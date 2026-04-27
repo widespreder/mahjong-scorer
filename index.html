@@ -2008,7 +2008,22 @@ function MahjongScorer() {
     <div style={body}>
       {historyDetail === null ? (
         <>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>対局履歴</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <span style={{ fontSize: 16, fontWeight: 700 }}>対局履歴</span>
+            {gameHistory.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm(`${gameHistory.length}件すべての履歴を削除します。よろしいですか？\n\n※ この操作は取り消せません。`)) {
+                    setGameHistory([]);
+                  }
+                }}
+                style={{
+                  padding: "6px 12px", border: `1px solid ${t.rd}55`, borderRadius: 8,
+                  background: "transparent", color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                }}
+              >🗑 全削除</button>
+            )}
+          </div>
           {gameHistory.length === 0 ? (
             <div style={{ ...card, textAlign: "center", padding: 32 }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
@@ -2019,32 +2034,50 @@ function MahjongScorer() {
             [...gameHistory].reverse().map((g, idx) => {
               const sorted = g.players.map((p, i) => ({ name: p, score: g.finalScores[i] })).sort((a, b) => b.score - a.score);
               return (
-                <button
-                  key={g.id}
-                  onClick={() => setHistoryDetail(g)}
-                  style={{ ...card, width: "100%", textAlign: "left", cursor: "pointer", padding: 16, transition: "all 0.12s" }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>{g.date}</span>
-                    <span style={{ fontSize: 12, color: t.dm, padding: "2px 10px", background: t.sf, borderRadius: 6 }}>
-                      {g.matchType === "tonpu" ? "東風" : "半荘"}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                    {sorted.map((s, si) => (
-                      <span key={si} style={{
-                        fontSize: 12, padding: "3px 8px", borderRadius: 6,
-                        background: si === 0 ? t.gdS : t.sf,
-                        color: si === 0 ? t.gd : t.tx,
-                        fontWeight: si === 0 ? 700 : 400,
-                        border: `1px solid ${si === 0 ? t.gd + "33" : t.bd}`,
-                      }}>
-                        {si === 0 && "🏆 "}{s.name} {s.score.toLocaleString()}
+                <div key={g.id} style={{ ...card, padding: 0, position: "relative", overflow: "hidden" }}>
+                  <button
+                    onClick={() => setHistoryDetail(g)}
+                    style={{ width: "100%", textAlign: "left", cursor: "pointer", padding: "16px 50px 16px 16px", background: "transparent", border: "none", color: t.tx, transition: "all 0.12s" }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700 }}>{g.date}</span>
+                      <span style={{ fontSize: 12, color: t.dm, padding: "2px 10px", background: t.sf, borderRadius: 6 }}>
+                        {g.matchType === "tonpu" ? "東風" : "半荘"}
                       </span>
-                    ))}
-                  </div>
-                  <div style={{ fontSize: 11, color: t.dm, marginTop: 6 }}>{g.rounds.length}局</div>
-                </button>
+                    </div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {sorted.map((s, si) => (
+                        <span key={si} style={{
+                          fontSize: 12, padding: "3px 8px", borderRadius: 6,
+                          background: si === 0 ? t.gdS : t.sf,
+                          color: si === 0 ? t.gd : t.tx,
+                          fontWeight: si === 0 ? 700 : 400,
+                          border: `1px solid ${si === 0 ? t.gd + "33" : t.bd}`,
+                        }}>
+                          {si === 0 && "🏆 "}{s.name} {s.score.toLocaleString()}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 11, color: t.dm, marginTop: 6 }}>{g.rounds.length}局</div>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`${g.date} の対局履歴を削除します。よろしいですか？`)) {
+                        setGameHistory(prev => prev.filter(h => h.id !== g.id));
+                      }
+                    }}
+                    style={{
+                      position: "absolute", top: 12, right: 12,
+                      width: 28, height: 28, borderRadius: 6,
+                      border: `1px solid ${t.bd}`, background: t.sf,
+                      color: t.dm, fontSize: 14, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "all 0.12s",
+                    }}
+                    title="この履歴を削除"
+                  >🗑</button>
+                </div>
               );
             })
           )}
