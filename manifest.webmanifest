@@ -1,0 +1,20 @@
+{
+  "name": "麻雀スコアラー",
+  "short_name": "麻雀スコアラー",
+  "description": "ブラウザで動く麻雀点数計算アプリ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c1117",
+  "theme_color": "#0c1117",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

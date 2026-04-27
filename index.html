@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="麻雀スコアラー">
+<meta name="theme-color" content="#0c1117">
+<meta name="description" content="ブラウザで動く麻雀点数計算 ＆ 対局管理アプリ">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>🀄 麻雀スコアラー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>html,body{margin:0;padding:0;background:#0c1117}*,*::before,*::after{box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useCallback, useMemo, useEffect } = React;
+
+// ── Score Engine ──
+function calcBasePoints(fu, han) {
+  // 13翻=単役満(8000)、26翻=ダブル役満(16000)、39翻=トリプル役満(24000)…
+  if (han >= 13) return Math.floor(han / 13) * 8000;
+  if (han >= 11) return 6000;
+  if (han >= 8) return 4000;
+  if (han >= 6) return 3000;
+  if (han >= 5) return 2000;
+  if (han === 4 && fu >= 30) return 2000;
+  if (han === 3 && fu >= 60) return 2000;
+  return Math.min(fu * Math.pow(2, 2 + han), 2000);
+}
+function roundUp100(n) { return Math.ceil(n / 100) * 100; }
+function calcScore(fu, han, isParent, isTsumo) {
+  const base = calcBasePoints(fu, han);
+  if (isParent) {
+    if (isTsumo) { const e = roundUp100(base * 2); return { total: e * 3, each: e }; }
+    else { return { total: roundUp100(base * 6) }; }
+  } else {
+    if (isTsumo) { const c = roundUp100(base), p = roundUp100(base * 2); return { total: c * 2 + p, fromChild: c, fromParent: p }; }
+    else { return { total: roundUp100(base * 4) }; }
+  }
+}
+function getLimitName(han) {
+  if (han >= 26) return `${Math.floor(han / 13)}倍役満`;
+  if (han >= 13) return "役満";
+  if (han >= 11) return "三倍満";
+  if (han >= 8) return "倍満";
+  if (han >= 6) return "跳満";
+  if (han >= 5) return "満貫";
+  return null;
+}
+
+const WINDS = ["東", "南", "西", "北"];
+const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+const PRESET_NAMES = ["つとむ", "ひろこ", "はじめ", "こころ"];
+
+// localStorage 永続化のキー
+const LS_HISTORY_KEY = "mahjong_scorer_history_v1";
+const LS_SUSPENDED_KEY = "mahjong_scorer_suspended_v1";
+const loadLS = (key, fallback) => {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+};
+const saveLS = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+};
+
+function MahjongScorer() {
+  const [view, setView] = useState("home");
+  const [gameHistory, setGameHistory] = useState(() => loadLS(LS_HISTORY_KEY, []));
+  const [suspendedGame, setSuspendedGame] = useState(() => loadLS(LS_SUSPENDED_KEY, null));
+  // 永続化
+  useEffect(() => { saveLS(LS_HISTORY_KEY, gameHistory); }, [gameHistory]);
+  useEffect(() => { saveLS(LS_SUSPENDED_KEY, suspendedGame); }, [suspendedGame]);
+
+  // ── Game Setup Wizard ──
+  const [setupStep, setSetupStep] = useState(0);
+  // Step 0: 対局日, Step 1: 試合数, Step 2: プレイヤー名, Step 3: ルール設定, Step 4: 確認
+  const [gameDate, setGameDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  });
+  const [matchType, setMatchType] = useState(null); // "tonpu" | "hanchan"
+  const [players, setPlayers] = useState(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
+  const [playerMode, setPlayerMode] = useState([false, false, false, false]); // false=text display, true=editing
+  const [rules, setRules] = useState({
+    tenpaiRenchan: true,    // テンパイ連荘
+    agariRenchan: false,    // あがり連荘のみ
+    kuitan: true,           // 食いタン
+    atozuke: true,          // 後付け
+    tobi: true,             // 飛び終了（誰かが0点未満で終了）
+    agariYame: false,       // アガリやめ（オーラス親トップで親が選択して終了可）
+    renpuuJantou4: false,   // 連風牌雀頭 +4符（OFFなら+2符）
+    startPoints: 30000,     // 持ち点
+    returnPoints: 30000,    // 返し点
+  });
+
+  // ── Game state ──
+  const [gameConfig, setGameConfig] = useState(null); // saved config after setup
+  const [scores, setScores] = useState([25000, 25000, 25000, 25000]);
+  const [rounds, setRounds] = useState([]);
+  const [dealerIdx, setDealerIdx] = useState(0);
+  const [roundWind, setRoundWind] = useState("東");
+  const [honba, setHonba] = useState(0);
+  const [riichiBets, setRiichiBets] = useState(0);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameFinished, setGameFinished] = useState(false); // natural game end
+
+  // ── Calc wizard ──
+  const [calcStep, setCalcStep] = useState(0);
+  const [cTsumo, setCTsumo] = useState(null);
+  const [cParent, setCParent] = useState(null);
+  const [cHan, setCHan] = useState(null);
+  const [cFu, setCFu] = useState(null);
+  const resetCalc = useCallback(() => { setCalcStep(0); setCTsumo(null); setCParent(null); setCHan(null); setCFu(null); setSelectedYakuIds([]); setYakuNaki(false); setYakuDora(0); setShowYakuSelector(false); }, []);
+  const calcResult = useMemo(() => {
+    if (cHan === null || cFu === null || cParent === null || cTsumo === null) return null;
+    return calcScore(cFu, cHan, cParent, cTsumo);
+  }, [cHan, cFu, cParent, cTsumo]);
+  const calcLimit = useMemo(() => cHan !== null ? getLimitName(cHan) : null, [cHan]);
+
+  // ── Game round wizard ──
+  const [gStep, setGStep] = useState(0);
+  const [gWinner, setGWinner] = useState(null);
+  const [gTsumo, setGTsumo] = useState(null);
+  const [gLoser, setGLoser] = useState(null);
+  const [gHan, setGHan] = useState(null);
+  const [gFu, setGFu] = useState(null);
+  const [showGW, setShowGW] = useState(false);
+  const [gRiichi, setGRiichi] = useState([false, false, false, false]); // who declared riichi this round
+  // Fu guide state
+  const [fuGuide, setFuGuide] = useState(null); // null=not started, object={mentsu, machi, jantou}
+  const resetFuGuide = () => setFuGuide(null);
+  const initFuGuide = () => setFuGuide({ mentsu: [], machi: "ryanmen", jantou: "suuhai" });
+  const [showFuHelp, setShowFuHelp] = useState(false);
+  // Yaku selector state (shared between calc & game wizard)
+  const [selectedYakuIds, setSelectedYakuIds] = useState([]);
+  const [yakuNaki, setYakuNaki] = useState(false);
+  const [yakuDora, setYakuDora] = useState(0);
+  const [showYakuSelector, setShowYakuSelector] = useState(false);
+  const MENTSU_OPTIONS = [
+    { id: "minko_c", label: "明刻(中張)", fu: 2, desc: "ポンした2〜8の牌の3枚組" },
+    { id: "minko_y", label: "明刻(么九)", fu: 4, desc: "ポンした1,9,字牌の3枚組" },
+    { id: "anko_c", label: "暗刻(中張)", fu: 4, desc: "自力で揃えた2〜8の3枚組" },
+    { id: "anko_y", label: "暗刻(么九)", fu: 8, desc: "自力で揃えた1,9,字牌の3枚組" },
+    { id: "minkan_c", label: "明槓(中張)", fu: 8, desc: "ポンから追加した2〜8の4枚組" },
+    { id: "minkan_y", label: "明槓(么九)", fu: 16, desc: "ポンから追加した1,9,字牌の4枚組" },
+    { id: "ankan_c", label: "暗槓(中張)", fu: 16, desc: "自力で揃えた2〜8の4枚組" },
+    { id: "ankan_y", label: "暗槓(么九)", fu: 32, desc: "自力で揃えた1,9,字牌の4枚組" },
+  ];
+  const MACHI_OPTIONS = [
+    { id: "ryanmen", label: "両面", fu: 0, desc: "例: 45で3と6待ち" },
+    { id: "shanpon", label: "シャンポン", fu: 0, desc: "2組の対子でどちらか待ち" },
+    { id: "kanchan", label: "カンチャン", fu: 2, desc: "例: 46で5待ち（間の牌）" },
+    { id: "penchan", label: "ペンチャン", fu: 2, desc: "例: 12で3待ち（端の牌）" },
+    { id: "tanki", label: "タンキ", fu: 2, desc: "雀頭の片方1枚待ち" },
+  ];
+  const JANTOU_OPTIONS = [
+    { id: "suuhai", label: "数牌/オタ風", fu: 0, desc: "数牌や役がつかない風牌" },
+    { id: "yakuhai", label: "役牌", fu: 2, desc: "白發中・場風・自風" },
+    { id: "renpuu", label: "連風牌", fu: 2, desc: "ダブ東・ダブ南など（ルールONで+4）" },
+  ];
+  const calcFuFromGuide = (guide, isTsumo, isNaki) => {
+    if (!guide) return { raw: 30, rounded: 30, base: 30, mentsuFu: 0, machiFu: 0, jantouFu: 0, isPinfuTsumo: false };
+    // ベース: ツモ=20+ツモ符2 / 鳴きロン=20 / 門前ロン=30
+    let base = isTsumo ? 22 : (isNaki ? 20 : 30);
+    let mentsuFu = 0;
+    guide.mentsu.forEach(m => { const opt = MENTSU_OPTIONS.find(o => o.id === m); if (opt) mentsuFu += opt.fu; });
+    const machiOpt = MACHI_OPTIONS.find(o => o.id === guide.machi);
+    const jantouOpt = JANTOU_OPTIONS.find(o => o.id === guide.jantou);
+    const machiFu = machiOpt?.fu || 0;
+    // 連風牌は通常+2符、ルールONで+4符
+    let jantouFu = jantouOpt?.fu || 0;
+    if (guide.jantou === "renpuu" && (gameConfig?.rules?.renpuuJantou4 || rules.renpuuJantou4)) {
+      jantouFu = 4;
+    }
+    const raw = base + mentsuFu + machiFu + jantouFu;
+    // 平和ツモ判定: ツモ + 全て順子(面子符0) + 待ち0 + 雀頭0 → 20符固定
+    const isPinfuTsumo = isTsumo && mentsuFu === 0 && machiFu === 0 && jantouFu === 0 && !isNaki;
+    const rounded = isPinfuTsumo ? 20 : Math.ceil(raw / 10) * 10;
+    return { raw, rounded, base, mentsuFu, machiFu, jantouFu, isPinfuTsumo };
+  };
+  const resetGW = useCallback(() => { setGStep(0); setGWinner(null); setGTsumo(null); setGLoser(null); setGHan(null); setGFu(null); setGRiichi([false,false,false,false]); setFuGuide(null); setSelectedYakuIds([]); setYakuNaki(false); setYakuDora(0); setShowYakuSelector(false); setShowGW(false); }, []);
+
+  // Draw (ryuukyoku) wizard
+  const [showDrawWiz, setShowDrawWiz] = useState(false);
+  const [drawTenpai, setDrawTenpai] = useState([false, false, false, false]); // who is tenpai
+  const [drawRiichi, setDrawRiichi] = useState([false, false, false, false]); // who declared riichi this round
+  const resetDrawWiz = useCallback(() => { setShowDrawWiz(false); setDrawTenpai([false, false, false, false]); setDrawRiichi([false, false, false, false]); }, []);
+  const gParent = gWinner !== null ? gWinner === dealerIdx : false;
+  const gLimit = gHan !== null ? getLimitName(gHan) : null;
+  const gResult = useMemo(() => {
+    if (gHan === null || gTsumo === null) return null;
+    return calcScore(gHan >= 5 ? 30 : (gFu || 30), gHan, gParent, gTsumo);
+  }, [gHan, gFu, gParent, gTsumo]);
+
+  const applyRound = useCallback(() => {
+    if (gWinner === null || !gResult) return;
+    const ns = [...scores], hb = honba * 300;
+    // Riichi: deduct 1000 from each riichi declarer
+    const riichiThisRound = gRiichi.filter(Boolean).length;
+    for (let i = 0; i < 4; i++) { if (gRiichi[i]) ns[i] -= 1000; }
+    // Total riichi pool = previous supply + this round's riichi
+    const totalRiichiPool = (riichiBets + riichiThisRound) * 1000;
+
+    if (gTsumo) {
+      if (gParent) {
+        for (let i = 0; i < 4; i++) { if (i === gWinner) ns[i] += gResult.each * 3 + hb + totalRiichiPool; else ns[i] -= gResult.each + Math.floor(hb / 3); }
+      } else {
+        for (let i = 0; i < 4; i++) { if (i === gWinner) ns[i] += gResult.total + hb + totalRiichiPool; else if (i === dealerIdx) ns[i] -= gResult.fromParent + Math.floor(hb / 3); else ns[i] -= gResult.fromChild + Math.floor(hb / 3); }
+      }
+    } else {
+      if (gLoser === null) return;
+      ns[gWinner] += gResult.total + hb + totalRiichiPool;
+      ns[gLoser] -= gResult.total + hb;
+    }
+    setScores(ns);
+    const totalGain = gResult.total + hb + totalRiichiPool;
+    const newRounds = [...rounds, { id: rounds.length + 1, wind: roundWind, dealer: dealerIdx, honba, winner: gWinner, loser: gLoser, han: gHan, fu: gHan >= 5 ? null : gFu, score: gResult.total, totalGain, tsumo: gTsumo, limitName: gLimit, riichi: [...gRiichi], honbaBonus: hb, riichiBonus: totalRiichiPool }];
+    setRounds(newRounds);
+
+    // Advance dealer / check game end
+    const cfg = gameConfig || {};
+    const ruleSet = cfg.rules || {};
+    // 飛び（トビ）チェック - 誰かが0点未満なら即終了
+    if (ruleSet.tobi && ns.some(s => s < 0)) {
+      setGameFinished(true);
+      setRiichiBets(0);
+      resetGW();
+      return;
+    }
+    const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
+                     (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+
+    if (gWinner !== dealerIdx) {
+      // Dealer rotates (child won)
+      const next = (dealerIdx + 1) % 4;
+      if (cfg.matchType === "tonpu" && next === 0) {
+        setGameFinished(true);
+      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+        setGameFinished(true);
+      } else {
+        setDealerIdx(next);
+        setHonba(0);
+        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+      }
+    } else {
+      // Parent won (renchan candidate)
+      if (isOrlast) {
+        // Orlast: 親が断トップ（同点なら起家順で先勝ち）→ 終了 / アガリやめONなら親選択 / それ以外は連荘
+        const parentScore = ns[dealerIdx];
+        const isTop = ns.every((s, i) => {
+          if (i === dealerIdx) return true;
+          if (parentScore !== s) return parentScore > s;
+          return dealerIdx < i; // 起家から近い順
+        });
+        if (isTop && !ruleSet.agariYame) {
+          setGameFinished(true);
+        } else {
+          // アガリやめONかつ親トップ → ユーザー選択（暫定: 連荘して画面に「終了」ボタン表示）
+          setHonba(h => h + 1);
+        }
+      } else {
+        setHonba(h => h + 1);
+      }
+    }
+    setRiichiBets(0);
+    resetGW();
+  }, [gWinner, gLoser, gResult, gTsumo, gParent, gHan, gFu, gLimit, gRiichi, scores, honba, riichiBets, dealerIdx, rounds, roundWind, resetGW, gameConfig]);
+
+  // Handle ryuukyoku (draw) - called after tenpai selection
+  const applyDraw = useCallback(() => {
+    const ns = [...scores];
+    const cfg = gameConfig || {};
+    const tenpaiCount = drawTenpai.filter(Boolean).length;
+    const notenCount = 4 - tenpaiCount;
+
+    // Riichi: deduct 1000 from each riichi declarer this round
+    const riichiThisRound = drawRiichi.filter(Boolean).length;
+    for (let i = 0; i < 4; i++) {
+      if (drawRiichi[i]) ns[i] -= 1000;
+    }
+
+    // Noten penalty: 3000 points split from noten to tenpai players
+    if (tenpaiCount > 0 && tenpaiCount < 4) {
+      const notenPay = Math.floor(3000 / notenCount);
+      const tenpaiGet = Math.floor(3000 / tenpaiCount);
+      for (let i = 0; i < 4; i++) {
+        if (drawTenpai[i]) ns[i] += tenpaiGet;
+        else ns[i] -= notenPay;
+      }
+    }
+
+    setScores(ns);
+    // Riichi sticks stay on the table as 供託 for next round's winner
+    setRiichiBets(b => b + riichiThisRound);
+    setHonba(h => h + 1);
+    setRounds(prev => [...prev, { id: prev.length + 1, wind: roundWind, dealer: dealerIdx, honba, draw: true, tenpai: [...drawTenpai], riichi: [...drawRiichi] }]);
+
+    // 飛び（トビ）チェック
+    const ruleSet = cfg.rules || {};
+    if (ruleSet.tobi && ns.some(s => s < 0)) {
+      setGameFinished(true);
+      resetDrawWiz();
+      return;
+    }
+
+    // Renchan / game-end logic
+    const dealerTenpai = drawTenpai[dealerIdx];
+    let dealerRotates = false;
+    const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
+                     (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+
+    if (ruleSet.agariRenchan) {
+      dealerRotates = true; // always rotate on draw
+    } else if (ruleSet.tenpaiRenchan) {
+      dealerRotates = !dealerTenpai; // rotate if dealer noten
+    }
+    // else (both off): dealer always stays on draw, just honba increments
+
+    if (dealerRotates) {
+      const next = (dealerIdx + 1) % 4;
+      if (cfg.matchType === "tonpu" && next === 0) {
+        setGameFinished(true);
+      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+        setGameFinished(true);
+      } else {
+        setDealerIdx(next);
+        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+      }
+    } else if (isOrlast) {
+      // Orlast: dealer stays (tenpai renchan), but if dealer is top → end
+      const parentScore = ns[dealerIdx];
+      const isTop = ns.every((s, i) => {
+        if (i === dealerIdx) return true;
+        if (parentScore !== s) return parentScore > s;
+        return dealerIdx < i;
+      });
+      if (isTop) {
+        setGameFinished(true);
+      }
+      // not top → renchan continues (honba already incremented)
+    }
+
+    resetDrawWiz();
+  }, [scores, honba, dealerIdx, roundWind, gameConfig, drawTenpai, drawRiichi, resetDrawWiz]);
+
+  const startGame = useCallback(() => {
+    const sp = rules.startPoints || 25000;
+    const cfg = { date: gameDate, matchType, players: [...players], rules: { ...rules } };
+    setGameConfig(cfg);
+    setScores([sp, sp, sp, sp]);
+    setDealerIdx(0);
+    setRoundWind("東");
+    setHonba(0);
+    setRiichiBets(0);
+    setRounds([]);
+    setGameStarted(true);
+    setGameFinished(false);
+  }, [gameDate, matchType, players, rules]);
+
+  // ── Theme ──
+  const t = { bg: "#0c1117", sf: "#161d27", card: "#1c2533", ac: "#3b82f6", acS: "rgba(59,130,246,0.12)", gn: "#22c55e", gnS: "rgba(34,197,94,0.12)", rd: "#ef4444", rdS: "rgba(239,68,68,0.12)", gd: "#eab308", gdS: "rgba(234,179,8,0.12)", tx: "#e2e8f0", dm: "#64748b", bd: "#2a3444" };
+
+  // ── Shared Styles ──
+  const card = { background: t.card, borderRadius: 14, padding: 20, marginBottom: 14, border: `1px solid ${t.bd}`, boxSizing: "border-box", maxWidth: "100%", overflow: "hidden" };
+  const question = { fontSize: 16, fontWeight: 700, marginBottom: 18, textAlign: "center" };
+  const bigBtn = (c, s) => ({ flex: "1 1 140px", maxWidth: 200, padding: "20px 8px", border: `2px solid ${c}`, borderRadius: 14, background: s, color: c, fontSize: 20, fontWeight: 800, cursor: "pointer", textAlign: "center", transition: "all 0.12s" });
+  const numBtn = (on) => ({ padding: "14px 0", border: `2px solid ${on ? t.ac : t.bd}`, borderRadius: 12, background: on ? t.acS : "transparent", color: on ? t.ac : t.tx, fontSize: 16, fontWeight: 700, cursor: "pointer", textAlign: "center", transition: "all 0.1s" });
+  const actionBtn = (v) => ({ width: "100%", padding: "14px 0", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 8, boxSizing: "border-box", ...(v === "p" ? { background: t.ac, color: "#fff" } : v === "d" ? { background: t.rd, color: "#fff" } : { background: t.sf, color: t.tx, border: `1px solid ${t.bd}` }) });
+  const pSelBtn = (on) => ({ padding: "14px 8px", border: `2px solid ${on ? t.ac : t.bd}`, borderRadius: 12, background: on ? t.acS : "transparent", color: on ? t.ac : t.tx, fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center", flex: 1, transition: "all 0.1s" });
+  const backBtn = { background: "none", border: "none", color: t.dm, fontSize: 13, cursor: "pointer", padding: "4px 0", marginBottom: 8 };
+  const inputStyle = { background: t.sf, border: `1px solid ${t.bd}`, borderRadius: 10, padding: "10px 14px", color: t.tx, fontSize: 14, width: "100%", boxSizing: "border-box", outline: "none" };
+  const selectStyle = { ...inputStyle, appearance: "none", WebkitAppearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 };
+  const toggleRow = (label, on, onToggle) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
+      <span style={{ fontSize: 14 }}>{label}</span>
+      <button onClick={onToggle} style={{
+        width: 48, height: 26, borderRadius: 13, border: "none", cursor: "pointer",
+        background: on ? t.ac : t.bd, position: "relative", transition: "background 0.2s",
+      }}>
+        <div style={{
+          width: 20, height: 20, borderRadius: "50%", background: "#fff",
+          position: "absolute", top: 3, left: on ? 25 : 3, transition: "left 0.2s",
+        }} />
+      </button>
+    </div>
+  );
+
+  const Dots = ({ total, cur }) => (
+    <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 16 }}>
+      {[...Array(total)].map((_, i) => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: i === cur ? t.ac : i < cur ? t.ac + "66" : t.bd, transition: "all 0.2s" }} />)}
+    </div>
+  );
+
+  const Back = ({ onClick }) => <button style={backBtn} onClick={onClick}>← 戻る</button>;
+
+  const FuHelpModal = () => (
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+      <div style={{ width: "100%", maxWidth: 400, paddingBottom: 40 }}>
+        <div style={{ ...card, padding: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <span style={{ fontSize: 16, fontWeight: 800 }}>符計算の解説</span>
+            <button style={{ background: "none", border: "none", color: t.dm, fontSize: 18, cursor: "pointer" }} onClick={() => setShowFuHelp(false)}>✕</button>
+          </div>
+
+          <div style={{ fontSize: 13, lineHeight: 1.8, color: t.tx }}>
+            <div style={{ fontWeight: 700, color: t.ac, marginBottom: 4 }}>基本符</div>
+            <div style={{ color: t.dm, marginBottom: 12 }}>ツモあがり = 20符 + ツモ符2{"\n"}ロンあがり（門前）= 30符</div>
+
+            <div style={{ fontWeight: 700, color: t.ac, marginBottom: 4 }}>面子（メンツ）とは？</div>
+            <div style={{ color: t.dm, marginBottom: 4 }}>手牌の中の3枚または4枚の組み合わせです。</div>
+
+            <div style={{ background: t.sf, borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12 }}>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ color: t.gn, fontWeight: 700 }}>明刻（ミンコ）</span> = ポンで作った同じ牌3枚
+              </div>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ color: t.gn, fontWeight: 700 }}>暗刻（アンコ）</span> = 自力で揃えた同じ牌3枚
+              </div>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ color: t.gn, fontWeight: 700 }}>明槓（ミンカン）</span> = ポンから追加 or 他家から4枚目
+              </div>
+              <div>
+                <span style={{ color: t.gn, fontWeight: 700 }}>暗槓（アンカン）</span> = 自力で揃えた同じ牌4枚
+              </div>
+            </div>
+
+            <div style={{ background: t.sf, borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12 }}>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ color: t.gd, fontWeight: 700 }}>中張牌（チュウチャン）</span> = 2〜8の数牌
+              </div>
+              <div>
+                <span style={{ color: t.gd, fontWeight: 700 }}>么九牌（ヤオチュウ）</span> = 1, 9, 字牌（東南西北白發中）
+              </div>
+            </div>
+
+            <div style={{ fontWeight: 700, color: t.ac, marginBottom: 4 }}>待ち（マチ）</div>
+            <div style={{ background: t.sf, borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12 }}>
+              <div style={{ marginBottom: 6 }}><span style={{ fontWeight: 700 }}>両面（リャンメン）</span> = 例: 🀇🀈 で 🀆と🀉待ち → 0符</div>
+              <div style={{ marginBottom: 6 }}><span style={{ fontWeight: 700 }}>シャンポン</span> = 2つの対子で片方待ち → 0符</div>
+              <div style={{ marginBottom: 6 }}><span style={{ fontWeight: 700 }}>カンチャン</span> = 例: 🀇🀉 で間の🀈待ち → +2符</div>
+              <div style={{ marginBottom: 6 }}><span style={{ fontWeight: 700 }}>ペンチャン</span> = 例: 🀇🀈 で端の🀉待ち → +2符</div>
+              <div><span style={{ fontWeight: 700 }}>タンキ</span> = 雀頭の1枚待ち → +2符</div>
+            </div>
+
+            <div style={{ fontWeight: 700, color: t.ac, marginBottom: 4 }}>雀頭（ジャントウ）</div>
+            <div style={{ background: t.sf, borderRadius: 8, padding: 10, fontSize: 12 }}>
+              <div style={{ marginBottom: 6 }}>あがりの形にある同じ牌2枚のペア（アタマ）</div>
+              <div style={{ marginBottom: 4 }}><span style={{ fontWeight: 700 }}>数牌 / オタ風</span> = 0符</div>
+              <div><span style={{ fontWeight: 700 }}>役牌（白發中・場風・自風）</span> = +2符</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ScoreDisplay = ({ han, fu, limit, result, tsumo, parent, extra }) => (
+    <div style={{ background: `linear-gradient(135deg, ${t.card}, ${t.sf})`, borderRadius: 16, padding: 24, textAlign: "center", border: `1px solid ${t.ac}33`, marginBottom: 14 }}>
+      {limit && <div style={{ display: "inline-block", padding: "4px 18px", borderRadius: 20, fontSize: 14, fontWeight: 800, background: han >= 13 ? t.gdS : t.acS, color: han >= 13 ? t.gd : t.ac, marginBottom: 12 }}>{limit}</div>}
+      <div style={{ fontSize: 13, color: t.dm, marginBottom: 8 }}>
+        {han >= 13 ? "役満" : han >= 5 ? `${han}翻` : `${han}翻 ${fu}符`} / {tsumo ? "ツモ" : "ロン"} / {parent ? "親" : "子"}
+      </div>
+      <div style={{ fontSize: 48, fontWeight: 900, color: t.ac, lineHeight: 1 }}>{result.total.toLocaleString()}</div>
+      <div style={{ fontSize: 18, color: t.dm, marginTop: 10, fontWeight: 600 }}>
+        {tsumo ? parent ? `${result.each.toLocaleString()}点オール` : `子${result.fromChild.toLocaleString()} / 親${result.fromParent.toLocaleString()}` : `${result.total.toLocaleString()}点`}
+      </div>
+      {extra}
+    </div>
+  );
+
+  const body = { padding: "16px 20px 32px", boxSizing: "border-box", maxWidth: "100%", overflowX: "clip" };
+
+  // Global box-sizing reset
+  const globalStyle = `*, *::before, *::after { box-sizing: border-box; }`;
+
+  // ══════════════════════════════════
+  // ── YAKU DATA ──
+  // ══════════════════════════════════
+  const YAKU_DATA = [
+    { name: "リーチ（立直）", han: 1, naki: null, desc: "テンパイ時に宣言。門前（メンゼン）限定。宣言後は手牌を変えられない", cat: "1翻" },
+    { name: "一発（イッパツ）", han: 1, naki: null, desc: "リーチ後、次の自分のツモまでにアガること。途中で鳴きが入ると無効", cat: "1翻" },
+    { name: "門前清自摸和（メンゼンツモ）", han: 1, naki: null, desc: "鳴かずにツモでアガる", cat: "1翻" },
+    { name: "平和（ピンフ）", han: 1, naki: null, desc: "全て順子（シュンツ）で構成。雀頭が役牌でなく、両面待ち。門前限定", cat: "1翻" },
+    { name: "断么九（タンヤオ）", han: 1, naki: 1, desc: "1・9・字牌を使わず、2〜8の数牌だけで構成", cat: "1翻" },
+    { name: "一盃口（イーペーコー）", han: 1, naki: null, desc: "同じ順子が2組ある。例: 123 123。門前限定", cat: "1翻" },
+    { name: "役牌 白（ハク）", han: 1, naki: 1, desc: "白を3枚揃える（刻子か槓子）", cat: "1翻" },
+    { name: "役牌 發（ハツ）", han: 1, naki: 1, desc: "發を3枚揃える", cat: "1翻" },
+    { name: "役牌 中（チュン）", han: 1, naki: 1, desc: "中を3枚揃える", cat: "1翻" },
+    { name: "場風牌（バカゼハイ）", han: 1, naki: 1, desc: "場風（東場なら東、南場なら南）を3枚揃える", cat: "1翻" },
+    { name: "自風牌（ジカゼハイ）", han: 1, naki: 1, desc: "自分の風（東家なら東など）を3枚揃える", cat: "1翻" },
+    { name: "嶺上開花（リンシャンカイホウ）", han: 1, naki: 1, desc: "カンした後のリンシャン牌でアガる", cat: "1翻" },
+    { name: "搶槓（チャンカン）", han: 1, naki: 1, desc: "他家がカカンした牌でロンアガリ", cat: "1翻" },
+    { name: "海底摸月（ハイテイ）", han: 1, naki: 1, desc: "最後のツモ牌でアガる", cat: "1翻" },
+    { name: "河底撈魚（ホウテイ）", han: 1, naki: 1, desc: "最後の捨て牌でロンアガリ", cat: "1翻" },
+    { name: "ダブル立直（ダブルリーチ）", han: 2, naki: null, desc: "最初の捨て牌でリーチ宣言。途中で鳴きが入っていないことが条件", cat: "2翻" },
+    { name: "三色同順（サンショクドウジュン）", han: 2, naki: 1, desc: "萬子・筒子・索子で同じ数の順子。例: 123萬 123筒 123索。鳴くと1翻", cat: "2翻" },
+    { name: "一気通貫（イッキツウカン）", han: 2, naki: 1, desc: "同じ種類の牌で123・456・789を揃える。鳴くと1翻", cat: "2翻" },
+    { name: "混全帯么九（チャンタ）", han: 2, naki: 1, desc: "全ての面子と雀頭に1・9・字牌が含まれる。鳴くと1翻", cat: "2翻" },
+    { name: "七対子（チートイツ）", han: 2, naki: null, desc: "7つの対子（同じ牌2枚のペア×7組）で構成。門前限定。25符固定", cat: "2翻" },
+    { name: "対々和（トイトイ）", han: 2, naki: 2, desc: "全て刻子（同じ牌3枚）で構成。順子なし", cat: "2翻" },
+    { name: "三暗刻（サンアンコー）", han: 2, naki: 2, desc: "暗刻（自力で揃えた3枚組）が3つある", cat: "2翻" },
+    { name: "三色同刻（サンショクドウコー）", han: 2, naki: 2, desc: "萬子・筒子・索子で同じ数の刻子。例: 555萬 555筒 555索", cat: "2翻" },
+    { name: "三槓子（サンカンツ）", han: 2, naki: 2, desc: "槓子（4枚組）が3つある", cat: "2翻" },
+    { name: "小三元（ショウサンゲン）", han: 2, naki: 2, desc: "白・發・中のうち2つを刻子、1つを雀頭にする。※役牌2つ分も加算", cat: "2翻" },
+    { name: "混老頭（ホンロウトウ）", han: 2, naki: 2, desc: "1・9・字牌のみで構成。対々和か七対子の形になる", cat: "2翻" },
+    { name: "二盃口（リャンペーコー）", han: 3, naki: null, desc: "一盃口が2組ある。門前限定", cat: "3翻" },
+    { name: "純全帯么九（ジュンチャン）", han: 3, naki: 2, desc: "全ての面子と雀頭に1・9が含まれる（字牌なし）。鳴くと2翻", cat: "3翻" },
+    { name: "混一色（ホンイツ）", han: 3, naki: 2, desc: "1種類の数牌＋字牌のみで構成。鳴くと2翻", cat: "3翻" },
+    { name: "清一色（チンイツ）", han: 6, naki: 5, desc: "1種類の数牌のみで構成。鳴くと5翻", cat: "6翻" },
+    { name: "国士無双（コクシムソウ）", han: 13, naki: null, desc: "1・9・字牌を全種類1枚ずつ＋どれか1枚。13種の么九牌を集める", cat: "役満" },
+    { name: "四暗刻（スーアンコー）", han: 13, naki: null, desc: "暗刻が4つ。全ての刻子を自力で揃える。門前限定", cat: "役満" },
+    { name: "大三元（ダイサンゲン）", han: 13, naki: 13, desc: "白・發・中の全てを刻子にする", cat: "役満" },
+    { name: "字一色（ツーイーソー）", han: 13, naki: 13, desc: "字牌（東南西北白發中）のみで構成", cat: "役満" },
+    { name: "小四喜（ショウスーシー）", han: 13, naki: 13, desc: "東南西北のうち3つを刻子、1つを雀頭にする", cat: "役満" },
+    { name: "大四喜（ダイスーシー）", han: 13, naki: 13, desc: "東南西北の全てを刻子にする", cat: "役満" },
+    { name: "緑一色（リューイーソー）", han: 13, naki: 13, desc: "索子の2・3・4・6・8と發のみで構成", cat: "役満" },
+    { name: "清老頭（チンロウトウ）", han: 13, naki: 13, desc: "1と9の数牌のみで構成（字牌なし）", cat: "役満" },
+    { name: "九蓮宝燈（チューレンポウトウ）", han: 13, naki: null, desc: "1112345678999＋同種の任意の1枚。門前限定", cat: "役満" },
+    { name: "四槓子（スーカンツ）", han: 13, naki: 13, desc: "槓子（4枚組）を4つ作る", cat: "役満" },
+    { name: "天和（テンホウ）", han: 13, naki: null, desc: "親が配牌の時点でアガリの形。門前限定", cat: "役満" },
+    { name: "地和（チーホウ）", han: 13, naki: null, desc: "子が最初のツモでアガる。鳴きが入っていないことが条件", cat: "役満" },
+  ];
+  const YAKU_CATEGORIES = ["1翻", "2翻", "3翻", "6翻", "役満"];
+  const HAN_CHOICES = ["0", "1", "2", "3", "5", "6", "役満"];
+
+  // よく出る役（上位に固定表示）
+  const COMMON_YAKU_NAMES = [
+    "リーチ（立直）",
+    "一発（イッパツ）",
+    "門前清自摸和（メンゼンツモ）",
+    "平和（ピンフ）",
+    "断么九（タンヤオ）",
+    "役牌 白（ハク）",
+    "役牌 發（ハツ）",
+    "役牌 中（チュン）",
+    "場風牌（バカゼハイ）",
+    "自風牌（ジカゼハイ）",
+    "三色同順（サンショクドウジュン）",
+    "対々和（トイトイ）",
+    "七対子（チートイツ）",
+    "混一色（ホンイツ）",
+  ];
+  const COMMON_YAKU_INDICES = COMMON_YAKU_NAMES
+    .map(n => YAKU_DATA.findIndex(y => y.name === n))
+    .filter(i => i >= 0);
+
+  // ── Yaku Selector (shared) ──
+  const renderYakuSelector = (onConfirm) => {
+    const yakumanCount = selectedYakuIds.filter(idx => YAKU_DATA[idx].han >= 13).length;
+    const hasYakuman = yakumanCount > 0;
+    const nonYakumanYakuCount = selectedYakuIds.filter(idx => YAKU_DATA[idx].han < 13).length;
+    let total = 0;
+    if (hasYakuman) {
+      total = yakumanCount * 13; // ダブル役満 = 26, トリプル = 39 …
+    } else {
+      selectedYakuIds.forEach(idx => {
+        const y = YAKU_DATA[idx];
+        const v = yakuNaki ? y.naki : y.han;
+        total += (v == null ? 0 : v);
+      });
+      total += yakuDora;
+    }
+    // 役満 or 役が1つ以上必要（ドラだけではアガれない）
+    const canConfirm = hasYakuman || nonYakumanYakuCount > 0;
+    const featured = new Set(COMMON_YAKU_INDICES);
+
+    const renderYakuBtn = (idx) => {
+      const y = YAKU_DATA[idx];
+      const disabled = yakuNaki && y.naki === null;
+      const sel = selectedYakuIds.includes(idx);
+      const han = yakuNaki ? y.naki : y.han;
+      const m = y.name.match(/^([^（]+)（([^）]+)）$/);
+      const mainName = m ? m[1].trim() : y.name;
+      const reading = m ? m[2] : null;
+      return (
+        <button
+          key={idx}
+          disabled={disabled}
+          onClick={() => setSelectedYakuIds(ids => sel ? ids.filter(x => x !== idx) : [...ids, idx])}
+          style={{
+            padding: "6px 8px",
+            borderRadius: 8,
+            border: `1px solid ${sel ? t.ac : t.bd}`,
+            background: sel ? t.acS : "transparent",
+            color: disabled ? t.dm : sel ? t.ac : t.tx,
+            cursor: disabled ? "not-allowed" : "pointer",
+            textAlign: "left",
+            fontSize: 11,
+            opacity: disabled ? 0.35 : 1,
+            transition: "all 0.1s",
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 12, lineHeight: 1.2 }}>{mainName}</div>
+          {reading && <div style={{ fontSize: 9, color: disabled ? t.dm : sel ? t.ac + "cc" : t.dm, marginTop: 1, lineHeight: 1.2 }}>{reading}</div>}
+          <div style={{ fontSize: 10, color: sel ? t.ac : t.dm, marginTop: 3 }}>
+            {disabled ? "✕ 鳴き不可" : y.han >= 13 ? "役満" : `${han}翻`}
+          </div>
+        </button>
+      );
+    };
+
+    return (
+      <>
+        {/* スティッキー合計バー */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 10,
+          background: t.card,
+          margin: "-20px -20px 14px",
+          padding: "10px 12px",
+          borderBottom: `1px solid ${t.bd}`,
+          boxShadow: `0 2px 8px rgba(0,0,0,0.3)`,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+        }}>
+          <button
+            style={{ background: "none", border: "none", color: t.dm, fontSize: 18, cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}
+            onClick={() => setShowYakuSelector(false)}
+            title="戻る"
+          >←</button>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, flex: 1, minWidth: 0, justifyContent: "center" }}>
+            <span style={{ fontSize: 11, color: t.dm }}>合計</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: hasYakuman ? t.gd : t.ac, lineHeight: 1 }}>
+              {hasYakuman ? (yakumanCount > 1 ? `${yakumanCount}倍役満` : "役満") : `${total}翻`}
+            </span>
+            <span style={{ fontSize: 10, color: t.dm, whiteSpace: "nowrap" }}>
+              {selectedYakuIds.length}役{yakuDora > 0 ? `+ドラ${yakuDora}` : ""}
+            </span>
+          </div>
+          <button
+            style={{
+              padding: "8px 14px", borderRadius: 8, border: "none",
+              background: canConfirm ? t.ac : t.bd, color: "#fff",
+              fontSize: 13, fontWeight: 800,
+              cursor: canConfirm ? "pointer" : "not-allowed",
+              opacity: canConfirm ? 1 : 0.5,
+              whiteSpace: "nowrap",
+            }}
+            disabled={!canConfirm}
+            onClick={() => onConfirm(total)}
+            title={!canConfirm ? "役を1つ以上選んでください（ドラだけではアガれません）" : ""}
+          >確定</button>
+        </div>
+
+        {/* ドラ */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 10, border: `1px solid ${t.gd}55`, background: t.gdS, marginBottom: 12 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: t.gd }}>ドラ</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 18, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+              onClick={() => setYakuDora(d => Math.max(0, d - 1))}
+            >−</button>
+            <span style={{ minWidth: 28, textAlign: "center", fontSize: 18, fontWeight: 900, color: t.gd }}>{yakuDora}</span>
+            <button
+              style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 18, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+              onClick={() => setYakuDora(d => d + 1)}
+            >＋</button>
+          </div>
+        </div>
+
+        {/* 門前 / 鳴き */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <button
+            style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${!yakuNaki ? t.ac : t.bd}`, background: !yakuNaki ? t.acS : "transparent", color: !yakuNaki ? t.ac : t.tx, fontWeight: 700, cursor: "pointer", fontSize: 13 }}
+            onClick={() => setYakuNaki(false)}
+          >🚫 門前</button>
+          <button
+            style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${yakuNaki ? t.gn : t.bd}`, background: yakuNaki ? t.gnS : "transparent", color: yakuNaki ? t.gn : t.tx, fontWeight: 700, cursor: "pointer", fontSize: 13 }}
+            onClick={() => {
+              setSelectedYakuIds(ids => ids.filter(idx => YAKU_DATA[idx].naki !== null));
+              setYakuNaki(true);
+            }}
+          >🔔 鳴きあり</button>
+        </div>
+
+        {/* カテゴリ別ヘッダー描画ヘルパー */}
+        {(() => {
+          const catColor = (cat) => {
+            if (cat === "1翻") return t.ac;       // 青
+            if (cat === "2翻") return t.gn;       // 緑
+            if (cat === "3翻") return t.gd;       // 黄
+            if (cat === "6翻") return "#f97316";  // オレンジ
+            if (cat === "役満") return t.rd;      // 赤
+            return t.dm;
+          };
+          const renderCategoryHeader = (label, color, icon) => (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 10,
+              margin: "20px -20px 10px", padding: "8px 20px",
+              borderTop: `2px solid ${color}`,
+              background: `linear-gradient(90deg, ${color}22, transparent)`,
+            }}>
+              {icon && <span style={{ fontSize: 16 }}>{icon}</span>}
+              <span style={{
+                fontSize: 15, fontWeight: 900, color,
+                letterSpacing: "0.05em",
+              }}>{label}</span>
+              <div style={{ flex: 1, height: 1, background: `${color}44` }} />
+            </div>
+          );
+          return (
+            <>
+              {/* よく出る役 */}
+              {renderCategoryHeader("よく出る役", t.ac, "★")}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+                {COMMON_YAKU_INDICES.map(idx => renderYakuBtn(idx))}
+              </div>
+
+              {/* カテゴリ別（よく出る役も含めて全件表示・選択は連動） */}
+              {YAKU_CATEGORIES.map(cat => {
+                const items = YAKU_DATA.map((y, idx) => ({ y, idx })).filter(({ y }) => y.cat === cat);
+                if (items.length === 0) return null;
+                const color = catColor(cat);
+                return (
+                  <React.Fragment key={cat}>
+                    {renderCategoryHeader(cat, color)}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+                      {items.map(({ idx }) => renderYakuBtn(idx))}
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </>
+          );
+        })()}
+      </>
+    );
+  };
+
+  // ── Quiz state ──
+  const [quizAnswer, setQuizAnswer] = useState(null);
+  const [quizRevealed, setQuizRevealed] = useState(false);
+  const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
+  const [quizMode, setQuizMode] = useState(null);
+  const [quizOrder, setQuizOrder] = useState([]);
+  const [quizIdx, setQuizIdx] = useState(0);
+  const [quizFinished, setQuizFinished] = useState(false);
+
+  const startQuiz = (mode) => {
+    const pool = mode === "naki" ? YAKU_DATA.filter(y => y.naki !== null) : YAKU_DATA;
+    const order = pool.map((_, i) => i).sort(() => Math.random() - 0.5);
+    setQuizMode(mode); setQuizOrder(order); setQuizIdx(0);
+    setQuizAnswer(null); setQuizRevealed(false);
+    setQuizScore({ correct: 0, total: 0 }); setQuizFinished(false);
+  };
+
+  const getQuizPool = () => quizMode === "naki" ? YAKU_DATA.filter(y => y.naki !== null) : YAKU_DATA;
+  const getQuizYaku = () => { const pool = getQuizPool(); return pool[quizOrder[quizIdx]] || null; };
+  const getCorrectAnswer = (yaku, askNaki) => {
+    if (!yaku) return "0";
+    if (askNaki) { return yaku.naki === null ? "なし" : yaku.naki >= 13 ? "役満" : String(yaku.naki); }
+    return yaku.han >= 13 ? "役満" : String(yaku.han);
+  };
+
+  // ── Dictionary state ──
+  const [dictCat, setDictCat] = useState("1翻");
+  const [dictExpanded, setDictExpanded] = useState(null);
+
+  // ══════════════════════════════════
+  // ── QUIZ VIEW ──
+  // ══════════════════════════════════
+  const renderQuiz = () => {
+    const yaku = getQuizYaku();
+    const total = quizOrder.length;
+
+    if (!quizMode) {
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>🎯</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>役の翻数テスト</h2>
+            <p style={{ fontSize: 13, color: t.dm }}>役の翻数を当てよう！</p>
+          </div>
+          <div style={card}>
+            <div style={question}>出題モードを選択</div>
+            <button style={{ ...actionBtn("p"), marginBottom: 10 }} onClick={() => startQuiz("menzen")}>門前（メンゼン）の翻数</button>
+            <button style={{ ...actionBtn("p"), marginBottom: 10, background: t.gn }} onClick={() => startQuiz("naki")}>鳴いた時の翻数</button>
+            <button style={{ ...actionBtn(), marginBottom: 10 }} onClick={() => startQuiz("both")}>ランダム（門前 or 鳴き）</button>
+            <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+          </div>
+        </div>
+      );
+    }
+
+    if (quizFinished) {
+      const pct = quizScore.total > 0 ? Math.round(quizScore.correct / quizScore.total * 100) : 0;
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>{pct >= 80 ? "🎉" : pct >= 50 ? "👍" : "📚"}</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>テスト結果</h2>
+          </div>
+          <div style={{ ...card, textAlign: "center" }}>
+            <div style={{ fontSize: 40, fontWeight: 900, color: pct >= 80 ? t.gn : pct >= 50 ? t.gd : t.rd }}>{pct}%</div>
+            <div style={{ fontSize: 16, color: t.dm, marginTop: 4 }}>{quizScore.correct} / {quizScore.total} 正解</div>
+          </div>
+          <button style={actionBtn("p")} onClick={() => startQuiz(quizMode)}>もう一度</button>
+          <button style={actionBtn()} onClick={() => setQuizMode(null)}>モード選択に戻る</button>
+          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+
+    if (!yaku) { setQuizFinished(true); return null; }
+
+    // Determine question type
+    const askNaki = quizMode === "naki" ? true : quizMode === "menzen" ? false : (yaku.naki !== null && quizIdx % 2 === 1);
+    const correctAns = getCorrectAnswer(yaku, askNaki);
+
+    return (
+      <div style={body}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <span style={{ fontSize: 13, color: t.dm }}>{quizIdx + 1} / {total}</span>
+          <span style={{ fontSize: 13, color: t.gn, fontWeight: 700 }}>{quizScore.correct}正解</span>
+        </div>
+        <div style={{ height: 4, background: t.bd, borderRadius: 2, marginBottom: 16 }}>
+          <div style={{ height: 4, background: t.ac, borderRadius: 2, width: `${(quizIdx / total) * 100}%`, transition: "width 0.3s" }} />
+        </div>
+
+        <div style={card}>
+          <div style={{ fontSize: 12, color: askNaki ? t.gn : t.ac, fontWeight: 700, textAlign: "center", marginBottom: 6 }}>
+            {askNaki ? "🔔 鳴いた時" : "🚫 門前（メンゼン）"}
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>{yaku.name}</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 16 }}>は何翻？</div>
+
+          {!quizRevealed ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+              {(askNaki && yaku.naki === null ? ["なし"] : HAN_CHOICES).map(ch => (
+                <button key={ch} style={numBtn(false)} onClick={() => {
+                  setQuizAnswer(ch); setQuizRevealed(true);
+                  setQuizScore(s => ({ correct: s.correct + (ch === correctAns ? 1 : 0), total: s.total + 1 }));
+                }}>{ch === "0" ? "なし" : ch === "役満" ? "役満" : ch === "なし" ? "鳴けない" : `${ch}翻`}</button>
+              ))}
+            </div>
+          ) : (
+            <div>
+              <div style={{
+                textAlign: "center", padding: 16, borderRadius: 12, marginBottom: 12,
+                background: quizAnswer === correctAns ? t.gnS : t.rdS,
+                border: `2px solid ${quizAnswer === correctAns ? t.gn : t.rd}`,
+              }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: quizAnswer === correctAns ? t.gn : t.rd }}>
+                  {quizAnswer === correctAns ? "⭕ 正解！" : "❌ 不正解"}
+                </div>
+                {quizAnswer !== correctAns && (
+                  <div style={{ fontSize: 16, color: t.tx, marginTop: 6, fontWeight: 700 }}>
+                    正解: {correctAns === "なし" ? "鳴けない役" : correctAns === "役満" ? "役満" : `${correctAns}翻`}
+                  </div>
+                )}
+              </div>
+              <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                <div style={{ fontSize: 13, color: t.tx, lineHeight: 1.7 }}>{yaku.desc}</div>
+                <div style={{ fontSize: 12, marginTop: 6, display: "flex", gap: 12 }}>
+                  <span style={{ color: t.ac }}>門前: {yaku.han >= 13 ? "役満" : `${yaku.han}翻`}</span>
+                  {yaku.naki !== null ? <span style={{ color: t.gn }}>鳴き: {yaku.naki >= 13 ? "役満" : `${yaku.naki}翻`}</span>
+                    : <span style={{ color: t.rd }}>鳴き: ✕</span>}
+                </div>
+              </div>
+              <button style={actionBtn("p")} onClick={() => {
+                if (quizIdx + 1 >= total) setQuizFinished(true);
+                else { setQuizIdx(quizIdx + 1); setQuizAnswer(null); setQuizRevealed(false); }
+              }}>{quizIdx + 1 >= total ? "結果を見る" : "次の問題"}</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
+  // ── DICTIONARY VIEW ──
+  // ══════════════════════════════════
+  const renderDict = () => (
+    <div style={body}>
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>役一覧</div>
+      <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        {YAKU_CATEGORIES.map(cat => (
+          <button key={cat} style={{
+            padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+            border: `1px solid ${dictCat === cat ? t.ac : t.bd}`,
+            background: dictCat === cat ? t.acS : "transparent",
+            color: dictCat === cat ? t.ac : t.dm,
+          }} onClick={() => { setDictCat(cat); setDictExpanded(null); }}>{cat}</button>
+        ))}
+      </div>
+      {YAKU_DATA.filter(y => y.cat === dictCat).map((y, idx) => (
+        <div key={idx} style={{ ...card, padding: 0, marginBottom: 8, cursor: "pointer", border: `1px solid ${dictExpanded === y.name ? t.ac + "55" : t.bd}` }}>
+          <button onClick={() => setDictExpanded(dictExpanded === y.name ? null : y.name)}
+            style={{ width: "100%", padding: "12px 16px", background: "transparent", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", textAlign: "left" }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: t.tx }}>{y.name}</div>
+              <div style={{ fontSize: 12, color: t.dm, marginTop: 2 }}>
+                門前 {y.han >= 13 ? "役満" : `${y.han}翻`}
+                {y.naki !== null ? <span style={{ color: t.gn, marginLeft: 8 }}>鳴き {y.naki >= 13 ? "役満" : `${y.naki}翻`}</span>
+                  : <span style={{ color: t.rd, marginLeft: 8 }}>鳴き ✕</span>}
+              </div>
+            </div>
+            <span style={{ fontSize: 14, color: t.dm }}>{dictExpanded === y.name ? "▲" : "▼"}</span>
+          </button>
+          {dictExpanded === y.name && (
+            <div style={{ padding: "0 16px 14px", fontSize: 13, color: t.dm, lineHeight: 1.7, borderTop: `1px solid ${t.bd}33` }}>
+              <div style={{ paddingTop: 10 }}>{y.desc}</div>
+            </div>
+          )}
+        </div>
+      ))}
+      <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+    </div>
+  );
+  const renderHome = () => {
+    const menuItem = (icon, label, sub, onClick, highlight) => (
+      <button
+        onClick={onClick}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 14,
+          padding: "16px 18px", background: highlight ? t.gdS : t.card, border: `1px solid ${highlight ? t.gd + "55" : t.bd}`,
+          borderRadius: 14, cursor: "pointer", marginBottom: 10, textAlign: "left",
+          transition: "all 0.12s",
+        }}
+      >
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: highlight ? t.gdS : t.acS, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+          {icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: highlight ? t.gd : t.tx }}>{label}</div>
+          <div style={{ fontSize: 12, color: t.dm, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>
+        </div>
+      </button>
+    );
+
+    return (
+      <div style={body}>
+        <div style={{ textAlign: "center", padding: "40px 0 28px" }}>
+          <div style={{ fontSize: 56, marginBottom: 10 }}>🀄</div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>麻雀スコアラー</h2>
+          <p style={{ fontSize: 13, color: t.dm, margin: 0 }}>かんたん点数計算 ＆ 対局管理</p>
+        </div>
+
+        {/* Suspended game - show at top if exists */}
+        {suspendedGame && menuItem("⏸", "保留中の対局を再開", `${suspendedGame.config.date} ${suspendedGame.config.matchType === "tonpu" ? "東風" : "半荘"} — ${suspendedGame.players.join("・")}`, () => {
+          // Restore game state
+          setGameConfig(suspendedGame.config);
+          setPlayers(suspendedGame.players);
+          setScores(suspendedGame.scores);
+          setRounds(suspendedGame.rounds);
+          setDealerIdx(suspendedGame.dealerIdx);
+          setRoundWind(suspendedGame.roundWind);
+          setHonba(suspendedGame.honba);
+          setRiichiBets(suspendedGame.riichiBets);
+          setGameStarted(true);
+          setSuspendedGame(null);
+          setView("game");
+        }, true)}
+
+        {menuItem("▶", "対局を始める", suspendedGame ? "※ 保留中の対局があります" : "対局設定 → スコア管理", () => {
+          if (suspendedGame) {
+            if (!window.confirm("保留中の対局があります。破棄して新しい対局を始めますか？")) return;
+            setSuspendedGame(null);
+          }
+          setView("game");
+          setSetupStep(0);
+          setMatchType(null);
+          setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
+          setPlayerMode([false, false, false, false]);
+          setGameStarted(false);
+        })}
+
+        {menuItem("📋", "対局履歴", `${gameHistory.length}件の記録`, () => {
+          setView("history");
+        })}
+
+        {menuItem("🔢", "1局計算", "翻・符から点数をすぐ計算", () => {
+          setView("calc");
+          resetCalc();
+        })}
+
+        {menuItem("🎯", "翻数テスト", "役の翻数クイズで腕試し", () => {
+          setView("quiz");
+          setQuizMode(null);
+        })}
+
+        {menuItem("📖", "役一覧", "全ての役の解説と翻数", () => {
+          setView("dict");
+          setDictCat("1翻");
+          setDictExpanded(null);
+        })}
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
+  // ── CALCULATOR WIZARD ──
+  // ══════════════════════════════════
+  const renderCalc = () => (
+    <div style={body}>
+      {calcStep === 0 && (
+        <div style={card}>
+          <Dots total={4} cur={0} />
+          <div style={question}>あがり方は？</div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button style={bigBtn(t.gn, t.gnS)} onClick={() => { setCTsumo(true); setCalcStep(1); }}>ツモ</button>
+            <button style={bigBtn(t.rd, t.rdS)} onClick={() => { setCTsumo(false); setCalcStep(1); }}>ロン</button>
+          </div>
+        </div>
+      )}
+      {calcStep === 1 && (
+        <div style={card}>
+          <Back onClick={() => setCalcStep(0)} />
+          <Dots total={4} cur={1} />
+          <div style={question}>あがった人は？</div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button style={bigBtn(t.gd, t.gdS)} onClick={() => { setCParent(true); setCalcStep(2); }}>親</button>
+            <button style={bigBtn(t.ac, t.acS)} onClick={() => { setCParent(false); setCalcStep(2); }}>子</button>
+          </div>
+        </div>
+      )}
+      {calcStep === 2 && (
+        <div style={{ ...card, overflow: showYakuSelector ? "visible" : "hidden" }}>
+          {!showYakuSelector && <Back onClick={() => setCalcStep(1)} />}
+          {!showYakuSelector && <Dots total={4} cur={2} />}
+          {showYakuSelector ? renderYakuSelector((han) => {
+            setCHan(han);
+            setShowYakuSelector(false);
+            // 特殊役の符自動セット
+            const hasPinfu = selectedYakuIds.some(idx => YAKU_DATA[idx].name.startsWith("平和"));
+            const hasChiitoi = selectedYakuIds.some(idx => YAKU_DATA[idx].name.startsWith("七対子"));
+            if (han >= 5) { setCFu(30); setCalcStep(4); }
+            else if (hasPinfu && cTsumo) { setCFu(20); setCalcStep(4); }
+            else if (hasChiitoi) { setCFu(25); setCalcStep(4); }
+            else if (hasPinfu && !cTsumo) { setCFu(30); setCalcStep(4); } // 平和ロン=30固定
+            else setCalcStep(3);
+          }) : (
+            <>
+              <div style={question}>翻数は？</div>
+              <button style={{ ...actionBtn("p"), marginBottom: 10 }} onClick={() => setShowYakuSelector(true)}>役から選んで計算</button>
+              <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                {[1,2,3,4,5,6,7,8,9,10,11,13].map(h => (
+                  <button key={h} style={numBtn(cHan===h)} onClick={() => { setCHan(h); if(h>=5){setCFu(30);setCalcStep(4);} else setCalcStep(3); }}>{h>=13?"役満":`${h}翻`}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {calcStep === 3 && (
+        <div style={card}>
+          <Back onClick={() => { setCalcStep(2); setCHan(null); resetFuGuide(); setSelectedYakuIds([]); setYakuDora(0); }} />
+          <Dots total={4} cur={3} />
+
+          {!fuGuide ? (
+            <>
+              <div style={question}>符の入力方法</div>
+              <button style={{ ...actionBtn("p"), marginBottom: 10 }} onClick={() => { initFuGuide(); }}>
+                ガイドで符を計算する
+              </button>
+              <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                {FU_OPTIONS.map(f => (
+                  <button key={f} style={numBtn(cFu===f)} onClick={() => { setCFu(f); setCalcStep(4); }}>{f}符</button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 18 }}><span style={{ fontSize: 16, fontWeight: 700 }}>符計算ガイド</span><button style={{ background: t.acS, border: `1px solid ${t.ac}44`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: t.ac, fontWeight: 700, cursor: "pointer" }} onClick={() => setShowFuHelp(true)}>？解説</button></div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>面子（タップで追加/削除）</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  {MENTSU_OPTIONS.map(m => {
+                    const count = fuGuide.mentsu.filter(x => x === m.id).length;
+                    return (
+                      <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, border: `1px solid ${count > 0 ? t.ac : t.bd}`, background: count > 0 ? t.acS : "transparent" }}>
+                        <div>
+                          <div style={{ fontSize: 12, color: count > 0 ? t.ac : t.tx }}>{m.label}</div><div style={{ fontSize: 9, color: t.dm }}>{m.desc}</div>
+                          <div style={{ fontSize: 10, color: t.dm }}>{m.fu}符</div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <button style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            onClick={() => { if (count > 0) setFuGuide(g => ({ ...g, mentsu: g.mentsu.filter((x, idx) => !(x === m.id && idx === g.mentsu.indexOf(m.id))) })); }}>−</button>
+                          <span style={{ fontSize: 14, fontWeight: 700, width: 16, textAlign: "center" }}>{count}</span>
+                          <button style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            onClick={() => { setFuGuide(g => { if (g.mentsu.length >= 4) return g; return { ...g, mentsu: [...g.mentsu, m.id] }; }); }}>+</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>待ち</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {MACHI_OPTIONS.map(m => (
+                    <button key={m.id} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${fuGuide.machi === m.id ? t.ac : t.bd}`, background: fuGuide.machi === m.id ? t.acS : "transparent", color: fuGuide.machi === m.id ? t.ac : t.tx }}
+                      onClick={() => setFuGuide(g => ({ ...g, machi: m.id }))}><>{m.label}{m.fu > 0 ? ` +${m.fu}` : ""}<div style={{ fontSize: 9, color: t.dm }}>{m.desc}</div></></button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>雀頭</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {JANTOU_OPTIONS.map(j => (
+                    <button key={j.id} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${fuGuide.jantou === j.id ? t.ac : t.bd}`, background: fuGuide.jantou === j.id ? t.acS : "transparent", color: fuGuide.jantou === j.id ? t.ac : t.tx }}
+                      onClick={() => setFuGuide(g => ({ ...g, jantou: j.id }))}><>{j.label}{j.fu > 0 ? ` +${j.fu}` : ""}<div style={{ fontSize: 9, color: t.dm }}>{j.desc}</div></></button>
+                  ))}
+                </div>
+              </div>
+              {(() => {
+                const fr = calcFuFromGuide(fuGuide, cTsumo, yakuNaki);
+                return (
+                  <div style={{ background: t.sf, borderRadius: 10, padding: 12, textAlign: "center", marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: t.dm }}>計算結果</div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: t.ac }}>{fr.rounded}符</div>
+                    <div style={{ fontSize: 11, color: t.dm, marginTop: 4 }}>
+                      {fr.isPinfuTsumo ? "平和ツモ → 20符固定" : (
+                        <>
+                          基本{cTsumo ? "22 (20+ツモ2)" : (yakuNaki ? "20 (鳴き)" : "30 (門前)")}
+                          {fr.mentsuFu > 0 && ` +面子${fr.mentsuFu}`}
+                          {fr.machiFu > 0 && ` +待ち${fr.machiFu}`}
+                          {fr.jantouFu > 0 && ` +雀頭${fr.jantouFu}`}
+                          {` = ${fr.raw}符 → ${fr.rounded}符`}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              <button style={actionBtn("p")} onClick={() => { setCFu(calcFuFromGuide(fuGuide, cTsumo, yakuNaki).rounded); setCalcStep(4); }}>この符数で確定</button>
+            </>
+          )}
+        </div>
+      )}
+      {calcStep === 4 && calcResult && (
+        <>
+          <ScoreDisplay han={cHan} fu={cFu} limit={calcLimit} result={calcResult} tsumo={cTsumo} parent={cParent} />
+          <button style={actionBtn("p")} onClick={resetCalc}>もう一度計算する</button>
+          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+        </>
+      )}
+    </div>
+  );
+
+  // ══════════════════════════════════
+  // ── GAME SETUP WIZARD ──
+  // ══════════════════════════════════
+  const renderSetup = () => (
+    <div style={body}>
+      {/* Step 0: 対局日 */}
+      {setupStep === 0 && (
+        <div style={card}>
+          <Dots total={4} cur={0} />
+          <div style={question}>対局日は？</div>
+          <div style={{ padding: "0 4px" }}>
+            <input
+              type="date"
+              value={gameDate}
+              onChange={e => setGameDate(e.target.value)}
+              style={{ ...inputStyle, fontSize: 16, textAlign: "center", padding: "14px 12px", colorScheme: "dark", display: "block", width: "70%", margin: "0 auto" }}
+            />
+            <div style={{ marginTop: 16 }}>
+              <button
+                style={actionBtn("p")}
+                onClick={() => setSetupStep(1)}
+              >次へ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 1: 試合数 */}
+      {setupStep === 1 && (
+        <div style={card}>
+          <Back onClick={() => setSetupStep(0)} />
+          <Dots total={4} cur={1} />
+          <div style={question}>試合形式は？</div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button
+              style={bigBtn(matchType === "tonpu" ? t.ac : t.dm, matchType === "tonpu" ? t.acS : "transparent")}
+              onClick={() => { setMatchType("tonpu"); setSetupStep(2); }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>東風戦</div>
+              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場のみ</div>
+            </button>
+            <button
+              style={bigBtn(matchType === "hanchan" ? t.ac : t.dm, matchType === "hanchan" ? t.acS : "transparent")}
+              onClick={() => { setMatchType("hanchan"); setSetupStep(2); }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>半荘戦</div>
+              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場＋南場</div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: プレイヤー名 */}
+      {setupStep === 2 && (
+        <div style={card}>
+          <Back onClick={() => setSetupStep(1)} />
+          <Dots total={4} cur={2} />
+          <div style={question}>プレイヤー名</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 14 }}>変更が必要な場合は「変更」をタップ</div>
+          {players.map((p, i) => (
+            <div key={i} style={{ marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: i === 0 ? t.gd : t.dm, width: 22 }}>{WINDS[i]}</span>
+                {!playerMode[i] ? (
+                  <>
+                    <div style={{ flex: 1, padding: "10px 14px", background: t.sf, borderRadius: 10, border: `1px solid ${t.bd}`, fontSize: 14, color: t.tx }}>{p}</div>
+                    <button
+                      style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "6px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
+                      onClick={() => { const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm); }}
+                    >変更</button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <select
+                        value={PRESET_NAMES.includes(p) ? p : ""}
+                        onChange={e => { if (e.target.value) { const np = [...players]; np[i] = e.target.value; setPlayers(np); const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); } }}
+                        style={selectStyle}
+                      >
+                        <option value="">— リストから選択 —</option>
+                        {PRESET_NAMES.filter(n => !players.includes(n) || players[i] === n).map(n => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                      <input
+                        style={inputStyle}
+                        placeholder="または直接入力"
+                        value={PRESET_NAMES.includes(p) ? "" : p}
+                        onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
+                      />
+                    </div>
+                    <button
+                      style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "6px 10px", color: t.ac, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
+                      onClick={() => { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); }}
+                    >決定</button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+          <div style={{ marginTop: 8 }}>
+            <button
+              style={{
+                ...actionBtn("p"),
+                opacity: players.every(p => p.trim()) ? 1 : 0.4,
+              }}
+              disabled={!players.every(p => p.trim())}
+              onClick={() => setSetupStep(3)}
+            >次へ</button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: ルール設定 */}
+      {setupStep === 3 && (
+        <div style={card}>
+          <Back onClick={() => setSetupStep(2)} />
+          <Dots total={4} cur={3} />
+          <div style={question}>ルール設定</div>
+
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>連荘・流局</div>
+            {toggleRow("テンパイ連荘", rules.tenpaiRenchan, () => setRules(r => ({ ...r, tenpaiRenchan: !r.tenpaiRenchan, agariRenchan: !r.tenpaiRenchan ? false : r.agariRenchan })))}
+            {toggleRow("あがり連荘のみ", rules.agariRenchan, () => setRules(r => ({ ...r, agariRenchan: !r.agariRenchan, tenpaiRenchan: !r.agariRenchan ? false : r.tenpaiRenchan })))}
+          </div>
+
+          <div style={{ marginBottom: 8, marginTop: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>その他</div>
+            {toggleRow("食いタンあり", rules.kuitan, () => setRules(r => ({ ...r, kuitan: !r.kuitan })))}
+            {toggleRow("後付けあり", rules.atozuke, () => setRules(r => ({ ...r, atozuke: !r.atozuke })))}
+            {toggleRow("飛びで終了（誰かが0点未満）", rules.tobi, () => setRules(r => ({ ...r, tobi: !r.tobi })))}
+            {toggleRow("アガリやめ（オーラス親トップ）", rules.agariYame, () => setRules(r => ({ ...r, agariYame: !r.agariYame })))}
+            {toggleRow("連風牌雀頭 +4符", rules.renpuuJantou4, () => setRules(r => ({ ...r, renpuuJantou4: !r.renpuuJantou4 })))}
+          </div>
+
+          <div style={{ marginTop: 16, marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>持ち点・返し</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 4 }}>持ち点</div>
+                <select
+                  value={rules.startPoints}
+                  onChange={e => setRules(r => ({ ...r, startPoints: Number(e.target.value) }))}
+                  style={selectStyle}
+                >
+                  {[20000, 25000, 30000].map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 4 }}>返し点</div>
+                <select
+                  value={rules.returnPoints}
+                  onChange={e => setRules(r => ({ ...r, returnPoints: Number(e.target.value) }))}
+                  style={selectStyle}
+                >
+                  {[25000, 30000, 35000].map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <button style={actionBtn("p")} onClick={() => setSetupStep(4)}>確認へ</button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 4: 確認 */}
+      {setupStep === 4 && (
+        <div>
+          <div style={card}>
+            <div style={question}>対局設定の確認</div>
+
+            <div style={{ fontSize: 13, lineHeight: 2 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
+                <span style={{ color: t.dm }}>対局日</span>
+                <span style={{ fontWeight: 600 }}>{gameDate}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
+                <span style={{ color: t.dm }}>形式</span>
+                <span style={{ fontWeight: 600 }}>{matchType === "tonpu" ? "東風戦" : "半荘戦"}</span>
+              </div>
+              <div style={{ borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
+                <span style={{ color: t.dm }}>プレイヤー</span>
+                <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                  {players.map((p, i) => (
+                    <span key={i} style={{
+                      padding: "4px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                      background: i === 0 ? t.gdS : t.acS,
+                      color: i === 0 ? t.gd : t.ac,
+                      border: `1px solid ${i === 0 ? t.gd : t.ac}33`,
+                    }}>
+                      {WINDS[i]} {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
+                <span style={{ color: t.dm }}>持ち点 / 返し</span>
+                <span style={{ fontWeight: 600 }}>{rules.startPoints.toLocaleString()} / {rules.returnPoints.toLocaleString()}</span>
+              </div>
+              <div style={{ padding: "6px 0" }}>
+                <span style={{ color: t.dm }}>ルール</span>
+                <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                  {rules.tenpaiRenchan && <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>テンパイ連荘</span>}
+                  {rules.agariRenchan && <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>あがり連荘</span>}
+                  {rules.kuitan && <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>食いタン</span>}
+                  {rules.atozuke && <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>後付け</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button style={actionBtn("p")} onClick={startGame}>対局開始！</button>
+          <button style={actionBtn()} onClick={() => setSetupStep(3)}>設定を修正する</button>
+        </div>
+      )}
+    </div>
+  );
+
+  // ══════════════════════════════════
+  // ── GAME PLAY ──
+  // ══════════════════════════════════
+  const renderGamePlay = () => (
+    <div style={body}>
+      {/* Config summary */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: 12, color: t.dm }}>
+        <span>{gameConfig?.date} / {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"}</span>
+      </div>
+
+      {/* Round info */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
+        <div>
+          <span style={{ fontSize: 22, fontWeight: 800 }}>{roundWind}{dealerIdx + 1}局</span>
+          {honba > 0 && <span style={{ fontSize: 13, color: t.gd, marginLeft: 6 }}>{honba}本場</span>}
+        </div>
+        {riichiBets > 0 && <span style={{ fontSize: 12, color: t.ac }}>供託{riichiBets}本</span>}
+      </div>
+
+      {/* Scores */}
+      <div style={card}>
+        {players.map((p, i) => {
+          const sw = WINDS[(i - dealerIdx + 4) % 4];
+          const isD = i === dealerIdx;
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, marginBottom: 4, border: isD ? `1px solid ${t.gd}55` : "1px solid transparent", background: isD ? t.gdS : "transparent" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: isD ? t.gd : t.dm }}>{sw}</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{p}</span>
+              </div>
+              <span style={{ fontSize: 17, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: scores[i] < 0 ? t.rd : t.tx }}>{scores[i].toLocaleString()}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
+        <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
+      </div>
+
+      {/* ── Round Wizard Modal ── */}
+      {showGW && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: showYakuSelector ? "flex-start" : "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+          <div style={{ width: "100%", maxWidth: 400 }}>
+            {gStep === 1 && (
+              <div style={card}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: t.dm }}>STEP 1</span>
+                  <button style={{ background: "none", border: "none", color: t.dm, fontSize: 18, cursor: "pointer" }} onClick={resetGW}>✕</button>
+                </div>
+                <div style={question}>誰があがった？</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {players.map((p, i) => (
+                    <button key={i} style={pSelBtn(gWinner === i)} onClick={() => { setGWinner(i); setGStep(2); }}>
+                      <div style={{ fontSize: 11, color: t.dm }}>{WINDS[(i - dealerIdx + 4) % 4]}{i === dealerIdx ? " (親)" : ""}</div>
+                      <div>{p}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {gStep === 2 && (
+              <div style={card}>
+                <Back onClick={() => { setGStep(1); setGWinner(null); }} />
+                <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>STEP 2</div>
+                <div style={question}>あがり方は？</div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                  <button style={bigBtn(t.gn, t.gnS)} onClick={() => { setGTsumo(true); setGStep(4); }}>ツモ</button>
+                  <button style={bigBtn(t.rd, t.rdS)} onClick={() => { setGTsumo(false); setGStep(3); }}>ロン</button>
+                </div>
+              </div>
+            )}
+            {gStep === 3 && (
+              <div style={card}>
+                <Back onClick={() => { setGStep(2); setGTsumo(null); }} />
+                <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>STEP 3</div>
+                <div style={question}>誰から？</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {players.map((p, i) => i !== gWinner && (
+                    <button key={i} style={pSelBtn(gLoser === i)} onClick={() => { setGLoser(i); setGStep(4); }}>
+                      <div style={{ fontSize: 11, color: t.dm }}>{WINDS[(i - dealerIdx + 4) % 4]}</div>
+                      <div style={{ fontSize: 13 }}>{p}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {gStep === 4 && (
+              <div style={card}>
+                <Back onClick={() => { if (gTsumo) { setGStep(2); setGTsumo(null); } else { setGStep(3); setGLoser(null); } }} />
+                <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>リーチ棒</div>
+                <div style={question}>リーチした人は？</div>
+                <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 12 }}>なければそのまま「次へ」</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+                  {players.map((p, i) => {
+                    const isR = gRiichi[i];
+                    return (
+                      <button key={i} style={{
+                        padding: "12px 8px", border: `2px solid ${isR ? t.gd : t.bd}`, borderRadius: 12,
+                        background: isR ? t.gdS : "transparent", color: isR ? t.gd : t.tx,
+                        fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center", transition: "all 0.12s",
+                      }} onClick={() => { const n = [...gRiichi]; n[i] = !n[i]; setGRiichi(n); }}>
+                        <div style={{ fontSize: 11, color: isR ? t.gd : t.dm, marginBottom: 2 }}>{WINDS[(i - dealerIdx + 4) % 4]}</div>
+                        <div>{p}</div>
+                        <div style={{ fontSize: 11, marginTop: 4 }}>{isR ? "🔴 リーチ" : "—"}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {gRiichi.some(Boolean) && (
+                  <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 8 }}>
+                    リーチ棒: {gRiichi.filter(Boolean).length}本 ({(gRiichi.filter(Boolean).length * 1000).toLocaleString()}点)
+                    {riichiBets > 0 && ` + 供託${riichiBets}本`}
+                  </div>
+                )}
+                <button style={actionBtn("p")} onClick={() => setGStep(5)}>次へ</button>
+              </div>
+            )}
+            {gStep === 5 && (
+              <div style={{ ...card, overflow: showYakuSelector ? "visible" : "hidden" }}>
+                {!showYakuSelector && <Back onClick={() => setGStep(4)} />}
+                {!showYakuSelector && <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>翻数</div>}
+                {showYakuSelector ? renderYakuSelector((han) => {
+                  setGHan(han);
+                  setShowYakuSelector(false);
+                  const hasPinfu = selectedYakuIds.some(idx => YAKU_DATA[idx].name.startsWith("平和"));
+                  const hasChiitoi = selectedYakuIds.some(idx => YAKU_DATA[idx].name.startsWith("七対子"));
+                  if (han >= 5) { setGFu(30); setGStep(7); }
+                  else if (hasPinfu && gTsumo) { setGFu(20); setGStep(7); }
+                  else if (hasChiitoi) { setGFu(25); setGStep(7); }
+                  else if (hasPinfu && !gTsumo) { setGFu(30); setGStep(7); }
+                  else setGStep(6);
+                }) : (
+                  <>
+                    <div style={question}>翻数は？</div>
+                    <button style={{ ...actionBtn("p"), marginBottom: 10 }} onClick={() => setShowYakuSelector(true)}>役から選んで計算</button>
+                    <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13].map(h => (
+                        <button key={h} style={numBtn(gHan === h)} onClick={() => { setGHan(h); if (h >= 5) { setGFu(30); setGStep(7); } else setGStep(6); }}>{h >= 13 ? "役満" : `${h}翻`}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            {gStep === 6 && (
+              <div style={card}>
+                <Back onClick={() => { setGStep(5); setGHan(null); resetFuGuide(); setSelectedYakuIds([]); setYakuDora(0); }} />
+                <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>符数</div>
+
+                {!fuGuide ? (
+                  <>
+                    <div style={question}>符の入力方法</div>
+                    <button style={{ ...actionBtn("p"), marginBottom: 10 }} onClick={() => { initFuGuide(); }}>
+                      ガイドで符を計算する
+                    </button>
+                    <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                      {FU_OPTIONS.map(f => (
+                        <button key={f} style={numBtn(gFu === f)} onClick={() => { setGFu(f); setGStep(7); }}>{f}符</button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 18 }}><span style={{ fontSize: 16, fontWeight: 700 }}>符計算ガイド</span><button style={{ background: t.acS, border: `1px solid ${t.ac}44`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: t.ac, fontWeight: 700, cursor: "pointer" }} onClick={() => setShowFuHelp(true)}>？解説</button></div>
+
+                    {/* 面子 */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>面子（タップで追加/削除）</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                        {MENTSU_OPTIONS.map(m => {
+                          const count = fuGuide.mentsu.filter(x => x === m.id).length;
+                          return (
+                            <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, border: `1px solid ${count > 0 ? t.ac : t.bd}`, background: count > 0 ? t.acS : "transparent" }}>
+                              <div>
+                                <div style={{ fontSize: 12, color: count > 0 ? t.ac : t.tx }}>{m.label}</div><div style={{ fontSize: 9, color: t.dm }}>{m.desc}</div>
+                                <div style={{ fontSize: 10, color: t.dm }}>{m.fu}符</div>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <button style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  onClick={() => { if (count > 0) setFuGuide(g => ({ ...g, mentsu: g.mentsu.filter((x, idx) => !(x === m.id && idx === g.mentsu.indexOf(m.id))) })); }}>−</button>
+                                <span style={{ fontSize: 14, fontWeight: 700, width: 16, textAlign: "center" }}>{count}</span>
+                                <button style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  onClick={() => { setFuGuide(g => { if (g.mentsu.length >= 4) return g; return { ...g, mentsu: [...g.mentsu, m.id] }; }); }}>+</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 待ち */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>待ち</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {MACHI_OPTIONS.map(m => (
+                          <button key={m.id} style={{
+                            padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                            border: `1px solid ${fuGuide.machi === m.id ? t.ac : t.bd}`,
+                            background: fuGuide.machi === m.id ? t.acS : "transparent",
+                            color: fuGuide.machi === m.id ? t.ac : t.tx,
+                          }} onClick={() => setFuGuide(g => ({ ...g, machi: m.id }))}>
+                            <>{m.label}{m.fu > 0 ? ` +${m.fu}` : ""}<div style={{ fontSize: 9, color: t.dm }}>{m.desc}</div></>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 雀頭 */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>雀頭</div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {JANTOU_OPTIONS.map(j => (
+                          <button key={j.id} style={{
+                            padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                            border: `1px solid ${fuGuide.jantou === j.id ? t.ac : t.bd}`,
+                            background: fuGuide.jantou === j.id ? t.acS : "transparent",
+                            color: fuGuide.jantou === j.id ? t.ac : t.tx,
+                          }} onClick={() => setFuGuide(g => ({ ...g, jantou: j.id }))}>
+                            <>{j.label}{j.fu > 0 ? ` +${j.fu}` : ""}<div style={{ fontSize: 9, color: t.dm }}>{j.desc}</div></>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 計算結果 */}
+                    {(() => {
+                      const fr = calcFuFromGuide(fuGuide, gTsumo, yakuNaki);
+                      return (
+                        <div style={{ background: t.sf, borderRadius: 10, padding: 12, textAlign: "center", marginBottom: 12 }}>
+                          <div style={{ fontSize: 12, color: t.dm }}>計算結果</div>
+                          <div style={{ fontSize: 28, fontWeight: 900, color: t.ac }}>{fr.rounded}符</div>
+                          <div style={{ fontSize: 11, color: t.dm, marginTop: 4 }}>
+                            {fr.isPinfuTsumo ? "平和ツモ → 20符固定" : (
+                              <>
+                                基本{gTsumo ? "22 (20+ツモ2)" : (yakuNaki ? "20 (鳴き)" : "30 (門前)")}
+                                {fr.mentsuFu > 0 && ` +面子${fr.mentsuFu}`}
+                                {fr.machiFu > 0 && ` +待ち${fr.machiFu}`}
+                                {fr.jantouFu > 0 && ` +雀頭${fr.jantouFu}`}
+                                {` = ${fr.raw}符 → ${fr.rounded}符`}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <button style={actionBtn("p")} onClick={() => { setGFu(calcFuFromGuide(fuGuide, gTsumo, yakuNaki).rounded); setGStep(7); }}>この符数で確定</button>
+                  </>
+                )}
+              </div>
+            )}
+            {gStep === 7 && gResult && (
+              <>
+                <ScoreDisplay han={gHan} fu={gFu} limit={gLimit} result={gResult} tsumo={gTsumo} parent={gParent}
+                  extra={
+                    <>
+                      <div style={{ fontSize: 18, color: t.tx, marginTop: 8, fontWeight: 700 }}>
+                        {players[gWinner]} {gTsumo ? "ツモ" : `← ${players[gLoser]}`}
+                      </div>
+                      {(honba > 0 || riichiBets > 0 || gRiichi.some(Boolean)) && (
+                        <div style={{ fontSize: 12, color: t.dm, marginTop: 6, borderTop: `1px solid ${t.bd}`, paddingTop: 6 }}>
+                          {honba > 0 && `本場 +${(honba * 300).toLocaleString()}`}
+                          {honba > 0 && (riichiBets > 0 || gRiichi.some(Boolean)) && " / "}
+                          {(riichiBets > 0 || gRiichi.some(Boolean)) && `リーチ棒 ${riichiBets + gRiichi.filter(Boolean).length}本 (+${((riichiBets + gRiichi.filter(Boolean).length) * 1000).toLocaleString()})`}
+                        </div>
+                      )}
+                    </>
+                  }
+                />
+                <button style={actionBtn("p")} onClick={applyRound}>スコアに反映</button>
+                <button style={actionBtn()} onClick={resetGW}>キャンセル</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Draw (Ryuukyoku) Wizard Modal ── */}
+      {showDrawWiz && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ width: "100%", maxWidth: 400 }}>
+            <div style={card}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: t.dm }}>流局</span>
+                <button style={{ background: "none", border: "none", color: t.dm, fontSize: 18, cursor: "pointer" }} onClick={resetDrawWiz}>✕</button>
+              </div>
+              <div style={question}>テンパイしている人は？</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+                {players.map((p, i) => {
+                  const isTenpai = drawTenpai[i];
+                  const sw = WINDS[(i - dealerIdx + 4) % 4];
+                  return (
+                    <button
+                      key={i}
+                      style={{
+                        padding: "14px 8px",
+                        border: `2px solid ${isTenpai ? t.gn : t.bd}`,
+                        borderRadius: 12,
+                        background: isTenpai ? t.gnS : "transparent",
+                        color: isTenpai ? t.gn : t.tx,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        textAlign: "center",
+                        transition: "all 0.12s",
+                      }}
+                      onClick={() => {
+                        const next = [...drawTenpai];
+                        next[i] = !next[i];
+                        setDrawTenpai(next);
+                      }}
+                    >
+                      <div style={{ fontSize: 11, color: isTenpai ? t.gn : t.dm, marginBottom: 2 }}>{sw}{i === dealerIdx ? " (親)" : ""}</div>
+                      <div>{p}</div>
+                      <div style={{ fontSize: 12, marginTop: 4, fontWeight: 800 }}>
+                        {isTenpai ? "テンパイ" : "ノーテン"}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Riichi selection */}
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>リーチした人は？</div>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 8 }}>なければそのまま「確定」</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 }}>
+                {players.map((p, i) => {
+                  const isR = drawRiichi[i];
+                  return (
+                    <button
+                      key={i}
+                      style={{
+                        padding: "10px 8px",
+                        border: `2px solid ${isR ? t.gd : t.bd}`,
+                        borderRadius: 10,
+                        background: isR ? t.gdS : "transparent",
+                        color: isR ? t.gd : t.tx,
+                        fontSize: 13, fontWeight: 700, cursor: "pointer",
+                        textAlign: "center", transition: "all 0.12s",
+                      }}
+                      onClick={() => { const n = [...drawRiichi]; n[i] = !n[i]; setDrawRiichi(n); }}
+                    >
+                      <div style={{ fontSize: 11, color: isR ? t.gd : t.dm, marginBottom: 2 }}>{WINDS[(i - dealerIdx + 4) % 4]}{i === dealerIdx ? " (親)" : ""}</div>
+                      <div>{p}</div>
+                      <div style={{ fontSize: 11, marginTop: 4 }}>{isR ? "🔴 リーチ" : "—"}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Preview payment */}
+              {(() => {
+                const tc = drawTenpai.filter(Boolean).length;
+                const nc = 4 - tc;
+                const rc = drawRiichi.filter(Boolean).length;
+                const notenPay = (tc > 0 && tc < 4) ? Math.floor(3000 / nc) : 0;
+                const tenpaiGet = (tc > 0 && tc < 4) ? Math.floor(3000 / tc) : 0;
+                if (tc === 0 || tc === 4) {
+                  if (rc === 0) {
+                    return (
+                      <div style={{ textAlign: "center", fontSize: 13, color: t.dm, marginBottom: 12 }}>
+                        {tc === 0 ? "全員ノーテン — 罰符なし" : "全員テンパイ — 罰符なし"}
+                      </div>
+                    );
+                  }
+                }
+                return (
+                  <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>合計の増減</div>
+                    {players.map((p, i) => {
+                      let diff = 0;
+                      if (tc > 0 && tc < 4) diff += drawTenpai[i] ? tenpaiGet : -notenPay;
+                      if (drawRiichi[i]) diff -= 1000;
+                      return (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 13 }}>
+                          <span>{p}{drawRiichi[i] ? " 🔴" : ""}</span>
+                          <span style={{ fontWeight: 700, color: diff > 0 ? t.gn : diff < 0 ? t.rd : t.tx }}>
+                            {diff > 0 ? "+" : ""}{diff.toLocaleString()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {rc > 0 && (
+                      <div style={{ fontSize: 11, color: t.dm, marginTop: 6, paddingTop: 6, borderTop: `1px solid ${t.bd}33` }}>
+                        リーチ棒 {rc}本 ({(rc * 1000).toLocaleString()}点) は次局の供託へ
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Renchan info */}
+              {(() => {
+                const cfg = gameConfig || {};
+                const dealerTenpai = drawTenpai[dealerIdx];
+                let renchanText = "";
+                if (cfg.agariRenchan) {
+                  renchanText = "あがり連荘 → 親が流れます";
+                } else if (cfg.tenpaiRenchan) {
+                  renchanText = dealerTenpai ? "親テンパイ → 連荘" : "親ノーテン → 親が流れます";
+                }
+                if (!renchanText) return null;
+                return (
+                  <div style={{ textAlign: "center", fontSize: 12, color: t.dm, marginBottom: 12, padding: "6px 0", borderTop: `1px solid ${t.bd}33` }}>
+                    {renchanText}
+                  </div>
+                );
+              })()}
+
+              <button style={actionBtn("p")} onClick={applyDraw}>確定</button>
+              <button style={actionBtn()} onClick={resetDrawWiz}>キャンセル</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History */}
+      {rounds.length > 0 && (
+        <div style={card}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>対局履歴</div>
+          {rounds.map((r, idx) => (
+            <div key={idx} style={{ padding: "6px 0", borderBottom: `1px solid ${t.bd}33`, fontSize: 12, display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: t.dm }}>{r.wind}{r.dealer + 1}局{r.honba > 0 ? ` ${r.honba}本場` : ""}</span>
+              {r.draw ? (
+                <span style={{ color: t.dm }}>
+                  流局
+                  {r.tenpai && r.tenpai.some(Boolean) && (
+                    <span style={{ marginLeft: 4, color: t.gn }}>
+                      聴{r.tenpai.map((tp, i) => tp ? players[i]?.charAt(0) : null).filter(Boolean).join("")}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span>
+                  <span style={{ color: t.ac, fontWeight: 600 }}>{players[r.winner]}</span>
+                  {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
+                  {" "}<span style={{ fontWeight: 700 }}>{r.score?.toLocaleString()}</span>
+                  {r.limitName && <span style={{ color: t.gd, marginLeft: 4 }}>{r.limitName}</span>}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* アガリやめ：オーラス親トップで親連荘中なら終了ボタン表示 */}
+      {(() => {
+        const cfg = gameConfig || {};
+        const ruleSet = cfg.rules || {};
+        if (!ruleSet.agariYame) return null;
+        const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
+                         (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+        if (!isOrlast) return null;
+        const parentScore = scores[dealerIdx];
+        const isTop = scores.every((s, i) => {
+          if (i === dealerIdx) return true;
+          if (parentScore !== s) return parentScore > s;
+          return dealerIdx < i;
+        });
+        if (!isTop) return null;
+        return (
+          <button style={{ ...actionBtn("p"), background: t.gd, marginBottom: 8 }} onClick={() => {
+            if (window.confirm("オーラス親トップ、アガリやめで終了しますか？")) setGameFinished(true);
+          }}>🏆 アガリやめで対局終了</button>
+        );
+      })()}
+
+      <button style={actionBtn()} onClick={() => {
+        setSuspendedGame({
+          config: gameConfig,
+          players: [...players],
+          scores: [...scores],
+          rounds: [...rounds],
+          dealerIdx,
+          roundWind,
+          honba,
+          riichiBets,
+        });
+        setGameStarted(false);
+        setView("home");
+      }}>⏸ 対局保留</button>
+    </div>
+  );
+
+  // ══════════════════════════════════
+  // ── GAME FINISHED SCREEN ──
+  // ══════════════════════════════════
+  const renderGameFinished = () => {
+    const ruleSet = gameConfig?.rules || {};
+    const returnPt = ruleSet.returnPoints || 30000;
+    const startPt = ruleSet.startPoints || 25000;
+    // 残り供託（リーチ棒）をトップに加算
+    const leftoverRiichi = riichiBets * 1000;
+    // 順位確定時のスコア（残り供託を1位に上乗せ）。同点時は起家(東家)から近い順=index小さい方優先
+    const adjusted = players.map((p, i) => ({ name: p, rawScore: scores[i], idx: i }));
+    const sortedByRaw = [...adjusted].sort((a, b) => b.rawScore - a.rawScore || a.idx - b.idx);
+    const topIdx = sortedByRaw[0].idx;
+    const adjustedWithRiichi = adjusted.map(a => ({
+      ...a,
+      finalRawScore: a.rawScore + (a.idx === topIdx ? leftoverRiichi : 0),
+    }));
+    // Oka: (returnPt - startPt) * 4 goes to 1st place
+    const okaPool = (returnPt - startPt) * 4;
+    const finalResults = adjustedWithRiichi.map(a => {
+      const isFirst = a.idx === topIdx;
+      const diff = a.finalRawScore - returnPt;
+      const finalPt = diff + (isFirst ? okaPool : 0);
+      return { ...a, diff, finalPt };
+    });
+    const sorted = [...finalResults].sort((a, b) => b.finalPt - a.finalPt || a.idx - b.idx);
+
+    return (
+      <div style={body}>
+        <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>🏆</div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>対局終了</h2>
+          <p style={{ fontSize: 13, color: t.dm, margin: 0 }}>
+            {gameConfig?.date} / {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"} / {rounds.length}局
+          </p>
+        </div>
+
+        {/* Raw scores */}
+        <div style={card}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 10, letterSpacing: "0.05em" }}>最終持ち点</div>
+          {[...adjustedWithRiichi].sort((a, b) => b.finalRawScore - a.finalRawScore || a.idx - b.idx).map((s, rank) => (
+            <div key={s.idx} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "10px 14px", borderRadius: 10, marginBottom: 4,
+              background: rank === 0 ? t.gdS : "transparent",
+              border: rank === 0 ? `1px solid ${t.gd}44` : `1px solid ${t.bd}33`,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 16, fontWeight: 900, color: rank === 0 ? t.gd : rank === 1 ? t.tx : t.dm, width: 24 }}>{rank + 1}</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{s.name}</span>
+                {rank === 0 && leftoverRiichi > 0 && <span style={{ fontSize: 10, color: t.gd }}>+残供託{leftoverRiichi.toLocaleString()}</span>}
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: s.finalRawScore < 0 ? t.rd : t.tx }}>{s.finalRawScore.toLocaleString()}</span>
+            </div>
+          ))}
+          {leftoverRiichi > 0 && (
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 8, textAlign: "center" }}>
+              場に残ったリーチ棒 {riichiBets}本 ({leftoverRiichi.toLocaleString()}点) は1位へ
+            </div>
+          )}
+        </div>
+
+        {/* Oka calculation */}
+        <div style={card}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6, letterSpacing: "0.05em" }}>精算（オカ計算）</div>
+          <div style={{ fontSize: 11, color: t.dm, marginBottom: 12 }}>
+            返し点 {returnPt.toLocaleString()} / オカ {okaPool > 0 ? `+${okaPool.toLocaleString()} (1位へ)` : "なし"}
+          </div>
+          {sorted.map((s, rank) => (
+            <div key={s.idx} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "12px 14px", borderRadius: 10, marginBottom: 6,
+              background: rank === 0 ? t.gdS : "transparent",
+              border: rank === 0 ? `1px solid ${t.gd}44` : `1px solid ${t.bd}33`,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: rank === 0 ? t.gd : rank === 1 ? t.tx : t.dm, width: 24 }}>{rank + 1}</span>
+                <span style={{ fontSize: 15, fontWeight: 600 }}>{s.name}</span>
+              </div>
+              <span style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: s.finalPt > 0 ? t.gn : s.finalPt < 0 ? t.rd : t.tx }}>
+                {s.finalPt > 0 ? "+" : ""}{s.finalPt.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Round history */}
+        <div style={card}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>局の記録</div>
+          {rounds.map((r, idx) => (
+            <div key={idx} style={{ padding: "6px 0", borderBottom: `1px solid ${t.bd}33`, fontSize: 12, display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: t.dm }}>{r.wind}{r.dealer + 1}局{r.honba > 0 ? ` ${r.honba}本場` : ""}</span>
+              {r.draw ? (
+                <span style={{ color: t.dm }}>
+                  流局
+                  {r.tenpai && r.tenpai.some(Boolean) && (
+                    <span style={{ marginLeft: 4, color: t.gn }}>
+                      聴{r.tenpai.map((tp, i) => tp ? players[i]?.charAt(0) : null).filter(Boolean).join("")}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span>
+                  <span style={{ color: t.ac, fontWeight: 600 }}>{players[r.winner]}</span>
+                  {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
+                  {" "}<span style={{ fontWeight: 700 }}>{r.score?.toLocaleString()}</span>
+                  {r.limitName && <span style={{ color: t.gd, marginLeft: 4 }}>{r.limitName}</span>}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <button style={actionBtn("p")} onClick={() => {
+          if (rounds.length > 0) {
+            setGameHistory(prev => [...prev, {
+              id: Date.now(),
+              date: gameConfig?.date || "",
+              matchType: gameConfig?.matchType || "",
+              players: [...players],
+              finalScores: [...scores],
+              okaResults: sorted.map(s => ({ name: s.name, finalPt: s.finalPt })),
+              rounds: [...rounds],
+              rules: gameConfig?.rules || {},
+            }]);
+          }
+          setGameStarted(false);
+          setGameFinished(false);
+          setView("home");
+        }}>履歴に保存してメニューへ</button>
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
+  // ── GAME VIEW ROUTER ──
+  // ══════════════════════════════════
+  const renderGame = () => {
+    if (gameFinished) return renderGameFinished();
+    if (gameStarted) return renderGamePlay();
+    return renderSetup();
+  };
+
+  // ══════════════════════════════════
+  // ── HISTORY VIEW ──
+  // ══════════════════════════════════
+  const [historyDetail, setHistoryDetail] = useState(null);
+
+  const renderHistory = () => (
+    <div style={body}>
+      {historyDetail === null ? (
+        <>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>対局履歴</div>
+          {gameHistory.length === 0 ? (
+            <div style={{ ...card, textAlign: "center", padding: 32 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
+              <div style={{ fontSize: 14, color: t.dm }}>まだ記録がありません</div>
+              <div style={{ fontSize: 12, color: t.dm, marginTop: 4 }}>対局を終了すると自動的に保存されます</div>
+            </div>
+          ) : (
+            [...gameHistory].reverse().map((g, idx) => {
+              const sorted = g.players.map((p, i) => ({ name: p, score: g.finalScores[i] })).sort((a, b) => b.score - a.score);
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => setHistoryDetail(g)}
+                  style={{ ...card, width: "100%", textAlign: "left", cursor: "pointer", padding: 16, transition: "all 0.12s" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700 }}>{g.date}</span>
+                    <span style={{ fontSize: 12, color: t.dm, padding: "2px 10px", background: t.sf, borderRadius: 6 }}>
+                      {g.matchType === "tonpu" ? "東風" : "半荘"}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {sorted.map((s, si) => (
+                      <span key={si} style={{
+                        fontSize: 12, padding: "3px 8px", borderRadius: 6,
+                        background: si === 0 ? t.gdS : t.sf,
+                        color: si === 0 ? t.gd : t.tx,
+                        fontWeight: si === 0 ? 700 : 400,
+                        border: `1px solid ${si === 0 ? t.gd + "33" : t.bd}`,
+                      }}>
+                        {si === 0 && "🏆 "}{s.name} {s.score.toLocaleString()}
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: t.dm, marginTop: 6 }}>{g.rounds.length}局</div>
+                </button>
+              );
+            })
+          )}
+        </>
+      ) : (
+        <>
+          <button style={backBtn} onClick={() => setHistoryDetail(null)}>← 一覧に戻る</button>
+          <div style={{ ...card, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <span style={{ fontSize: 16, fontWeight: 700 }}>{historyDetail.date}</span>
+              <span style={{ fontSize: 12, color: t.dm, padding: "2px 10px", background: t.sf, borderRadius: 6 }}>
+                {historyDetail.matchType === "tonpu" ? "東風戦" : "半荘戦"}
+              </span>
+            </div>
+
+            {/* Final scores ranked */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>最終スコア</div>
+              {historyDetail.players
+                .map((p, i) => ({ name: p, score: historyDetail.finalScores[i], idx: i }))
+                .sort((a, b) => b.score - a.score)
+                .map((s, rank) => (
+                  <div key={s.idx} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "8px 12px", borderRadius: 8, marginBottom: 4,
+                    background: rank === 0 ? t.gdS : "transparent",
+                    border: rank === 0 ? `1px solid ${t.gd}33` : "1px solid transparent",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: rank === 0 ? t.gd : t.dm, width: 20 }}>{rank + 1}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{s.name}</span>
+                    </div>
+                    <span style={{ fontSize: 16, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: s.score < 0 ? t.rd : t.tx }}>
+                      {s.score.toLocaleString()}
+                    </span>
+                  </div>
+                ))
+              }
+            </div>
+
+            {/* Round history */}
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>局の記録</div>
+            {historyDetail.rounds.map((r, idx) => (
+              <div key={idx} style={{ padding: "6px 0", borderBottom: `1px solid ${t.bd}33`, fontSize: 12, display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: t.dm }}>{r.wind}{r.dealer + 1}局{r.honba > 0 ? ` ${r.honba}本場` : ""}</span>
+                {r.draw ? (
+                  <span style={{ color: t.dm }}>
+                    流局
+                    {r.tenpai && r.tenpai.some(Boolean) && (
+                      <span style={{ marginLeft: 4, color: t.gn }}>
+                        聴{r.tenpai.map((tp, i) => tp ? historyDetail.players[i]?.charAt(0) : null).filter(Boolean).join("")}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span>
+                    <span style={{ color: t.ac, fontWeight: 600 }}>{historyDetail.players[r.winner]}</span>
+                    {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
+                    {" "}<span style={{ fontWeight: 700 }}>{r.score?.toLocaleString()}</span>
+                    {r.limitName && <span style={{ color: t.gd, marginLeft: 4 }}>{r.limitName}</span>}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      <style>{globalStyle}</style>
+      <div style={{ minHeight: "100vh", background: t.bg, color: t.tx, fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',system-ui,sans-serif", maxWidth: 440, margin: "0 auto", overflowX: "clip", width: "100%" }}>
+        <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${t.bd}` }}>
+          <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }} onClick={() => setView("home")}>🀄 <span>麻雀スコアラー</span></h1>
+        </div>
+        {view === "home" && renderHome()}
+        {view === "calc" && renderCalc()}
+        {view === "game" && renderGame()}
+        {view === "history" && renderHistory()}
+        {view === "quiz" && renderQuiz()}
+        {view === "dict" && renderDict()}
+        {showFuHelp && <FuHelpModal />}
+      </div>
+    </>
+  );
+}
+
+
+ReactDOM.render(<MahjongScorer />, document.getElementById("root"));
+</script>
+</body>
+</html>
