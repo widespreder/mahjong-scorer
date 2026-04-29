@@ -61,6 +61,108 @@ const WINDS = ["東", "南", "西", "北"];
 const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 const PRESET_NAMES = ["つとむ", "ひろこ", "はじめ", "こころ"];
 
+// ── 麻雀用語集（このアプリ内で使われる用語） ──
+const TERMS_DATA = [
+  // 基本ルール
+  { kanji: "対局", reading: "タイキョク", cat: "基本", desc: "麻雀のゲームを行うこと。1対局＝1試合。" },
+  { kanji: "東風戦", reading: "トンプウセン", cat: "基本", desc: "東場のみで戦う最短形式（約4局）。" },
+  { kanji: "半荘戦", reading: "ハンチャンセン", cat: "基本", desc: "東場＋南場で戦う標準形式（約8局）。" },
+  { kanji: "一荘戦", reading: "イーチャンセン", cat: "基本", desc: "東・南・西・北の4風全てを戦う最長形式（約16局）。" },
+  { kanji: "親", reading: "オヤ", cat: "基本", desc: "東家のプレイヤー。和了点が1.5倍だが、誰かに振り込んでも全額負担。" },
+  { kanji: "子", reading: "コ", cat: "基本", desc: "親以外のプレイヤー（南家・西家・北家）。" },
+  { kanji: "起家", reading: "チーチャ", cat: "基本", desc: "東1局の親。同点首位の場合の優先順位の基準。" },
+
+  // 場・局
+  { kanji: "場", reading: "バ", cat: "場・局", desc: "東場・南場など、4局のまとまり。" },
+  { kanji: "局", reading: "キョク", cat: "場・局", desc: "1ゲームの単位。親が一巡するごとに進行。" },
+  { kanji: "オーラス", reading: "オーラス", cat: "場・局", desc: "対局の最終局のこと。半荘なら南4局、一荘なら北4局。" },
+  { kanji: "連荘", reading: "レンチャン", cat: "場・局", desc: "親が和了 or テンパイ流局で、次局も親を続けること。" },
+  { kanji: "親流れ", reading: "オヤナガレ", cat: "場・局", desc: "親が交代すること。子が和了したら必ず流れる。" },
+  { kanji: "本場", reading: "ホンバ", cat: "場・局", desc: "連荘や流局で積み上がる回数。和了点に+300×n点が加算。" },
+  { kanji: "アガリやめ", reading: "アガリヤメ", cat: "場・局", desc: "オーラスで親トップで和了したら親の選択で対局終了できるルール。" },
+  { kanji: "飛び", reading: "トビ", cat: "場・局", desc: "持ち点が0点未満になり対局終了するルール。ハコ下とも。" },
+
+  // 牌
+  { kanji: "数牌", reading: "シューハイ", cat: "牌", desc: "1〜9の数字が書かれた牌。萬子・筒子・索子の3種。" },
+  { kanji: "字牌", reading: "ジハイ", cat: "牌", desc: "風牌（東南西北）と三元牌（白發中）の総称。" },
+  { kanji: "萬子", reading: "マンズ", cat: "牌", desc: "1〜9の漢字（一万・二万…）が書かれた数牌。" },
+  { kanji: "筒子", reading: "ピンズ", cat: "牌", desc: "丸い円が描かれた数牌。" },
+  { kanji: "索子", reading: "ソーズ", cat: "牌", desc: "竹の図柄の数牌。1索だけ鳥の絵になっている。" },
+  { kanji: "風牌", reading: "フォンパイ", cat: "牌", desc: "東・南・西・北の4種。場風と自風で役牌になる。" },
+  { kanji: "三元牌", reading: "サンゲンパイ", cat: "牌", desc: "白・發・中の3種。3枚揃えると役牌（1翻）。3つ揃えば大三元（役満）。" },
+  { kanji: "中張牌", reading: "チュウチャンパイ", cat: "牌", desc: "2〜8の数牌。タンヤオの構成牌。" },
+  { kanji: "么九牌", reading: "ヤオチュウハイ", cat: "牌", desc: "1・9の数牌と字牌の総称。チャンタ系の構成要素。" },
+  { kanji: "ドラ", reading: "ドラ", cat: "牌", desc: "ボーナス牌。1枚につき+1翻。それ自体には役はないため、別途役が必要。" },
+  { kanji: "役牌", reading: "ヤクハイ", cat: "牌", desc: "刻子にすると1翻になる字牌（白發中・場風・自風）。" },
+  { kanji: "場風", reading: "バカゼ", cat: "牌", desc: "現在の場と同じ風牌。東場なら東。" },
+  { kanji: "自風", reading: "ジカゼ", cat: "牌", desc: "自分の家と同じ風牌。東家なら東。" },
+  { kanji: "オタ風", reading: "オタカゼ", cat: "牌", desc: "場風でも自風でもない風牌。役にならない。" },
+  { kanji: "連風牌", reading: "レンプウハイ", cat: "牌", desc: "場風と自風が同じ牌（東場の東家など）。雀頭にすると+4符のローカルルールあり。" },
+
+  // 進行
+  { kanji: "配牌", reading: "ハイパイ", cat: "進行", desc: "ゲーム開始時に各プレイヤーに配られる13枚の牌。" },
+  { kanji: "ツモ", reading: "ツモ", cat: "進行", desc: "山から自分で牌を引いて和了すること。" },
+  { kanji: "ロン", reading: "ロン", cat: "進行", desc: "他家の捨て牌で和了すること。" },
+  { kanji: "リーチ", reading: "リーチ", cat: "進行", desc: "テンパイ宣言。1000点供託、以降手を変えられない。1翻。" },
+  { kanji: "ダブル立直", reading: "ダブルリーチ", cat: "進行", desc: "最初の捨て牌でリーチ宣言。2翻。" },
+  { kanji: "一発", reading: "イッパツ", cat: "進行", desc: "リーチ後、次の自分のツモ前に和了。+1翻。鳴きが入ると無効。" },
+  { kanji: "テンパイ", reading: "テンパイ", cat: "進行", desc: "あと1枚で和了できる状態。聴牌。" },
+  { kanji: "ノーテン", reading: "ノーテン", cat: "進行", desc: "テンパイしていない状態。流局時に罰符を払う。" },
+  { kanji: "流局", reading: "リュウキョク", cat: "進行", desc: "誰も和了せずに局が終わること。本場+1。テンパイ・ノーテンで罰符。" },
+  { kanji: "海底摸月", reading: "ハイテイ・モーユエ", cat: "進行", desc: "局の最後のツモ牌でアガる役。+1翻。" },
+  { kanji: "河底撈魚", reading: "ホウテイ・ラオユィ", cat: "進行", desc: "局の最後の捨て牌でロンする役。+1翻。" },
+  { kanji: "嶺上開花", reading: "リンシャンカイホウ", cat: "進行", desc: "カンの後に引く嶺上牌で和了する役。+1翻。" },
+  { kanji: "槓", reading: "カン", cat: "進行", desc: "同じ牌4枚で槓子を作ること。明槓・暗槓・加槓の3種。" },
+  { kanji: "ポン", reading: "ポン", cat: "進行", desc: "他家の捨て牌で同じ牌2枚と合わせて刻子を作ること。" },
+  { kanji: "チー", reading: "チー", cat: "進行", desc: "上家の捨て牌で順子を作ること。" },
+  { kanji: "鳴き", reading: "ナキ", cat: "進行", desc: "ポン・チー・カンの総称。鳴くと門前が崩れる。" },
+  { kanji: "門前", reading: "メンゼン", cat: "進行", desc: "鳴いていない状態。リーチ・ピンフなど門前限定の役がある。" },
+  { kanji: "食い下がり", reading: "クイサガリ", cat: "進行", desc: "鳴くと翻数が下がる役（三色同順、一気通貫、混一色など）。" },
+  { kanji: "食いタン", reading: "クイタン", cat: "進行", desc: "鳴いてもタンヤオが成立するルール。「あり」が現代主流。" },
+  { kanji: "後付け", reading: "アトヅケ", cat: "進行", desc: "和了牌で初めて役が確定するアガリを認めるルール。" },
+
+  // 手牌構成
+  { kanji: "面子", reading: "メンツ", cat: "手牌", desc: "順子・刻子・槓子の3または4枚の組み合わせ。" },
+  { kanji: "順子", reading: "シュンツ", cat: "手牌", desc: "同種の連続する数字3枚（123、234など）。" },
+  { kanji: "刻子", reading: "コーツ", cat: "手牌", desc: "同じ牌3枚の組。" },
+  { kanji: "槓子", reading: "カンツ", cat: "手牌", desc: "同じ牌4枚の組。カンで作る。" },
+  { kanji: "雀頭", reading: "ジャントウ", cat: "手牌", desc: "和了形に必要な同じ牌2枚のペア。アタマとも。" },
+  { kanji: "明刻", reading: "ミンコ", cat: "手牌", desc: "ポンで作った刻子。+2符（中張）or +4符（么九）。" },
+  { kanji: "暗刻", reading: "アンコ", cat: "手牌", desc: "自力で揃えた刻子。+4符（中張）or +8符（么九）。" },
+  { kanji: "明槓", reading: "ミンカン", cat: "手牌", desc: "鳴いて作った槓子。+8符（中張）or +16符（么九）。" },
+  { kanji: "暗槓", reading: "アンカン", cat: "手牌", desc: "自力で揃えた槓子。+16符（中張）or +32符（么九）。" },
+  { kanji: "加槓", reading: "カカン", cat: "手牌", desc: "ポンに4枚目を加えてカンすること。明槓扱い。" },
+  { kanji: "対子", reading: "トイツ", cat: "手牌", desc: "同じ牌2枚の組。雀頭になり得る形。" },
+
+  // 待ち
+  { kanji: "待ち", reading: "マチ", cat: "待ち", desc: "テンパイ時に和了できる牌の形。" },
+  { kanji: "両面", reading: "リャンメン", cat: "待ち", desc: "順子の両側待ち（45→3,6）。+0符。" },
+  { kanji: "シャンポン", reading: "シャンポン", cat: "待ち", desc: "2組の対子のうちどちらかが刻子になる待ち。+0符。" },
+  { kanji: "カンチャン", reading: "カンチャン", cat: "待ち", desc: "順子の真ん中待ち（46→5）。+2符。" },
+  { kanji: "ペンチャン", reading: "ペンチャン", cat: "待ち", desc: "12→3 や 89→7 の端の待ち。+2符。" },
+  { kanji: "タンキ", reading: "タンキ", cat: "待ち", desc: "雀頭1枚待ち（単騎）。+2符。" },
+
+  // 点数
+  { kanji: "翻", reading: "ハン", cat: "点数", desc: "役の数え方。翻数が増えるほど点数も増える。" },
+  { kanji: "符", reading: "フ", cat: "点数", desc: "和了形の細かい点数単位。10符単位で切り上げ。" },
+  { kanji: "満貫", reading: "マンガン", cat: "点数", desc: "5翻以上、または4翻30符以上で固定の点数（親12000、子8000）。" },
+  { kanji: "跳満", reading: "ハネマン", cat: "点数", desc: "6〜7翻の和了。親18000、子12000。" },
+  { kanji: "倍満", reading: "バイマン", cat: "点数", desc: "8〜10翻の和了。親24000、子16000。" },
+  { kanji: "三倍満", reading: "サンバイマン", cat: "点数", desc: "11〜12翻の和了。親36000、子24000。" },
+  { kanji: "役満", reading: "ヤクマン", cat: "点数", desc: "13翻以上または特定の手役（国士無双・四暗刻など）。親48000、子32000。" },
+  { kanji: "数え役満", reading: "カゾエヤクマン", cat: "点数", desc: "13翻以上で役満扱いにするルール。" },
+  { kanji: "ダブル役満", reading: "ダブルヤクマン", cat: "点数", desc: "役満が2つ重なった場合（小四喜+字一色など）。点数が2倍。" },
+  { kanji: "切り上げ満貫", reading: "キリアゲマンガン", cat: "点数", desc: "4翻30符以上、3翻60符以上を満貫として扱うルール。" },
+  { kanji: "供託", reading: "キョウタク", cat: "点数", desc: "リーチ棒や流局で残った点棒。次の和了者が取る。" },
+  { kanji: "リーチ棒", reading: "リーチボウ", cat: "点数", desc: "リーチ宣言時に出す1000点棒。" },
+  { kanji: "ノーテン罰符", reading: "ノーテンバップ", cat: "点数", desc: "流局時、テンパイしていない人が払う罰金（合計3000点）。" },
+  { kanji: "持ち点", reading: "モチテン", cat: "点数", desc: "対局開始時の点数。通常25,000点 or 30,000点。" },
+  { kanji: "返し点", reading: "カエシテン", cat: "点数", desc: "精算の基準点。これより上は加点、下は減点。" },
+  { kanji: "オカ", reading: "オカ", cat: "点数", desc: "（返し点 - 持ち点）×4 を1位に加算する精算ルール。" },
+  { kanji: "ウマ", reading: "ウマ", cat: "点数", desc: "順位による点数のやり取り（例: +20/+10/-10/-20）。" },
+];
+const TERM_CATEGORIES = ["基本", "場・局", "牌", "進行", "手牌", "待ち", "点数"];
+
 // localStorage 永続化のキー
 const LS_HISTORY_KEY = "mahjong_scorer_history_v1";
 const LS_SUSPENDED_KEY = "mahjong_scorer_suspended_v1";
@@ -85,6 +187,25 @@ function MahjongScorer() {
   const [infoYakuIdx, setInfoYakuIdx] = useState(null);
   const longPressTimerRef = useRef(null);
   const longPressFiredRef = useRef(false);
+  // 用語集 state
+  const [termCat, setTermCat] = useState("基本");
+  const [infoTermIdx, setInfoTermIdx] = useState(null);
+  const termLongPressTimerRef = useRef(null);
+  const termLongPressFiredRef = useRef(false);
+  const handleTermLongPressStart = (idx) => {
+    termLongPressFiredRef.current = false;
+    if (termLongPressTimerRef.current) clearTimeout(termLongPressTimerRef.current);
+    termLongPressTimerRef.current = setTimeout(() => {
+      termLongPressFiredRef.current = true;
+      setInfoTermIdx(idx);
+    }, 500);
+  };
+  const handleTermLongPressEnd = () => {
+    if (termLongPressTimerRef.current) {
+      clearTimeout(termLongPressTimerRef.current);
+      termLongPressTimerRef.current = null;
+    }
+  };
   const handleYakuLongPressStart = (idx) => {
     longPressFiredRef.current = false;
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
@@ -1320,6 +1441,86 @@ function MahjongScorer() {
   };
 
   // ══════════════════════════════════
+  // ── GLOSSARY VIEW ──
+  // ══════════════════════════════════
+  const renderGlossary = () => {
+    const catColor = (cat) => {
+      if (cat === "基本") return t.ac;
+      if (cat === "場・局") return t.gn;
+      if (cat === "牌") return t.gd;
+      if (cat === "進行") return "#f97316";
+      if (cat === "手牌") return "#a855f7";
+      if (cat === "待ち") return "#ec4899";
+      if (cat === "点数") return t.rd;
+      return t.ac;
+    };
+    const items = TERMS_DATA.map((term, idx) => ({ term, idx })).filter(({ term }) => term.cat === termCat);
+    const accent = catColor(termCat);
+
+    return (
+      <div style={body}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>📚 麻雀用語集</div>
+        <div style={{ fontSize: 11, color: t.dm, marginBottom: 12 }}>💡 長押しで意味の詳細を表示</div>
+        <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          {TERM_CATEGORIES.map(cat => {
+            const c = catColor(cat);
+            return (
+              <button key={cat} style={{
+                padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+                border: `1px solid ${termCat === cat ? c : t.bd}`,
+                background: termCat === cat ? c + "22" : "transparent",
+                color: termCat === cat ? c : t.dm,
+              }} onClick={() => setTermCat(cat)}>{cat}</button>
+            );
+          })}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 }}>
+          {items.map(({ term, idx }) => (
+            <button
+              key={idx}
+              onMouseDown={() => handleTermLongPressStart(idx)}
+              onMouseUp={handleTermLongPressEnd}
+              onMouseLeave={handleTermLongPressEnd}
+              onTouchStart={() => handleTermLongPressStart(idx)}
+              onTouchEnd={handleTermLongPressEnd}
+              onTouchMove={handleTermLongPressEnd}
+              onContextMenu={(e) => { e.preventDefault(); setInfoTermIdx(idx); }}
+              onClick={(e) => {
+                if (termLongPressFiredRef.current) {
+                  termLongPressFiredRef.current = false;
+                  e.preventDefault();
+                  return;
+                }
+                // 通常タップでも詳細表示（長押し前提だがアクセシビリティのため）
+                setInfoTermIdx(idx);
+              }}
+              style={{
+                padding: "10px 12px",
+                border: `1px solid ${accent}55`,
+                borderLeft: `3px solid ${accent}`,
+                borderRadius: 8,
+                background: "transparent",
+                color: t.tx,
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "all 0.12s",
+              }}
+              title="タップ or 長押しで意味を表示"
+            >
+              <div style={{ fontSize: 14, fontWeight: 800, color: t.tx, lineHeight: 1.3 }}>{term.kanji}</div>
+              <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>{term.reading}</div>
+            </button>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 10 }}>
+          全 {TERMS_DATA.length} 語 / 「{termCat}」カテゴリ {items.length} 語
+        </div>
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
   // ── DICTIONARY VIEW ──
   // ══════════════════════════════════
   const renderDict = () => (
@@ -1444,6 +1645,11 @@ function MahjongScorer() {
           setView("dict");
           setDictCat("1翻");
           setDictExpanded(null);
+        })}
+
+        {menuItem("📚", "麻雀用語集", "漢字・読み・意味（長押しで詳細）", () => {
+          setView("glossary");
+          setTermCat("基本");
         })}
       </div>
     );
@@ -2725,8 +2931,43 @@ function MahjongScorer() {
         {view === "history" && renderHistory()}
         {view === "quiz" && renderQuiz()}
         {view === "fuQuiz" && renderFuQuiz()}
+        {view === "glossary" && renderGlossary()}
         {view === "dict" && renderDict()}
         {showFuHelp && <FuHelpModal />}
+
+        {/* 用語詳細モーダル */}
+        {infoTermIdx !== null && (() => {
+          const term = TERMS_DATA[infoTermIdx];
+          return (
+            <div
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 280, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+              onClick={() => setInfoTermIdx(null)}
+            >
+              <div
+                style={{ background: t.card, borderRadius: 14, padding: 22, maxWidth: 380, width: "100%", border: `1px solid ${t.bd}` }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: t.tx, lineHeight: 1.2 }}>{term.kanji}</div>
+                    <div style={{ fontSize: 13, color: t.ac, marginTop: 4, fontWeight: 700 }}>{term.reading}</div>
+                  </div>
+                  <button style={{ background: "none", border: "none", color: t.dm, fontSize: 22, cursor: "pointer", padding: 4 }} onClick={() => setInfoTermIdx(null)}>✕</button>
+                </div>
+                <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, background: t.sf, color: t.dm, fontSize: 11, fontWeight: 700, marginBottom: 14 }}>
+                  カテゴリ: {term.cat}
+                </div>
+                <div style={{ background: t.sf, borderRadius: 10, padding: 14, fontSize: 14, lineHeight: 1.8, color: t.tx, marginBottom: 14 }}>
+                  {term.desc}
+                </div>
+                <button
+                  style={{ width: "100%", padding: "12px", border: "none", borderRadius: 10, background: t.ac, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                  onClick={() => setInfoTermIdx(null)}
+                >閉じる</button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 符早見表モーダル */}
         {showFuRef && (() => {
