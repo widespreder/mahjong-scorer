@@ -22,7 +22,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script type="text/babel">
-const { useState, useCallback, useMemo, useEffect } = React;
+const { useState, useCallback, useMemo, useEffect, useRef } = React;
 
 // ── Score Engine ──
 function calcBasePoints(fu, han) {
@@ -81,6 +81,24 @@ function MahjongScorer() {
   const [lastPlayers, setLastPlayers] = useState(() => loadLS(LS_LAST_PLAYERS_KEY, null));
   const [showPlayerManage, setShowPlayerManage] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
+  // 役の長押しで詳細表示
+  const [infoYakuIdx, setInfoYakuIdx] = useState(null);
+  const longPressTimerRef = useRef(null);
+  const longPressFiredRef = useRef(false);
+  const handleYakuLongPressStart = (idx) => {
+    longPressFiredRef.current = false;
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      setInfoYakuIdx(idx);
+    }, 500);
+  };
+  const handleYakuLongPressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
   // 永続化
   useEffect(() => { saveLS(LS_HISTORY_KEY, gameHistory); }, [gameHistory]);
   useEffect(() => { saveLS(LS_SUSPENDED_KEY, suspendedGame); }, [suspendedGame]);
@@ -714,28 +732,41 @@ function MahjongScorer() {
         <button
           key={idx}
           disabled={disabled}
-          onClick={() => setSelectedYakuIds(ids => {
-            if (sel) {
-              // 解除時: この役を外す + 前提を失う依存役も連鎖解除
-              let newIds = ids.filter(x => x !== idx);
-              // 依存役を再帰的に外す
-              let changed = true;
-              while (changed) {
-                changed = false;
-                newIds = newIds.filter(otherId => {
-                  const req = YAKU_REQUIRES_MAP.get(YAKU_DATA[otherId].name);
-                  if (!req) return true;
-                  const reqMet = req.some(reqName => newIds.some(nid => YAKU_DATA[nid].name === reqName));
-                  if (!reqMet) { changed = true; return false; }
-                  return true;
-                });
-              }
-              return newIds;
-            } else {
-              return [...ids, idx];
+          onMouseDown={() => handleYakuLongPressStart(idx)}
+          onMouseUp={handleYakuLongPressEnd}
+          onMouseLeave={handleYakuLongPressEnd}
+          onTouchStart={() => handleYakuLongPressStart(idx)}
+          onTouchEnd={handleYakuLongPressEnd}
+          onTouchMove={handleYakuLongPressEnd}
+          onContextMenu={(e) => { e.preventDefault(); setInfoYakuIdx(idx); }}
+          onClick={(e) => {
+            // 長押しで詳細表示が発火していたらクリック処理を抑制
+            if (longPressFiredRef.current) {
+              longPressFiredRef.current = false;
+              e.preventDefault();
+              return;
             }
-          })}
-          title={conflictDisabled ? `${conflictName}と同時には選択できません` : requireDisabled ? `先に ${requireText} を選んでください` : ""}
+            setSelectedYakuIds(ids => {
+              if (sel) {
+                let newIds = ids.filter(x => x !== idx);
+                let changed = true;
+                while (changed) {
+                  changed = false;
+                  newIds = newIds.filter(otherId => {
+                    const req = YAKU_REQUIRES_MAP.get(YAKU_DATA[otherId].name);
+                    if (!req) return true;
+                    const reqMet = req.some(reqName => newIds.some(nid => YAKU_DATA[nid].name === reqName));
+                    if (!reqMet) { changed = true; return false; }
+                    return true;
+                  });
+                }
+                return newIds;
+              } else {
+                return [...ids, idx];
+              }
+            });
+          }}
+          title={conflictDisabled ? `${conflictName}と同時には選択できません` : requireDisabled ? `先に ${requireText} を選んでください` : "長押しで詳細"}
           style={{
             padding: "6px 8px",
             borderRadius: 8,
@@ -831,6 +862,11 @@ function MahjongScorer() {
               >🔔 鳴きあり</button>
             </div>
           </div>
+        </div>
+
+        {/* 長押しヒント */}
+        <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 6, marginTop: -8 }}>
+          💡 役を長押しすると説明が見られます
         </div>
 
         {/* カテゴリ別ヘッダー描画ヘルパー */}
@@ -2396,6 +2432,72 @@ function MahjongScorer() {
         {view === "quiz" && renderQuiz()}
         {view === "dict" && renderDict()}
         {showFuHelp && <FuHelpModal />}
+
+        {/* 役の詳細モーダル（長押しで起動） */}
+        {infoYakuIdx !== null && (() => {
+          const y = YAKU_DATA[infoYakuIdx];
+          const m = y.name.match(/^([^（]+)（([^）]+)）$/);
+          const main = m ? m[1].trim() : y.name;
+          const reading = m ? m[2] : null;
+          // 関連する競合役・前提役
+          const conflictSet = YAKU_CONFLICT_MAP.get(y.name);
+          const conflictNames = conflictSet ? [...conflictSet].map(n => n.match(/^([^（]+)/)?.[1] || n) : [];
+          const requiresArr = YAKU_REQUIRES_MAP.get(y.name);
+          const requiresNames = requiresArr ? requiresArr.map(n => n.match(/^([^（]+)/)?.[1] || n) : [];
+          return (
+            <div
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+              onClick={() => setInfoYakuIdx(null)}
+            >
+              <div
+                style={{ background: t.card, borderRadius: 14, padding: 20, maxWidth: 380, width: "100%", border: `1px solid ${t.bd}`, maxHeight: "85vh", overflowY: "auto" }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: t.tx }}>{main}</div>
+                    {reading && <div style={{ fontSize: 12, color: t.dm, marginTop: 2 }}>{reading}</div>}
+                  </div>
+                  <button style={{ background: "none", border: "none", color: t.dm, fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }} onClick={() => setInfoYakuIdx(null)}>✕</button>
+                </div>
+
+                <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                  <span style={{ padding: "4px 10px", borderRadius: 6, background: t.acS, color: t.ac, fontSize: 12, fontWeight: 700 }}>
+                    門前: {y.han >= 13 ? "役満" : `${y.han}翻`}
+                  </span>
+                  {y.naki !== null
+                    ? <span style={{ padding: "4px 10px", borderRadius: 6, background: t.gnS, color: t.gn, fontSize: 12, fontWeight: 700 }}>鳴き: {y.naki >= 13 ? "役満" : `${y.naki}翻`}</span>
+                    : <span style={{ padding: "4px 10px", borderRadius: 6, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700 }}>鳴き: ✕ 不可</span>
+                  }
+                  {y.cat && <span style={{ padding: "4px 10px", borderRadius: 6, background: t.sf, color: t.dm, fontSize: 12, fontWeight: 700 }}>カテゴリ: {y.cat}</span>}
+                </div>
+
+                <div style={{ background: t.sf, borderRadius: 10, padding: 14, fontSize: 14, lineHeight: 1.7, color: t.tx, marginBottom: 14 }}>
+                  {y.desc}
+                </div>
+
+                {requiresNames.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: t.dm, marginBottom: 4, fontWeight: 700 }}>📋 前提条件</div>
+                    <div style={{ fontSize: 13, color: t.tx }}>{requiresNames.join(" / ")} のいずれかが必要</div>
+                  </div>
+                )}
+
+                {conflictNames.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: t.dm, marginBottom: 4, fontWeight: 700 }}>⚠ 併用不可</div>
+                    <div style={{ fontSize: 12, color: t.dm, lineHeight: 1.6 }}>{conflictNames.join("、")}</div>
+                  </div>
+                )}
+
+                <button
+                  style={{ width: "100%", padding: "12px", border: "none", borderRadius: 10, background: t.ac, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                  onClick={() => setInfoYakuIdx(null)}
+                >閉じる</button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </>
   );
