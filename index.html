@@ -64,6 +64,8 @@ const PRESET_NAMES = ["つとむ", "ひろこ", "はじめ", "こころ"];
 // localStorage 永続化のキー
 const LS_HISTORY_KEY = "mahjong_scorer_history_v1";
 const LS_SUSPENDED_KEY = "mahjong_scorer_suspended_v1";
+const LS_PLAYERS_KEY = "mahjong_scorer_players_v1"; // 登録済みプレーヤー名リスト
+const LS_LAST_PLAYERS_KEY = "mahjong_scorer_last_players_v1"; // 前回使ったプレーヤー4人
 const loadLS = (key, fallback) => {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 };
@@ -75,9 +77,15 @@ function MahjongScorer() {
   const [view, setView] = useState("home");
   const [gameHistory, setGameHistory] = useState(() => loadLS(LS_HISTORY_KEY, []));
   const [suspendedGame, setSuspendedGame] = useState(() => loadLS(LS_SUSPENDED_KEY, null));
+  const [knownPlayers, setKnownPlayers] = useState(() => loadLS(LS_PLAYERS_KEY, ["つとむ", "ひろこ", "はじめ", "こころ"]));
+  const [lastPlayers, setLastPlayers] = useState(() => loadLS(LS_LAST_PLAYERS_KEY, null));
+  const [showPlayerManage, setShowPlayerManage] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState("");
   // 永続化
   useEffect(() => { saveLS(LS_HISTORY_KEY, gameHistory); }, [gameHistory]);
   useEffect(() => { saveLS(LS_SUSPENDED_KEY, suspendedGame); }, [suspendedGame]);
+  useEffect(() => { saveLS(LS_PLAYERS_KEY, knownPlayers); }, [knownPlayers]);
+  useEffect(() => { saveLS(LS_LAST_PLAYERS_KEY, lastPlayers); }, [lastPlayers]);
 
   // ── Game Setup Wizard ──
   const [setupStep, setSetupStep] = useState(0);
@@ -87,7 +95,10 @@ function MahjongScorer() {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   });
   const [matchType, setMatchType] = useState(null); // "tonpu" | "hanchan"
-  const [players, setPlayers] = useState(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
+  const [players, setPlayers] = useState(() => {
+    const last = loadLS(LS_LAST_PLAYERS_KEY, null);
+    return Array.isArray(last) && last.length === 4 ? last : ["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"];
+  });
   const [playerMode, setPlayerMode] = useState([false, false, false, false]); // false=text display, true=editing
   const [rules, setRules] = useState({
     tenpaiRenchan: true,    // テンパイ連荘
@@ -363,6 +374,18 @@ function MahjongScorer() {
     setRounds([]);
     setGameStarted(true);
     setGameFinished(false);
+    // 今回のメンバーを「次回のデフォルト」として保存し、登録済みプレーヤーにも追加
+    setLastPlayers([...players]);
+    setKnownPlayers(prev => {
+      const merged = [...prev];
+      players.forEach(name => {
+        const trimmed = (name || "").trim();
+        if (trimmed && !merged.includes(trimmed) && !trimmed.match(/^[A-D]プレーヤー$/)) {
+          merged.push(trimmed);
+        }
+      });
+      return merged;
+    });
   }, [gameDate, matchType, players, rules]);
 
   // ── Theme ──
@@ -967,7 +990,8 @@ function MahjongScorer() {
           setView("game");
           setSetupStep(0);
           setMatchType(null);
-          setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
+          // 前回の対局メンバーを引き継ぐ（無ければデフォルト）
+          setPlayers(Array.isArray(lastPlayers) && lastPlayers.length === 4 ? lastPlayers : ["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
           setPlayerMode([false, false, false, false]);
           setGameStarted(false);
         })}
@@ -1205,57 +1229,136 @@ function MahjongScorer() {
           <Back onClick={() => setSetupStep(1)} />
           <Dots total={4} cur={2} />
           <div style={question}>プレイヤー名</div>
-          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 14 }}>変更が必要な場合は「変更」をタップ</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 14 }}>各家をタップして変更</div>
           {players.map((p, i) => (
             <div key={i} style={{ marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 15, fontWeight: 800, color: i === 0 ? t.gd : t.dm, width: 22 }}>{WINDS[i]}</span>
                 {!playerMode[i] ? (
                   <>
-                    <div style={{ flex: 1, padding: "10px 14px", background: t.sf, borderRadius: 10, border: `1px solid ${t.bd}`, fontSize: 14, color: t.tx }}>{p}</div>
                     <button
-                      style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "6px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
                       onClick={() => { const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm); }}
-                    >変更</button>
+                      style={{ flex: 1, padding: "10px 14px", background: t.sf, borderRadius: 10, border: `1px solid ${t.bd}`, fontSize: 14, color: t.tx, textAlign: "left", cursor: "pointer" }}
+                    >{p}</button>
                   </>
                 ) : (
-                  <>
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                      <select
-                        value={PRESET_NAMES.includes(p) ? p : ""}
-                        onChange={e => { if (e.target.value) { const np = [...players]; np[i] = e.target.value; setPlayers(np); const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); } }}
-                        style={selectStyle}
-                      >
-                        <option value="">— リストから選択 —</option>
-                        {PRESET_NAMES.filter(n => !players.includes(n) || players[i] === n).map(n => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                      <input
-                        style={inputStyle}
-                        placeholder="または直接入力"
-                        value={PRESET_NAMES.includes(p) ? "" : p}
-                        onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
-                      />
-                    </div>
+                  <div style={{ flex: 1, padding: 10, background: t.sf, borderRadius: 10, border: `1px solid ${t.ac}55` }}>
+                    <input
+                      style={{ ...inputStyle, marginBottom: 8 }}
+                      placeholder="名前を入力"
+                      value={p}
+                      autoFocus
+                      onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
+                      onKeyDown={e => { if (e.key === 'Enter') { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); } }}
+                    />
+                    {knownPlayers.length > 0 && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, color: t.dm, marginBottom: 4 }}>登録済みから選ぶ</div>
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                          {knownPlayers.filter(n => !players.includes(n) || players[i] === n).map(n => (
+                            <button
+                              key={n}
+                              onClick={() => {
+                                const np = [...players]; np[i] = n; setPlayers(np);
+                                const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm);
+                              }}
+                              style={{
+                                padding: "5px 10px", fontSize: 12, fontWeight: 600,
+                                border: `1px solid ${players[i] === n ? t.ac : t.bd}`, borderRadius: 14,
+                                background: players[i] === n ? t.acS : "transparent",
+                                color: players[i] === n ? t.ac : t.tx,
+                                cursor: "pointer",
+                              }}
+                            >{n}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <button
-                      style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "6px 10px", color: t.ac, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
+                      style={{ width: "100%", background: t.ac, border: "none", borderRadius: 8, padding: "8px 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                       onClick={() => { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); }}
                     >決定</button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
           ))}
-          <div style={{ marginTop: 8 }}>
-            <button
-              style={{
-                ...actionBtn("p"),
-                opacity: players.every(p => p.trim()) ? 1 : 0.4,
-              }}
-              disabled={!players.every(p => p.trim())}
-              onClick={() => setSetupStep(3)}
-            >次へ</button>
+          <button
+            style={{ ...actionBtn(), marginBottom: 12, fontSize: 12 }}
+            onClick={() => { setShowPlayerManage(true); setNewPlayerName(""); }}
+          >👥 登録プレーヤーを管理</button>
+          <button
+            style={{
+              ...actionBtn("p"),
+              opacity: players.every(p => p.trim()) ? 1 : 0.4,
+            }}
+            disabled={!players.every(p => p.trim())}
+            onClick={() => setSetupStep(3)}
+          >次へ</button>
+        </div>
+      )}
+
+      {/* Player management modal */}
+      {showPlayerManage && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 200, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+          <div style={{ width: "100%", maxWidth: 400, paddingBottom: 40 }}>
+            <div style={card}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <span style={{ fontSize: 16, fontWeight: 800 }}>登録プレーヤー</span>
+                <button style={{ background: "none", border: "none", color: t.dm, fontSize: 18, cursor: "pointer" }} onClick={() => setShowPlayerManage(false)}>✕</button>
+              </div>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 12 }}>対局開始時に自動的に追加されます。手動でも管理できます。</div>
+
+              <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                <input
+                  style={{ ...inputStyle, flex: 1 }}
+                  placeholder="新しい名前を追加"
+                  value={newPlayerName}
+                  onChange={e => setNewPlayerName(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      const name = newPlayerName.trim();
+                      if (name && !knownPlayers.includes(name)) {
+                        setKnownPlayers(prev => [...prev, name]);
+                        setNewPlayerName("");
+                      }
+                    }
+                  }}
+                />
+                <button
+                  style={{ padding: "10px 16px", background: t.ac, border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                  onClick={() => {
+                    const name = newPlayerName.trim();
+                    if (name && !knownPlayers.includes(name)) {
+                      setKnownPlayers(prev => [...prev, name]);
+                      setNewPlayerName("");
+                    }
+                  }}
+                >追加</button>
+              </div>
+
+              {knownPlayers.length === 0 ? (
+                <div style={{ fontSize: 13, color: t.dm, textAlign: "center", padding: 20 }}>登録されたプレーヤーはまだありません</div>
+              ) : (
+                <div>
+                  {knownPlayers.map((name, idx) => (
+                    <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: t.sf, borderRadius: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 14 }}>{name}</span>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`「${name}」を登録から削除しますか？`)) {
+                            setKnownPlayers(prev => prev.filter(n => n !== name));
+                          }
+                        }}
+                        style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 6, padding: "4px 10px", color: t.rd, fontSize: 11, cursor: "pointer" }}
+                      >削除</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button style={{ ...actionBtn(), marginTop: 12 }} onClick={() => setShowPlayerManage(false)}>閉じる</button>
+            </div>
           </div>
         </div>
       )}
