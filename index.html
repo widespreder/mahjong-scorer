@@ -1635,7 +1635,7 @@ function MahjongScorer() {
           <Back onClick={() => setSetupStep(1)} />
           <Dots total={4} cur={2} />
           <div style={question}>プレイヤー名</div>
-          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 14 }}>各家をタップして変更</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 14 }}>各家をタップ → 名前がクリアされ、入力 or 登録から選択</div>
           {players.map((p, i) => (
             <div key={i} style={{ marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1643,7 +1643,11 @@ function MahjongScorer() {
                 {!playerMode[i] ? (
                   <>
                     <button
-                      onClick={() => { const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm); }}
+                      onClick={() => {
+                        // タップしたら名前をクリアして編集モードへ（一から選び直せる）
+                        const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm);
+                        const np = [...players]; np[i] = ""; setPlayers(np);
+                      }}
                       style={{ flex: 1, padding: "10px 14px", background: t.sf, borderRadius: 10, border: `1px solid ${t.bd}`, fontSize: 14, color: t.tx, textAlign: "left", cursor: "pointer" }}
                     >{p}</button>
                   </>
@@ -1681,7 +1685,15 @@ function MahjongScorer() {
                       </div>
                     )}
                     <button
-                      style={{ width: "100%", background: t.ac, border: "none", borderRadius: 8, padding: "8px 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      disabled={!players[i]?.trim()}
+                      style={{
+                        width: "100%",
+                        background: players[i]?.trim() ? t.ac : t.bd,
+                        border: "none", borderRadius: 8, padding: "8px 10px",
+                        color: "#fff", fontSize: 12, fontWeight: 700,
+                        cursor: players[i]?.trim() ? "pointer" : "not-allowed",
+                        opacity: players[i]?.trim() ? 1 : 0.5,
+                      }}
                       onClick={() => { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); }}
                     >決定</button>
                   </div>
