@@ -229,6 +229,30 @@ function MahjongScorer() {
     return calcScore(gHan >= 5 ? 30 : (gFu || 30), gHan, gParent, gTsumo);
   }, [gHan, gFu, gParent, gTsumo]);
 
+  // ── 試合形式ヘルパー ──
+  // tonpu=東風（東のみ）、hanchan=半荘（東＋南）、issho=一荘（東＋南＋西＋北）
+  const matchTypeWinds = (type) => {
+    if (type === "tonpu") return ["東"];
+    if (type === "hanchan") return ["東", "南"];
+    if (type === "issho") return ["東", "南", "西", "北"];
+    return ["東", "南"];
+  };
+  const isLastWind = (wind, type) => {
+    const winds = matchTypeWinds(type);
+    return wind === winds[winds.length - 1];
+  };
+  const nextRoundWind = (wind, type) => {
+    const winds = matchTypeWinds(type);
+    const idx = winds.indexOf(wind);
+    return idx >= 0 && idx + 1 < winds.length ? winds[idx + 1] : null;
+  };
+  const matchTypeLabel = (type, short = false) => {
+    if (type === "tonpu") return short ? "東風" : "東風戦";
+    if (type === "hanchan") return short ? "半荘" : "半荘戦";
+    if (type === "issho") return short ? "一荘" : "一荘戦";
+    return "";
+  };
+
   const applyRound = useCallback(() => {
     if (gWinner === null || !gResult) return;
     const ns = [...scores], hb = honba * 300;
@@ -264,20 +288,20 @@ function MahjongScorer() {
       resetGW();
       return;
     }
-    const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
-                     (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+    const isOrlast = isLastWind(roundWind, cfg.matchType) && dealerIdx === 3;
 
     if (gWinner !== dealerIdx) {
       // Dealer rotates (child won)
       const next = (dealerIdx + 1) % 4;
-      if (cfg.matchType === "tonpu" && next === 0) {
-        setGameFinished(true);
-      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+      if (next === 0 && isLastWind(roundWind, cfg.matchType)) {
         setGameFinished(true);
       } else {
         setDealerIdx(next);
         setHonba(0);
-        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+        if (next === 0) {
+          const nw = nextRoundWind(roundWind, cfg.matchType);
+          if (nw) setRoundWind(nw);
+        }
       }
     } else {
       // Parent won (renchan candidate)
@@ -342,8 +366,7 @@ function MahjongScorer() {
     // Renchan / game-end logic
     const dealerTenpai = drawTenpai[dealerIdx];
     let dealerRotates = false;
-    const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
-                     (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+    const isOrlast = isLastWind(roundWind, cfg.matchType) && dealerIdx === 3;
 
     if (ruleSet.agariRenchan) {
       dealerRotates = true; // always rotate on draw
@@ -354,13 +377,14 @@ function MahjongScorer() {
 
     if (dealerRotates) {
       const next = (dealerIdx + 1) % 4;
-      if (cfg.matchType === "tonpu" && next === 0) {
-        setGameFinished(true);
-      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+      if (next === 0 && isLastWind(roundWind, cfg.matchType)) {
         setGameFinished(true);
       } else {
         setDealerIdx(next);
-        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+        if (next === 0) {
+          const nw = nextRoundWind(roundWind, cfg.matchType);
+          if (nw) setRoundWind(nw);
+        }
       }
     } else if (isOrlast) {
       // Orlast: dealer stays (tenpai renchan), but if dealer is top → end
@@ -1365,7 +1389,7 @@ function MahjongScorer() {
         </div>
 
         {/* Suspended game - show at top if exists */}
-        {suspendedGame && menuItem("⏸", "保留中の対局を再開", `${suspendedGame.config.date} ${suspendedGame.config.matchType === "tonpu" ? "東風" : "半荘"} — ${suspendedGame.players.join("・")}`, () => {
+        {suspendedGame && menuItem("⏸", "保留中の対局を再開", `${suspendedGame.config.date} ${matchTypeLabel(suspendedGame.config.matchType, true)} — ${suspendedGame.players.join("・")}`, () => {
           // Restore game state
           setGameConfig(suspendedGame.config);
           setPlayers(suspendedGame.players);
@@ -1610,20 +1634,27 @@ function MahjongScorer() {
           <Back onClick={() => setSetupStep(0)} />
           <Dots total={4} cur={1} />
           <div style={question}>試合形式は？</div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button
-              style={bigBtn(matchType === "tonpu" ? t.ac : t.dm, matchType === "tonpu" ? t.acS : "transparent")}
+              style={{ ...bigBtn(matchType === "tonpu" ? t.ac : t.dm, matchType === "tonpu" ? t.acS : "transparent"), maxWidth: "none", flex: "none", padding: "16px 12px" }}
               onClick={() => { setMatchType("tonpu"); setSetupStep(2); }}
             >
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>東風戦</div>
-              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場のみ</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>東風戦（トンプウセン）</div>
+              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400, marginTop: 4 }}>東場のみ・約4局</div>
             </button>
             <button
-              style={bigBtn(matchType === "hanchan" ? t.ac : t.dm, matchType === "hanchan" ? t.acS : "transparent")}
+              style={{ ...bigBtn(matchType === "hanchan" ? t.ac : t.dm, matchType === "hanchan" ? t.acS : "transparent"), maxWidth: "none", flex: "none", padding: "16px 12px" }}
               onClick={() => { setMatchType("hanchan"); setSetupStep(2); }}
             >
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>半荘戦</div>
-              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場＋南場</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>半荘戦（ハンチャンセン）</div>
+              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400, marginTop: 4 }}>東場＋南場・約8局</div>
+            </button>
+            <button
+              style={{ ...bigBtn(matchType === "issho" ? t.ac : t.dm, matchType === "issho" ? t.acS : "transparent"), maxWidth: "none", flex: "none", padding: "16px 12px" }}
+              onClick={() => { setMatchType("issho"); setSetupStep(2); }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 700 }}>一荘戦（イーチャンセン）</div>
+              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400, marginTop: 4 }}>東・南・西・北 全場・約16局</div>
             </button>
           </div>
         </div>
@@ -1848,7 +1879,7 @@ function MahjongScorer() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
                 <span style={{ color: t.dm }}>形式</span>
-                <span style={{ fontWeight: 600 }}>{matchType === "tonpu" ? "東風戦" : "半荘戦"}</span>
+                <span style={{ fontWeight: 600 }}>{matchTypeLabel(matchType)}</span>
               </div>
               <div style={{ borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
                 <span style={{ color: t.dm }}>プレイヤー</span>
@@ -1895,7 +1926,7 @@ function MahjongScorer() {
     <div style={body}>
       {/* Config summary */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: 12, color: t.dm }}>
-        <span>{gameConfig?.date} / {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"}</span>
+        <span>{gameConfig?.date} / {matchTypeLabel(gameConfig?.matchType)}</span>
       </div>
 
       {/* Round info */}
@@ -2356,8 +2387,7 @@ function MahjongScorer() {
         const cfg = gameConfig || {};
         const ruleSet = cfg.rules || {};
         if (!ruleSet.agariYame) return null;
-        const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
-                         (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+        const isOrlast = isLastWind(roundWind, cfg.matchType) && dealerIdx === 3;
         if (!isOrlast) return null;
         const parentScore = scores[dealerIdx];
         const isTop = scores.every((s, i) => {
@@ -2423,7 +2453,7 @@ function MahjongScorer() {
           <div style={{ fontSize: 48, marginBottom: 8 }}>🏆</div>
           <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>対局終了</h2>
           <p style={{ fontSize: 13, color: t.dm, margin: 0 }}>
-            {gameConfig?.date} / {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"} / {rounds.length}局
+            {gameConfig?.date} / {matchTypeLabel(gameConfig?.matchType)} / {rounds.length}局
           </p>
         </div>
 
@@ -2576,7 +2606,7 @@ function MahjongScorer() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                       <span style={{ fontSize: 14, fontWeight: 700 }}>{g.date}</span>
                       <span style={{ fontSize: 12, color: t.dm, padding: "2px 10px", background: t.sf, borderRadius: 6 }}>
-                        {g.matchType === "tonpu" ? "東風" : "半荘"}
+                        {matchTypeLabel(g.matchType, true)}
                       </span>
                     </div>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -2623,7 +2653,7 @@ function MahjongScorer() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>{historyDetail.date}</span>
               <span style={{ fontSize: 12, color: t.dm, padding: "2px 10px", background: t.sf, borderRadius: 6 }}>
-                {historyDetail.matchType === "tonpu" ? "東風戦" : "半荘戦"}
+                {matchTypeLabel(historyDetail.matchType)}
               </span>
             </div>
 
