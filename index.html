@@ -106,7 +106,7 @@ function MahjongScorer() {
     kuitan: true,           // 食いタン
     atozuke: true,          // 後付け
     tobi: true,             // 飛び終了（誰かが0点未満で終了）
-    agariYame: false,       // アガリやめ（オーラス親トップで親が選択して終了可）
+    agariYame: true,        // アガリやめ（オーラス親トップで自動終了）
     renpuuJantou4: false,   // 連風牌雀頭 +4符（OFFなら+2符）
     startPoints: 30000,     // 持ち点
     returnPoints: 30000,    // 返し点
@@ -264,17 +264,16 @@ function MahjongScorer() {
     } else {
       // Parent won (renchan candidate)
       if (isOrlast) {
-        // Orlast: 親が断トップ（同点なら起家順で先勝ち）→ 終了 / アガリやめONなら親選択 / それ以外は連荘
+        // Orlast 親アガリ: アガリやめON+親トップなら終了、それ以外は連荘（同点は起家順で先勝ち）
         const parentScore = ns[dealerIdx];
         const isTop = ns.every((s, i) => {
           if (i === dealerIdx) return true;
           if (parentScore !== s) return parentScore > s;
           return dealerIdx < i; // 起家から近い順
         });
-        if (isTop && !ruleSet.agariYame) {
+        if (isTop && ruleSet.agariYame) {
           setGameFinished(true);
         } else {
-          // アガリやめONかつ親トップ → ユーザー選択（暫定: 連荘して画面に「終了」ボタン表示）
           setHonba(h => h + 1);
         }
       } else {
@@ -1381,7 +1380,7 @@ function MahjongScorer() {
             {toggleRow("食いタンあり", rules.kuitan, () => setRules(r => ({ ...r, kuitan: !r.kuitan })))}
             {toggleRow("後付けあり", rules.atozuke, () => setRules(r => ({ ...r, atozuke: !r.atozuke })))}
             {toggleRow("飛びで終了（誰かが0点未満）", rules.tobi, () => setRules(r => ({ ...r, tobi: !r.tobi })))}
-            {toggleRow("アガリやめ（オーラス親トップ）", rules.agariYame, () => setRules(r => ({ ...r, agariYame: !r.agariYame })))}
+            {toggleRow("アガリやめあり（オーラス親トップで終了）", rules.agariYame, () => setRules(r => ({ ...r, agariYame: !r.agariYame })))}
             {toggleRow("連風牌雀頭 +4符", rules.renpuuJantou4, () => setRules(r => ({ ...r, renpuuJantou4: !r.renpuuJantou4 })))}
           </div>
 
