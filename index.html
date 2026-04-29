@@ -960,6 +960,7 @@ function MahjongScorer() {
   const [fuQuizAnswer, setFuQuizAnswer] = useState(null);
   const [fuQuizRevealed, setFuQuizRevealed] = useState(false);
   const [fuQuizScore, setFuQuizScore] = useState({ correct: 0, total: 0 });
+  const [showFuRef, setShowFuRef] = useState(false);
 
   const generateFuQuizScenario = () => {
     const isTsumo = Math.random() < 0.5;
@@ -1131,6 +1132,7 @@ function MahjongScorer() {
               setFuQuizRevealed(false);
               setFuQuizScore({ correct: 0, total: 0 });
             }}>練習を始める</button>
+            <button style={actionBtn()} onClick={() => setShowFuRef(true)}>📋 符早見表を見る</button>
             <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
           </div>
         </div>
@@ -1280,6 +1282,7 @@ function MahjongScorer() {
               setFuQuizAnswer(null);
               setFuQuizRevealed(false);
             }}>次の問題</button>
+            <button style={actionBtn()} onClick={() => setShowFuRef(true)}>📋 符早見表を見る</button>
             <button style={actionBtn()} onClick={() => {
               setFuQuizScenario(null);
               setFuQuizAnswer(null);
@@ -2682,6 +2685,165 @@ function MahjongScorer() {
         {view === "fuQuiz" && renderFuQuiz()}
         {view === "dict" && renderDict()}
         {showFuHelp && <FuHelpModal />}
+
+        {/* 符早見表モーダル */}
+        {showFuRef && (() => {
+          const sec = { marginBottom: 14 };
+          const head = (color) => ({ fontSize: 13, fontWeight: 800, color, marginBottom: 6, padding: "4px 0", borderBottom: `1px solid ${color}55` });
+          const tableStyle = { background: t.sf, borderRadius: 8, overflow: "hidden", border: `1px solid ${t.bd}` };
+          const row = { display: "grid", gridTemplateColumns: "1.6fr 0.7fr", padding: "7px 12px", fontSize: 13, borderBottom: `1px solid ${t.bd}33` };
+          const lastRow = { ...row, borderBottom: "none" };
+          const fuVal = (color = t.ac) => ({ textAlign: "right", fontFamily: "monospace", fontWeight: 700, color });
+          const note = { fontSize: 11, color: t.dm, lineHeight: 1.7, marginTop: 6 };
+          return (
+            <div
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 250, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 16, overflowY: "auto" }}
+              onClick={() => setShowFuRef(false)}
+            >
+              <div
+                style={{ background: t.card, borderRadius: 14, padding: 18, maxWidth: 400, width: "100%", border: `1px solid ${t.bd}`, marginBottom: 32 }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <div style={{ fontSize: 18, fontWeight: 900 }}>📋 符早見表</div>
+                  <button style={{ background: "none", border: "none", color: t.dm, fontSize: 22, cursor: "pointer", padding: 4 }} onClick={() => setShowFuRef(false)}>✕</button>
+                </div>
+
+                {/* 基本符 */}
+                <div style={sec}>
+                  <div style={head(t.ac)}>① 基本符（あがり方で決まる）</div>
+                  <div style={tableStyle}>
+                    <div style={row}><span>ツモ</span><span style={fuVal(t.gn)}>20符 +ツモ符2</span></div>
+                    <div style={row}><span>ロン（門前）</span><span style={fuVal()}>30符</span></div>
+                    <div style={lastRow}><span>ロン（鳴き）</span><span style={fuVal()}>20符</span></div>
+                  </div>
+                </div>
+
+                {/* 面子符 */}
+                <div style={sec}>
+                  <div style={head(t.gn)}>② 面子符（刻子・槓子の符）</div>
+                  <div style={tableStyle}>
+                    <div style={row}>
+                      <div>
+                        <div>明刻（ミンコ）<span style={{ fontSize: 11, color: t.dm }}> 中張</span></div>
+                        <div style={{ fontSize: 10, color: t.dm }}>チュウチャン: 2〜8</div>
+                      </div>
+                      <span style={fuVal()}>+2</span>
+                    </div>
+                    <div style={row}>
+                      <div>
+                        <div>明刻（ミンコ）<span style={{ fontSize: 11, color: t.dm }}> 么九</span></div>
+                        <div style={{ fontSize: 10, color: t.dm }}>ヤオチュウ: 1,9,字</div>
+                      </div>
+                      <span style={fuVal()}>+4</span>
+                    </div>
+                    <div style={row}>
+                      <div>
+                        <div>暗刻（アンコ）<span style={{ fontSize: 11, color: t.dm }}> 中張</span></div>
+                        <div style={{ fontSize: 10, color: t.dm }}>チュウチャン</div>
+                      </div>
+                      <span style={fuVal()}>+4</span>
+                    </div>
+                    <div style={row}>
+                      <div>
+                        <div>暗刻（アンコ）<span style={{ fontSize: 11, color: t.dm }}> 么九</span></div>
+                        <div style={{ fontSize: 10, color: t.dm }}>ヤオチュウ</div>
+                      </div>
+                      <span style={fuVal()}>+8</span>
+                    </div>
+                    <div style={row}>
+                      <div>
+                        <div>明槓（ミンカン）<span style={{ fontSize: 11, color: t.dm }}> 中張</span></div>
+                        <div style={{ fontSize: 10, color: t.dm }}>チュウチャン</div>
+                      </div>
+                      <span style={fuVal()}>+8</span>
+                    </div>
+                    <div style={row}>
+                      <div>
+                        <div>明槓（ミンカン）<span style={{ fontSize: 11, color: t.dm }}> 么九</span></div>
+                        <div style={{ fontSize: 10, color: t.dm }}>ヤオチュウ</div>
+                      </div>
+                      <span style={fuVal()}>+16</span>
+                    </div>
+                    <div style={row}>
+                      <div>
+                        <div>暗槓（アンカン）<span style={{ fontSize: 11, color: t.dm }}> 中張</span></div>
+                        <div style={{ fontSize: 10, color: t.dm }}>チュウチャン</div>
+                      </div>
+                      <span style={fuVal()}>+16</span>
+                    </div>
+                    <div style={lastRow}>
+                      <div>
+                        <div>暗槓（アンカン）<span style={{ fontSize: 11, color: t.dm }}> 么九</span></div>
+                        <div style={{ fontSize: 10, color: t.dm }}>ヤオチュウ</div>
+                      </div>
+                      <span style={fuVal()}>+32</span>
+                    </div>
+                  </div>
+                  <div style={note}>※ 順子（シュンツ：123など3枚連番）は符なし（+0）</div>
+                </div>
+
+                {/* 待ち符 */}
+                <div style={sec}>
+                  <div style={head(t.gd)}>③ 待ち符</div>
+                  <div style={tableStyle}>
+                    <div style={row}><span>両面（リャンメン）</span><span style={fuVal(t.dm)}>+0</span></div>
+                    <div style={row}><span>シャンポン</span><span style={fuVal(t.dm)}>+0</span></div>
+                    <div style={row}><span>カンチャン（中の牌）</span><span style={fuVal()}>+2</span></div>
+                    <div style={row}><span>ペンチャン（端の牌）</span><span style={fuVal()}>+2</span></div>
+                    <div style={lastRow}><span>タンキ（雀頭1枚待ち）</span><span style={fuVal()}>+2</span></div>
+                  </div>
+                </div>
+
+                {/* 雀頭符 */}
+                <div style={sec}>
+                  <div style={head("#f97316")}>④ 雀頭（ジャントウ）符</div>
+                  <div style={tableStyle}>
+                    <div style={row}>
+                      <div>
+                        <div>数牌・オタ風</div>
+                        <div style={{ fontSize: 10, color: t.dm }}>スウパイ・オタカゼ</div>
+                      </div>
+                      <span style={fuVal(t.dm)}>+0</span>
+                    </div>
+                    <div style={lastRow}>
+                      <div>
+                        <div>役牌（ヤクハイ）</div>
+                        <div style={{ fontSize: 10, color: t.dm }}>白發中・場風・自風</div>
+                      </div>
+                      <span style={fuVal()}>+2</span>
+                    </div>
+                  </div>
+                  <div style={note}>※ 連風牌（レンプウハイ：ダブ東等）はルール設定で +4 にも</div>
+                </div>
+
+                {/* 特殊例外 */}
+                <div style={sec}>
+                  <div style={head(t.rd)}>⑤ 特殊な符（例外）</div>
+                  <div style={tableStyle}>
+                    <div style={row}><span>平和ツモ</span><span style={fuVal(t.rd)}>20符固定</span></div>
+                    <div style={lastRow}><span>七対子</span><span style={fuVal(t.rd)}>25符固定</span></div>
+                  </div>
+                  <div style={note}>これらは通常の符計算をせず固定値</div>
+                </div>
+
+                {/* 計算手順 */}
+                <div style={{ background: t.acS, borderRadius: 10, padding: 12, marginTop: 4, border: `1px solid ${t.ac}55`, fontSize: 12, lineHeight: 1.8, color: t.tx }}>
+                  <div style={{ fontWeight: 800, color: t.ac, marginBottom: 4 }}>🧮 計算手順</div>
+                  ① 基本符を決める<br/>
+                  ② 各面子の符を加算<br/>
+                  ③ 待ち符・雀頭符を加算<br/>
+                  ④ 合計を <strong>10符単位で切り上げ</strong>
+                </div>
+
+                <button
+                  style={{ width: "100%", padding: "12px", border: "none", borderRadius: 10, background: t.ac, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, marginTop: 14 }}
+                  onClick={() => setShowFuRef(false)}
+                >閉じる</button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 役の詳細モーダル（長押しで起動） */}
         {infoYakuIdx !== null && (() => {
