@@ -1975,6 +1975,12 @@ function MahjongScorer() {
                         const next = [...drawTenpai];
                         next[i] = !next[i];
                         setDrawTenpai(next);
+                        // テンパイから外したら、その人のリーチも自動解除
+                        if (!next[i] && drawRiichi[i]) {
+                          const nr = [...drawRiichi];
+                          nr[i] = false;
+                          setDrawRiichi(nr);
+                        }
                       }}
                     >
                       <div style={{ fontSize: 11, color: isTenpai ? t.gn : t.dm, marginBottom: 2 }}>{sw}{i === dealerIdx ? " (親)" : ""}</div>
@@ -1989,27 +1995,34 @@ function MahjongScorer() {
 
               {/* Riichi selection */}
               <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>リーチした人は？</div>
-              <div style={{ fontSize: 11, color: t.dm, marginBottom: 8 }}>なければそのまま「確定」</div>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 8 }}>テンパイの人のみ選択可（なければそのまま「確定」）</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 }}>
                 {players.map((p, i) => {
                   const isR = drawRiichi[i];
+                  const tenpaiRequired = !drawTenpai[i];
                   return (
                     <button
                       key={i}
+                      disabled={tenpaiRequired}
                       style={{
                         padding: "10px 8px",
                         border: `2px solid ${isR ? t.gd : t.bd}`,
                         borderRadius: 10,
                         background: isR ? t.gdS : "transparent",
-                        color: isR ? t.gd : t.tx,
-                        fontSize: 13, fontWeight: 700, cursor: "pointer",
+                        color: tenpaiRequired ? t.dm : isR ? t.gd : t.tx,
+                        fontSize: 13, fontWeight: 700,
+                        cursor: tenpaiRequired ? "not-allowed" : "pointer",
+                        opacity: tenpaiRequired ? 0.4 : 1,
                         textAlign: "center", transition: "all 0.12s",
                       }}
+                      title={tenpaiRequired ? "先にテンパイにしてください" : ""}
                       onClick={() => { const n = [...drawRiichi]; n[i] = !n[i]; setDrawRiichi(n); }}
                     >
                       <div style={{ fontSize: 11, color: isR ? t.gd : t.dm, marginBottom: 2 }}>{WINDS[(i - dealerIdx + 4) % 4]}{i === dealerIdx ? " (親)" : ""}</div>
                       <div>{p}</div>
-                      <div style={{ fontSize: 11, marginTop: 4 }}>{isR ? "🔴 リーチ" : "—"}</div>
+                      <div style={{ fontSize: 11, marginTop: 4, color: tenpaiRequired ? t.rd : "inherit" }}>
+                        {tenpaiRequired ? "✕ テンパイ要" : isR ? "🔴 リーチ" : "—"}
+                      </div>
                     </button>
                   );
                 })}
