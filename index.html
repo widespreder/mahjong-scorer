@@ -574,6 +574,79 @@ function MahjongScorer() {
     .map(n => YAKU_DATA.findIndex(y => y.name === n))
     .filter(i => i >= 0);
 
+  // 役の併用不可ペア（短縮名OK。漢字名 or カナ名どちらでも可）
+  const CONFLICT_PAIRS_RAW = [
+    // タンヤオ（中張のみ）と字牌・1,9系
+    ["タンヤオ", ["役牌 白", "役牌 發", "役牌 中", "場風牌", "自風牌", "混全帯么九", "純全帯么九", "混老頭", "字一色", "清老頭", "国士無双", "九蓮宝燈", "大三元", "小三元", "小四喜", "大四喜", "緑一色"]],
+    // 平和（順子のみ・雀頭役牌不可・両面待ち）と刻子主体・特殊形・役牌
+    ["ピンフ", ["対々和", "三暗刻", "四暗刻", "三色同刻", "三槓子", "四槓子", "嶺上開花", "七対子", "役牌 白", "役牌 發", "役牌 中", "場風牌", "自風牌", "大三元", "小三元", "字一色", "小四喜", "大四喜", "清老頭", "混老頭", "九蓮宝燈", "国士無双"]],
+    // 七対子（特殊形）と順子・刻子・全形系
+    ["チートイツ", ["対々和", "一盃口", "二盃口", "三色同順", "一気通貫", "三色同刻", "三槓子", "四槓子", "三暗刻", "四暗刻", "嶺上開花", "混全帯么九", "純全帯么九", "大三元", "小三元", "小四喜", "大四喜", "緑一色", "九蓮宝燈", "国士無双", "役牌 白", "役牌 發", "役牌 中", "場風牌", "自風牌"]],
+    // 対々和（全刻子）と順子主体
+    ["トイトイ", ["一盃口", "二盃口", "三色同順", "一気通貫"]],
+    ["イーペーコー", ["リャンペーコー"]],
+    ["サンショクドウジュン", ["サンショクドウコー"]],
+    // 純全帯么九（1,9のみ・字なし）
+    ["ジュンチャン", ["混全帯么九", "混老頭", "字一色", "役牌 白", "役牌 發", "役牌 中", "場風牌", "自風牌", "大三元", "小三元", "小四喜", "大四喜"]],
+    // 色系
+    ["ホンイツ", ["清一色", "字一色"]],
+    ["チンイツ", ["字一色", "役牌 白", "役牌 發", "役牌 中", "場風牌", "自風牌", "混全帯么九", "混老頭", "大三元", "小三元", "小四喜", "大四喜"]],
+    // 字一色（字牌のみ）
+    ["ツーイーソー", ["三色同順", "三色同刻", "緑一色", "清老頭", "九蓮宝燈", "混全帯么九"]],
+    // 役満内の上位下位
+    ["サンアンコー", ["スーアンコー"]],
+    ["サンカンツ", ["スーカンツ"]],
+    ["ダイサンゲン", ["小三元"]],
+    ["ダイスーシー", ["小四喜"]],
+    // ダブルリーチはリーチを内包
+    ["ダブルリーチ", ["リーチ"]],
+    // 海底/河底はツモ/ロン排他
+    ["ハイテイ", ["ホウテイ"]],
+    // 国士無双（特殊形・1,9字牌のみ）— 天地和以外と排他
+    ["コクシムソウ", ["リーチ", "イッパツ", "メンゼンツモ", "ピンフ", "タンヤオ", "イーペーコー", "リャンペーコー", "役牌 白", "役牌 發", "役牌 中", "場風牌", "自風牌", "リンシャンカイホウ", "チャンカン", "ハイテイ", "ホウテイ", "ダブルリーチ", "サンショクドウジュン", "イッキツウカン", "チャンタ", "ジュンチャン", "トイトイ", "サンアンコー", "サンショクドウコー", "サンカンツ", "ショウサンゲン", "ホンロウトウ", "チートイツ", "ホンイツ", "チンイツ", "スーアンコー", "ダイサンゲン", "ツーイーソー", "ショウスーシー", "ダイスーシー", "リューイーソー", "チンロウトウ", "チューレンポウトウ", "スーカンツ"]],
+    // 九蓮宝燈（清一色の特殊形・1112345678999＋1枚）
+    ["チューレンポウトウ", ["リーチ", "イッパツ", "タンヤオ", "イーペーコー", "リャンペーコー", "役牌 白", "役牌 發", "役牌 中", "場風牌", "自風牌", "リンシャンカイホウ", "チャンカン", "ダブルリーチ", "サンショクドウジュン", "イッキツウカン", "チャンタ", "ジュンチャン", "トイトイ", "サンアンコー", "サンショクドウコー", "サンカンツ", "ショウサンゲン", "ホンロウトウ", "チートイツ", "ホンイツ", "スーアンコー", "ダイサンゲン", "ツーイーソー", "ショウスーシー", "ダイスーシー", "リューイーソー", "チンロウトウ", "スーカンツ"]],
+    // 緑一色（索子234678+發）
+    ["リューイーソー", ["役牌 白", "役牌 中", "場風牌", "自風牌", "三色同順", "三色同刻", "清老頭"]],
+    // 清老頭（1,9数牌のみ）
+    ["チンロウトウ", ["役牌 白", "役牌 發", "役牌 中", "場風牌", "自風牌", "混一色", "混老頭", "三色同順", "一気通貫", "混全帯么九"]],
+    // 混老頭（1,9字牌のみ・順子なし）
+    ["ホンロウトウ", ["一盃口", "二盃口", "三色同順", "一気通貫"]],
+    // 天和・地和は親/子の最初のツモなので、ロン系・通常役と排他
+    ["テンホウ", ["リーチ", "イッパツ", "チャンカン", "ハイテイ", "ホウテイ", "ダブルリーチ"]],
+    ["チーホウ", ["リーチ", "イッパツ", "チャンカン", "ハイテイ", "ホウテイ", "ダブルリーチ"]],
+  ];
+
+  // 役名解決: 漢字名 / カナ名 / 部分一致 で正式名を取得
+  const resolveYakuFullName = (key) => {
+    for (const y of YAKU_DATA) {
+      if (y.name === key) return y.name;
+      const m = y.name.match(/^(.+?)（(.+?)）$/);
+      if (m && (m[1].trim() === key || m[2].trim() === key)) return y.name;
+    }
+    return YAKU_DATA.find(y => y.name.includes(key))?.name || null;
+  };
+
+  // 双方向の競合 Map を構築
+  const YAKU_CONFLICT_MAP = (() => {
+    const map = new Map();
+    const add = (a, b) => {
+      if (!a || !b || a === b) return;
+      if (!map.has(a)) map.set(a, new Set());
+      map.get(a).add(b);
+      if (!map.has(b)) map.set(b, new Set());
+      map.get(b).add(a);
+    };
+    CONFLICT_PAIRS_RAW.forEach(([base, others]) => {
+      const baseFull = resolveYakuFullName(base);
+      others.forEach(o => {
+        const oFull = resolveYakuFullName(o);
+        add(baseFull, oFull);
+      });
+    });
+    return map;
+  })();
+
   // ── Yaku Selector (shared) ──
   const renderYakuSelector = (onConfirm) => {
     const yakumanCount = selectedYakuIds.filter(idx => YAKU_DATA[idx].han >= 13).length;
@@ -596,17 +669,26 @@ function MahjongScorer() {
 
     const renderYakuBtn = (idx) => {
       const y = YAKU_DATA[idx];
-      const disabled = yakuNaki && y.naki === null;
+      const nakiDisabled = yakuNaki && y.naki === null;
       const sel = selectedYakuIds.includes(idx);
+      // 競合チェック: 既に選択されている役と排他なら disable
+      const conflictWith = !sel ? selectedYakuIds.find(id => YAKU_CONFLICT_MAP.get(YAKU_DATA[id].name)?.has(y.name)) : -1;
+      const conflictDisabled = conflictWith !== undefined && conflictWith !== -1;
+      const conflictName = conflictDisabled ? (YAKU_DATA[conflictWith].name.match(/^([^（]+)/)?.[1] || "") : "";
+      const disabled = nakiDisabled || conflictDisabled;
       const han = yakuNaki ? y.naki : y.han;
       const m = y.name.match(/^([^（]+)（([^）]+)）$/);
       const mainName = m ? m[1].trim() : y.name;
       const reading = m ? m[2] : null;
+      const reasonText = nakiDisabled ? "✕ 鳴き不可"
+        : conflictDisabled ? `✕ ${conflictName}と併用不可`
+        : y.han >= 13 ? "役満" : `${han}翻`;
       return (
         <button
           key={idx}
           disabled={disabled}
           onClick={() => setSelectedYakuIds(ids => sel ? ids.filter(x => x !== idx) : [...ids, idx])}
+          title={conflictDisabled ? `${conflictName}と同時には選択できません` : ""}
           style={{
             padding: "6px 8px",
             borderRadius: 8,
@@ -622,8 +704,8 @@ function MahjongScorer() {
         >
           <div style={{ fontWeight: 700, fontSize: 12, lineHeight: 1.2 }}>{mainName}</div>
           {reading && <div style={{ fontSize: 9, color: disabled ? t.dm : sel ? t.ac + "cc" : t.dm, marginTop: 1, lineHeight: 1.2 }}>{reading}</div>}
-          <div style={{ fontSize: 10, color: sel ? t.ac : t.dm, marginTop: 3 }}>
-            {disabled ? "✕ 鳴き不可" : y.han >= 13 ? "役満" : `${han}翻`}
+          <div style={{ fontSize: 10, color: sel ? t.ac : conflictDisabled ? t.rd : t.dm, marginTop: 3 }}>
+            {reasonText}
           </div>
         </button>
       );
