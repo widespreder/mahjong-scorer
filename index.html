@@ -647,6 +647,23 @@ function MahjongScorer() {
     return map;
   })();
 
+  // 役の前提条件: ある役を選ぶには、これらの役のうち1つ以上が選ばれている必要がある
+  // [対象役, [必要な役のいずれか]] の形式
+  const YAKU_REQUIRES_RAW = [
+    ["イッパツ", ["リーチ", "ダブルリーチ"]], // 一発はリーチ or ダブルリーチが前提
+  ];
+  const YAKU_REQUIRES_MAP = (() => {
+    const map = new Map();
+    YAKU_REQUIRES_RAW.forEach(([target, anyOf]) => {
+      const targetFull = resolveYakuFullName(target);
+      const reqFulls = anyOf.map(resolveYakuFullName).filter(Boolean);
+      if (targetFull && reqFulls.length > 0) {
+        map.set(targetFull, reqFulls);
+      }
+    });
+    return map;
+  })();
+
   // ── Yaku Selector (shared) ──
   const renderYakuSelector = (onConfirm) => {
     const yakumanCount = selectedYakuIds.filter(idx => YAKU_DATA[idx].han >= 13).length;
@@ -675,20 +692,50 @@ function MahjongScorer() {
       const conflictWith = !sel ? selectedYakuIds.find(id => YAKU_CONFLICT_MAP.get(YAKU_DATA[id].name)?.has(y.name)) : -1;
       const conflictDisabled = conflictWith !== undefined && conflictWith !== -1;
       const conflictName = conflictDisabled ? (YAKU_DATA[conflictWith].name.match(/^([^（]+)/)?.[1] || "") : "";
-      const disabled = nakiDisabled || conflictDisabled;
+      // 前提条件チェック: 必要な役のうち1つ以上が選ばれているか
+      const requires = YAKU_REQUIRES_MAP.get(y.name);
+      const reqMissingNames = requires && !sel
+        ? (requires.some(req => selectedYakuIds.some(id => YAKU_DATA[id].name === req)) ? null : requires)
+        : null;
+      const requireDisabled = reqMissingNames !== null;
+      const requireText = requireDisabled
+        ? reqMissingNames.map(n => n.match(/^([^（]+)/)?.[1] || n).join("/") + "が必要"
+        : "";
+      const disabled = nakiDisabled || conflictDisabled || requireDisabled;
       const han = yakuNaki ? y.naki : y.han;
       const m = y.name.match(/^([^（]+)（([^）]+)）$/);
       const mainName = m ? m[1].trim() : y.name;
       const reading = m ? m[2] : null;
       const reasonText = nakiDisabled ? "✕ 鳴き不可"
         : conflictDisabled ? `✕ ${conflictName}と併用不可`
+        : requireDisabled ? `✕ ${requireText}`
         : y.han >= 13 ? "役満" : `${han}翻`;
       return (
         <button
           key={idx}
           disabled={disabled}
-          onClick={() => setSelectedYakuIds(ids => sel ? ids.filter(x => x !== idx) : [...ids, idx])}
-          title={conflictDisabled ? `${conflictName}と同時には選択できません` : ""}
+          onClick={() => setSelectedYakuIds(ids => {
+            if (sel) {
+              // 解除時: この役を外す + 前提を失う依存役も連鎖解除
+              let newIds = ids.filter(x => x !== idx);
+              // 依存役を再帰的に外す
+              let changed = true;
+              while (changed) {
+                changed = false;
+                newIds = newIds.filter(otherId => {
+                  const req = YAKU_REQUIRES_MAP.get(YAKU_DATA[otherId].name);
+                  if (!req) return true;
+                  const reqMet = req.some(reqName => newIds.some(nid => YAKU_DATA[nid].name === reqName));
+                  if (!reqMet) { changed = true; return false; }
+                  return true;
+                });
+              }
+              return newIds;
+            } else {
+              return [...ids, idx];
+            }
+          })}
+          title={conflictDisabled ? `${conflictName}と同時には選択できません` : requireDisabled ? `先に ${requireText} を選んでください` : ""}
           style={{
             padding: "6px 8px",
             borderRadius: 8,
@@ -704,7 +751,7 @@ function MahjongScorer() {
         >
           <div style={{ fontWeight: 700, fontSize: 12, lineHeight: 1.2 }}>{mainName}</div>
           {reading && <div style={{ fontSize: 9, color: disabled ? t.dm : sel ? t.ac + "cc" : t.dm, marginTop: 1, lineHeight: 1.2 }}>{reading}</div>}
-          <div style={{ fontSize: 10, color: sel ? t.ac : conflictDisabled ? t.rd : t.dm, marginTop: 3 }}>
+          <div style={{ fontSize: 10, color: sel ? t.ac : (conflictDisabled || requireDisabled) ? t.rd : t.dm, marginTop: 3 }}>
             {reasonText}
           </div>
         </button>
