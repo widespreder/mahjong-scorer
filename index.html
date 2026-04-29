@@ -1215,14 +1215,65 @@ function MahjongScorer() {
             </div>
             <div style={card}>
               <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>📐 計算内訳</div>
-              <div style={{ fontSize: 13, lineHeight: 2, color: t.tx }}>
-                基本 {fuQuizScenario.isTsumo ? "20" : "30"}{fuQuizScenario.isTsumo ? " + ツモ符 2" : ""}
-                {fr.mentsuFu > 0 && ` + 面子 ${fr.mentsuFu}`}
-                {fr.machiFu > 0 && ` + 待ち ${fr.machiFu}`}
-                {fr.jantouFu > 0 && ` + 雀頭 ${fr.jantouFu}`}
-                <br/>
-                = <strong>{fr.raw}符</strong> → 切り上げ → <strong style={{ color: t.ac, fontSize: 16 }}>{fr.rounded}符</strong>
-              </div>
+              {(() => {
+                const rows = [];
+                rows.push({
+                  label: "基本符",
+                  detail: fuQuizScenario.isTsumo ? "ツモ" : "ロン（門前）",
+                  fu: fuQuizScenario.isTsumo ? 20 : 30,
+                });
+                if (fuQuizScenario.isTsumo) {
+                  rows.push({ label: "ツモ符", detail: "—", fu: 2 });
+                }
+                fuQuizScenario.guide.mentsu.forEach((mid, i) => {
+                  const opt = MENTSU_OPTIONS.find(o => o.id === mid);
+                  rows.push({ label: `面子${i + 1}`, detail: opt?.label || "", fu: opt?.fu || 0 });
+                });
+                rows.push({
+                  label: "待ち",
+                  detail: machiOpt?.label || "",
+                  fu: machiOpt?.fu || 0,
+                });
+                rows.push({
+                  label: "雀頭",
+                  detail: jantouOpt?.label || "",
+                  fu: jantouOpt?.fu || 0,
+                });
+
+                const cellBase = { padding: "8px 10px", borderBottom: `1px solid ${t.bd}33` };
+                const headerCell = { ...cellBase, fontSize: 11, color: t.dm, fontWeight: 700, background: t.sf };
+
+                return (
+                  <div style={{ background: t.sf, borderRadius: 10, overflow: "hidden", border: `1px solid ${t.bd}` }}>
+                    {/* Header */}
+                    <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.4fr 0.8fr", background: t.bg }}>
+                      <div style={headerCell}>項目</div>
+                      <div style={headerCell}>内容</div>
+                      <div style={{ ...headerCell, textAlign: "right" }}>符</div>
+                    </div>
+                    {/* Body rows */}
+                    {rows.map((r, i) => (
+                      <div key={i} style={{ display: "grid", gridTemplateColumns: "0.9fr 1.4fr 0.8fr", fontSize: 13 }}>
+                        <div style={{ ...cellBase, color: t.dm, fontWeight: 600 }}>{r.label}</div>
+                        <div style={{ ...cellBase, color: t.tx }}>{r.detail}</div>
+                        <div style={{ ...cellBase, textAlign: "right", fontFamily: "monospace", fontWeight: 700, color: r.fu > 0 ? t.ac : t.dm }}>
+                          {r.fu > 0 ? `+${r.fu}` : r.fu === 0 ? "+0" : r.fu}
+                        </div>
+                      </div>
+                    ))}
+                    {/* Subtotal */}
+                    <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.4fr 0.8fr", background: t.acS, borderTop: `2px solid ${t.ac}55` }}>
+                      <div style={{ padding: "10px", fontSize: 12, fontWeight: 800, color: t.ac, gridColumn: "span 2" }}>合計（切り上げ前）</div>
+                      <div style={{ padding: "10px", textAlign: "right", fontFamily: "monospace", fontSize: 15, fontWeight: 900, color: t.ac }}>{fr.raw}符</div>
+                    </div>
+                    {/* Rounded final */}
+                    <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.4fr 0.8fr", background: `linear-gradient(135deg, ${t.gnS}, ${t.acS})`, borderTop: `2px solid ${t.gn}66` }}>
+                      <div style={{ padding: "12px 10px", fontSize: 12, fontWeight: 800, color: t.gn, gridColumn: "span 2" }}>10符単位で切り上げ ↑</div>
+                      <div style={{ padding: "12px 10px", textAlign: "right", fontFamily: "monospace", fontSize: 18, fontWeight: 900, color: t.gn }}>{fr.rounded}符</div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <button style={actionBtn("p")} onClick={() => {
               setFuQuizScenario(generateFuQuizScenario());
