@@ -760,74 +760,77 @@ function MahjongScorer() {
 
     return (
       <>
-        {/* スティッキー合計バー */}
+        {/* スティッキー上部ブロック（合計バー＋ドラ＋門前/鳴き） */}
         <div style={{
           position: "sticky", top: 0, zIndex: 10,
           background: t.card,
           margin: "-20px -20px 14px",
-          padding: "10px 12px",
+          padding: "10px 12px 12px",
           borderBottom: `1px solid ${t.bd}`,
           boxShadow: `0 2px 8px rgba(0,0,0,0.3)`,
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
         }}>
-          <button
-            style={{ background: "none", border: "none", color: t.dm, fontSize: 18, cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}
-            onClick={() => setShowYakuSelector(false)}
-            title="戻る"
-          >←</button>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6, flex: 1, minWidth: 0, justifyContent: "center" }}>
-            <span style={{ fontSize: 11, color: t.dm }}>合計</span>
-            <span style={{ fontSize: 24, fontWeight: 900, color: hasYakuman ? t.gd : t.ac, lineHeight: 1 }}>
-              {hasYakuman ? (yakumanCount > 1 ? `${yakumanCount}倍役満` : "役満") : `${total}翻`}
-            </span>
-            <span style={{ fontSize: 10, color: t.dm, whiteSpace: "nowrap" }}>
-              {selectedYakuIds.length}役{yakuDora > 0 ? `+ドラ${yakuDora}` : ""}
-            </span>
-          </div>
-          <button
-            style={{
-              padding: "8px 14px", borderRadius: 8, border: "none",
-              background: canConfirm ? t.ac : t.bd, color: "#fff",
-              fontSize: 13, fontWeight: 800,
-              cursor: canConfirm ? "pointer" : "not-allowed",
-              opacity: canConfirm ? 1 : 0.5,
-              whiteSpace: "nowrap",
-            }}
-            disabled={!canConfirm}
-            onClick={() => onConfirm(total)}
-            title={!canConfirm ? "役を1つ以上選んでください（ドラだけではアガれません）" : ""}
-          >確定</button>
-        </div>
-
-        {/* ドラ */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 10, border: `1px solid ${t.gd}55`, background: t.gdS, marginBottom: 12 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: t.gd }}>ドラ</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* 合計バー */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
             <button
-              style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 18, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
-              onClick={() => setYakuDora(d => Math.max(0, d - 1))}
-            >−</button>
-            <span style={{ minWidth: 28, textAlign: "center", fontSize: 18, fontWeight: 900, color: t.gd }}>{yakuDora}</span>
+              style={{ background: "none", border: "none", color: t.dm, fontSize: 18, cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}
+              onClick={() => setShowYakuSelector(false)}
+              title="戻る"
+            >←</button>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, flex: 1, minWidth: 0, justifyContent: "center" }}>
+              <span style={{ fontSize: 11, color: t.dm }}>合計</span>
+              <span style={{ fontSize: 24, fontWeight: 900, color: hasYakuman ? t.gd : t.ac, lineHeight: 1 }}>
+                {hasYakuman ? (yakumanCount > 1 ? `${yakumanCount}倍役満` : "役満") : `${total}翻`}
+              </span>
+              <span style={{ fontSize: 10, color: t.dm, whiteSpace: "nowrap" }}>
+                {selectedYakuIds.length}役{yakuDora > 0 ? `+ドラ${yakuDora}` : ""}
+              </span>
+            </div>
             <button
-              style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 18, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
-              onClick={() => setYakuDora(d => d + 1)}
-            >＋</button>
+              style={{
+                padding: "8px 14px", borderRadius: 8, border: "none",
+                background: canConfirm ? t.ac : t.bd, color: "#fff",
+                fontSize: 13, fontWeight: 800,
+                cursor: canConfirm ? "pointer" : "not-allowed",
+                opacity: canConfirm ? 1 : 0.5,
+                whiteSpace: "nowrap",
+              }}
+              disabled={!canConfirm}
+              onClick={() => onConfirm(total)}
+              title={!canConfirm ? "役を1つ以上選んでください（ドラだけではアガれません）" : ""}
+            >確定</button>
           </div>
-        </div>
 
-        {/* 門前 / 鳴き */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-          <button
-            style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${!yakuNaki ? t.ac : t.bd}`, background: !yakuNaki ? t.acS : "transparent", color: !yakuNaki ? t.ac : t.tx, fontWeight: 700, cursor: "pointer", fontSize: 13 }}
-            onClick={() => setYakuNaki(false)}
-          >🚫 門前</button>
-          <button
-            style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${yakuNaki ? t.gn : t.bd}`, background: yakuNaki ? t.gnS : "transparent", color: yakuNaki ? t.gn : t.tx, fontWeight: 700, cursor: "pointer", fontSize: 13 }}
-            onClick={() => {
-              setSelectedYakuIds(ids => ids.filter(idx => YAKU_DATA[idx].naki !== null));
-              setYakuNaki(true);
-            }}
-          >🔔 鳴きあり</button>
+          {/* ドラ + 門前/鳴き を横並び（コンパクト） */}
+          <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+            {/* ドラ */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, border: `1px solid ${t.gd}55`, background: t.gdS, gap: 6, flex: "0 0 auto" }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: t.gd }}>ドラ</span>
+              <button
+                style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 14, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+                onClick={() => setYakuDora(d => Math.max(0, d - 1))}
+              >−</button>
+              <span style={{ minWidth: 18, textAlign: "center", fontSize: 16, fontWeight: 900, color: t.gd }}>{yakuDora}</span>
+              <button
+                style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 14, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+                onClick={() => setYakuDora(d => d + 1)}
+              >＋</button>
+            </div>
+
+            {/* 門前 / 鳴き */}
+            <div style={{ display: "flex", gap: 4, flex: 1 }}>
+              <button
+                style={{ flex: 1, padding: "6px 4px", borderRadius: 8, border: `2px solid ${!yakuNaki ? t.ac : t.bd}`, background: !yakuNaki ? t.acS : "transparent", color: !yakuNaki ? t.ac : t.tx, fontWeight: 700, cursor: "pointer", fontSize: 12 }}
+                onClick={() => setYakuNaki(false)}
+              >🚫 門前</button>
+              <button
+                style={{ flex: 1, padding: "6px 4px", borderRadius: 8, border: `2px solid ${yakuNaki ? t.gn : t.bd}`, background: yakuNaki ? t.gnS : "transparent", color: yakuNaki ? t.gn : t.tx, fontWeight: 700, cursor: "pointer", fontSize: 12 }}
+                onClick={() => {
+                  setSelectedYakuIds(ids => ids.filter(idx => YAKU_DATA[idx].naki !== null));
+                  setYakuNaki(true);
+                }}
+              >🔔 鳴きあり</button>
+            </div>
+          </div>
         </div>
 
         {/* カテゴリ別ヘッダー描画ヘルパー */}
