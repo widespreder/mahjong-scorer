@@ -955,6 +955,25 @@ function MahjongScorer() {
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
 
+  // ── 符計算クイズ state ──
+  const [fuQuizScenario, setFuQuizScenario] = useState(null);
+  const [fuQuizAnswer, setFuQuizAnswer] = useState(null);
+  const [fuQuizRevealed, setFuQuizRevealed] = useState(false);
+  const [fuQuizScore, setFuQuizScore] = useState({ correct: 0, total: 0 });
+
+  const generateFuQuizScenario = () => {
+    const isTsumo = Math.random() < 0.5;
+    const mentsuCount = Math.floor(Math.random() * 4); // 0〜3 個
+    const mentsu = [];
+    for (let i = 0; i < mentsuCount; i++) {
+      const opt = MENTSU_OPTIONS[Math.floor(Math.random() * MENTSU_OPTIONS.length)];
+      mentsu.push(opt.id);
+    }
+    const machi = MACHI_OPTIONS[Math.floor(Math.random() * MACHI_OPTIONS.length)].id;
+    const jantou = JANTOU_OPTIONS[Math.floor(Math.random() * JANTOU_OPTIONS.length)].id;
+    return { isTsumo, guide: { mentsu, machi, jantou } };
+  };
+
   const startQuiz = (mode) => {
     const pool = mode === "naki" ? YAKU_DATA.filter(y => y.naki !== null) : YAKU_DATA;
     const order = pool.map((_, i) => i).sort(() => Math.random() - 0.5);
@@ -1088,6 +1107,141 @@ function MahjongScorer() {
   };
 
   // ══════════════════════════════════
+  // ── FU QUIZ VIEW ──
+  // ══════════════════════════════════
+  const renderFuQuiz = () => {
+    if (!fuQuizScenario) {
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>🧮</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>符計算練習</h2>
+            <p style={{ fontSize: 13, color: t.dm }}>ランダムに出される手牌の符を当てよう</p>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 13, color: t.dm, lineHeight: 1.8, marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, color: t.tx, marginBottom: 6 }}>ルール</div>
+              ・あがり方（ツモ/ロン）、面子、待ち、雀頭がランダム提示<br/>
+              ・基本符（ツモ20+ツモ符2 / ロン30）+ 面子・待ち・雀頭符 → 10符単位で切り上げ<br/>
+              ・正解を当てて自分の符計算を訓練しよう
+            </div>
+            <button style={actionBtn("p")} onClick={() => {
+              setFuQuizScenario(generateFuQuizScenario());
+              setFuQuizAnswer(null);
+              setFuQuizRevealed(false);
+              setFuQuizScore({ correct: 0, total: 0 });
+            }}>練習を始める</button>
+            <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+          </div>
+        </div>
+      );
+    }
+
+    const fr = calcFuFromGuide(fuQuizScenario.guide, fuQuizScenario.isTsumo);
+    const correctFu = fr.rounded;
+    const scenarioMentsuLabels = fuQuizScenario.guide.mentsu.length === 0
+      ? "なし（順子のみ）"
+      : fuQuizScenario.guide.mentsu.map(m => MENTSU_OPTIONS.find(o => o.id === m)?.label).join(" / ");
+    const machiOpt = MACHI_OPTIONS.find(o => o.id === fuQuizScenario.guide.machi);
+    const jantouOpt = JANTOU_OPTIONS.find(o => o.id === fuQuizScenario.guide.jantou);
+
+    return (
+      <div style={body}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <span style={{ fontSize: 13, color: t.dm }}>第 {fuQuizScore.total + (fuQuizRevealed ? 0 : 1)} 問</span>
+          <span style={{ fontSize: 13, color: t.gn, fontWeight: 700 }}>{fuQuizScore.correct} / {fuQuizScore.total} 正解</span>
+        </div>
+
+        <div style={card}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: "center" }}>
+            この手牌は何符？
+          </div>
+          <div style={{ background: t.sf, borderRadius: 10, padding: 14, fontSize: 14, lineHeight: 2 }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: t.dm, fontSize: 12 }}>あがり方</span>
+              <span style={{ fontWeight: 700, color: fuQuizScenario.isTsumo ? t.gn : t.rd }}>
+                {fuQuizScenario.isTsumo ? "ツモ" : "ロン（門前）"}
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", borderTop: `1px solid ${t.bd}33`, paddingTop: 6 }}>
+              <span style={{ color: t.dm, fontSize: 12 }}>面子（刻子・槓子）</span>
+              <span style={{ fontWeight: 600, fontSize: 13, textAlign: "right" }}>{scenarioMentsuLabels}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", borderTop: `1px solid ${t.bd}33`, paddingTop: 6 }}>
+              <span style={{ color: t.dm, fontSize: 12 }}>待ち</span>
+              <span style={{ fontWeight: 600, fontSize: 13 }}>{machiOpt?.label}{machiOpt?.fu > 0 ? ` (+${machiOpt.fu})` : ""}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", borderTop: `1px solid ${t.bd}33`, paddingTop: 6 }}>
+              <span style={{ color: t.dm, fontSize: 12 }}>雀頭</span>
+              <span style={{ fontWeight: 600, fontSize: 13 }}>{jantouOpt?.label}{jantouOpt?.fu > 0 ? ` (+${jantouOpt.fu})` : ""}</span>
+            </div>
+          </div>
+        </div>
+
+        {!fuQuizRevealed ? (
+          <div style={card}>
+            <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>符を選択</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {FU_OPTIONS.map(f => (
+                <button key={f} style={numBtn(false)} onClick={() => {
+                  setFuQuizAnswer(f);
+                  setFuQuizRevealed(true);
+                  setFuQuizScore(s => ({
+                    correct: s.correct + (f === correctFu ? 1 : 0),
+                    total: s.total + 1
+                  }));
+                }}>{f}符</button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{
+              background: fuQuizAnswer === correctFu ? t.gnS : t.rdS,
+              border: `2px solid ${fuQuizAnswer === correctFu ? t.gn : t.rd}`,
+              borderRadius: 12, padding: 16, marginBottom: 12, textAlign: "center"
+            }}>
+              <div style={{ fontSize: 26, fontWeight: 900, color: fuQuizAnswer === correctFu ? t.gn : t.rd }}>
+                {fuQuizAnswer === correctFu ? "⭕ 正解！" : "❌ 不正解"}
+              </div>
+              {fuQuizAnswer !== correctFu && (
+                <div style={{ fontSize: 15, marginTop: 6, fontWeight: 700, color: t.tx }}>
+                  あなた: {fuQuizAnswer}符 / 正解: {correctFu}符
+                </div>
+              )}
+              {fuQuizAnswer === correctFu && (
+                <div style={{ fontSize: 14, marginTop: 4, color: t.tx }}>{correctFu}符</div>
+              )}
+            </div>
+            <div style={card}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>📐 計算内訳</div>
+              <div style={{ fontSize: 13, lineHeight: 2, color: t.tx }}>
+                基本 {fuQuizScenario.isTsumo ? "20" : "30"}{fuQuizScenario.isTsumo ? " + ツモ符 2" : ""}
+                {fr.mentsuFu > 0 && ` + 面子 ${fr.mentsuFu}`}
+                {fr.machiFu > 0 && ` + 待ち ${fr.machiFu}`}
+                {fr.jantouFu > 0 && ` + 雀頭 ${fr.jantouFu}`}
+                <br/>
+                = <strong>{fr.raw}符</strong> → 切り上げ → <strong style={{ color: t.ac, fontSize: 16 }}>{fr.rounded}符</strong>
+              </div>
+            </div>
+            <button style={actionBtn("p")} onClick={() => {
+              setFuQuizScenario(generateFuQuizScenario());
+              setFuQuizAnswer(null);
+              setFuQuizRevealed(false);
+            }}>次の問題</button>
+            <button style={actionBtn()} onClick={() => {
+              setFuQuizScenario(null);
+              setFuQuizAnswer(null);
+              setFuQuizRevealed(false);
+            }}>最初に戻る</button>
+            <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
   // ── DICTIONARY VIEW ──
   // ══════════════════════════════════
   const renderDict = () => (
@@ -1198,6 +1352,14 @@ function MahjongScorer() {
         {menuItem("🎯", "翻数テスト", "役の翻数クイズで腕試し", () => {
           setView("quiz");
           setQuizMode(null);
+        })}
+
+        {menuItem("🧮", "符計算練習", "ランダム手牌の符を当てるクイズ", () => {
+          setView("fuQuiz");
+          setFuQuizScenario(null);
+          setFuQuizAnswer(null);
+          setFuQuizRevealed(false);
+          setFuQuizScore({ correct: 0, total: 0 });
         })}
 
         {menuItem("📖", "役一覧", "全ての役の解説と翻数", () => {
@@ -2466,6 +2628,7 @@ function MahjongScorer() {
         {view === "game" && renderGame()}
         {view === "history" && renderHistory()}
         {view === "quiz" && renderQuiz()}
+        {view === "fuQuiz" && renderFuQuiz()}
         {view === "dict" && renderDict()}
         {showFuHelp && <FuHelpModal />}
 
