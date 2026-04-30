@@ -268,11 +268,7 @@ function MahjongScorer() {
   const [cParent, setCParent] = useState(null);
   const [cHan, setCHan] = useState(null);
   const [cFu, setCFu] = useState(null);
-  const resetCalc = useCallback(() => { setCalcStep(0); setCTsumo(null); setCParent(null); setCHan(null); setCFu(null); setSelectedYakuIds([]); setYakuNaki(false); setYakuDora(0); setShowYakuSelector(false); }, []);
-  const calcResult = useMemo(() => {
-    if (cHan === null || cFu === null || cParent === null || cTsumo === null) return null;
-    return calcScore(cFu, cHan, cParent, cTsumo);
-  }, [cHan, cFu, cParent, cTsumo]);
+  const resetCalc = useCallback(() => { setCalcStep(0); setCTsumo(null); setCParent(null); setCHan(null); setCFu(null); setSelectedYakuIds([]); setYakuNaki(false); setYakuDora(0); setShowYakuSelector(false); setFuGuide(null); }, []);
   const calcLimit = useMemo(() => cHan !== null ? getLimitName(cHan) : null, [cHan]);
 
   // ── Game round wizard ──
@@ -715,6 +711,36 @@ function MahjongScorer() {
   ];
   const YAKU_CATEGORIES = ["1翻", "2翻", "3翻", "6翻", "役満"];
   const HAN_CHOICES = ["0", "1", "2", "3", "5", "6", "役満"];
+
+  // 得点シミュレーション: ツモ・ロン両方の点数を計算（YAKU_DATA を参照するためここに配置）
+  const calcSimResults = useMemo(() => {
+    if (cHan === null || cParent === null) return null;
+    const sel = Array.isArray(selectedYakuIds) ? selectedYakuIds : [];
+    const hasPinfu = sel.some(idx => YAKU_DATA[idx]?.name?.startsWith("平和"));
+    const hasChiitoi = sel.some(idx => YAKU_DATA[idx]?.name?.startsWith("七対子"));
+    let tsumoFu, ronFu;
+    if (cHan >= 5) {
+      tsumoFu = ronFu = 30;
+    } else if (hasChiitoi) {
+      tsumoFu = ronFu = 25;
+    } else if (hasPinfu) {
+      tsumoFu = 20;
+      ronFu = 30;
+    } else if (fuGuide) {
+      tsumoFu = calcFuFromGuide(fuGuide, true, yakuNaki).rounded;
+      ronFu = calcFuFromGuide(fuGuide, false, yakuNaki).rounded;
+    } else if (cFu !== null) {
+      tsumoFu = ronFu = cFu;
+    } else {
+      return null;
+    }
+    return {
+      tsumo: calcScore(tsumoFu, cHan, cParent, true),
+      ron: calcScore(ronFu, cHan, cParent, false),
+      tsumoFu, ronFu,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cHan, cParent, cFu, fuGuide, yakuNaki, selectedYakuIds]);
 
   // よく出る役（上位に固定表示）
   const COMMON_YAKU_NAMES = [
@@ -1623,7 +1649,7 @@ function MahjongScorer() {
           setView("history");
         })}
 
-        {menuItem("🔢", "1局計算", "翻・符から点数をすぐ計算", () => {
+        {menuItem("🔢", "得点シミュレーション", "ツモ・ロン両方の点数を比較", () => {
           setView("calc");
           resetCalc();
         })}
@@ -1660,42 +1686,32 @@ function MahjongScorer() {
   // ══════════════════════════════════
   const renderCalc = () => (
     <div style={body}>
+      {/* Step 0: 親 / 子 */}
       {calcStep === 0 && (
         <div style={card}>
-          <Dots total={4} cur={0} />
-          <div style={question}>あがり方は？</div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <button style={bigBtn(t.gn, t.gnS)} onClick={() => { setCTsumo(true); setCalcStep(1); }}>ツモ</button>
-            <button style={bigBtn(t.rd, t.rdS)} onClick={() => { setCTsumo(false); setCalcStep(1); }}>ロン</button>
-          </div>
-        </div>
-      )}
-      {calcStep === 1 && (
-        <div style={card}>
-          <Back onClick={() => setCalcStep(0)} />
-          <Dots total={4} cur={1} />
+          <Dots total={3} cur={0} />
+          <div style={{ fontSize: 13, color: t.dm, textAlign: "center", marginBottom: 4 }}>得点シミュレーション</div>
           <div style={question}>あがった人は？</div>
+          <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 12 }}>ツモ／ロン両方の点数を比較表示します</div>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <button style={bigBtn(t.gd, t.gdS)} onClick={() => { setCParent(true); setCalcStep(2); }}>親</button>
-            <button style={bigBtn(t.ac, t.acS)} onClick={() => { setCParent(false); setCalcStep(2); }}>子</button>
+            <button style={bigBtn(t.gd, t.gdS)} onClick={() => { setCParent(true); setCalcStep(1); }}>親</button>
+            <button style={bigBtn(t.ac, t.acS)} onClick={() => { setCParent(false); setCalcStep(1); }}>子</button>
           </div>
         </div>
       )}
-      {calcStep === 2 && (
+      {/* Step 1: 翻数 */}
+      {calcStep === 1 && (
         <div style={{ ...card, overflow: showYakuSelector ? "visible" : "hidden" }}>
-          {!showYakuSelector && <Back onClick={() => setCalcStep(1)} />}
-          {!showYakuSelector && <Dots total={4} cur={2} />}
+          {!showYakuSelector && <Back onClick={() => setCalcStep(0)} />}
+          {!showYakuSelector && <Dots total={3} cur={1} />}
           {showYakuSelector ? renderYakuSelector((han) => {
             setCHan(han);
             setShowYakuSelector(false);
-            // 特殊役の符自動セット
             const hasPinfu = selectedYakuIds.some(idx => YAKU_DATA[idx].name.startsWith("平和"));
             const hasChiitoi = selectedYakuIds.some(idx => YAKU_DATA[idx].name.startsWith("七対子"));
-            if (han >= 5) { setCFu(30); setCalcStep(4); }
-            else if (hasPinfu && cTsumo) { setCFu(20); setCalcStep(4); }
-            else if (hasChiitoi) { setCFu(25); setCalcStep(4); }
-            else if (hasPinfu && !cTsumo) { setCFu(30); setCalcStep(4); } // 平和ロン=30固定
-            else setCalcStep(3);
+            // 満貫以上 / 七対子 / 平和 → 符を自動扱いで結果へ直接
+            if (han >= 5 || hasChiitoi || hasPinfu) { setCalcStep(3); }
+            else { setCalcStep(2); }
           }) : (
             <>
               <div style={question}>翻数は？</div>
@@ -1703,17 +1719,18 @@ function MahjongScorer() {
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
                 {[1,2,3,4,5,6,7,8,9,10,11,13].map(h => (
-                  <button key={h} style={numBtn(cHan===h)} onClick={() => { setCHan(h); if(h>=5){setCFu(30);setCalcStep(4);} else setCalcStep(3); }}>{h>=13?"役満":`${h}翻`}</button>
+                  <button key={h} style={numBtn(cHan===h)} onClick={() => { setCHan(h); if(h>=5){setCalcStep(3);} else setCalcStep(2); }}>{h>=13?"役満":`${h}翻`}</button>
                 ))}
               </div>
             </>
           )}
         </div>
       )}
-      {calcStep === 3 && (
+      {/* Step 2: 符 */}
+      {calcStep === 2 && (
         <div style={card}>
-          <Back onClick={() => { setCalcStep(2); setCHan(null); resetFuGuide(); setSelectedYakuIds([]); setYakuDora(0); }} />
-          <Dots total={4} cur={3} />
+          <Back onClick={() => { setCalcStep(1); setCHan(null); resetFuGuide(); setSelectedYakuIds([]); setYakuDora(0); }} />
+          <Dots total={3} cur={2} />
 
           {!fuGuide ? (
             <>
@@ -1724,7 +1741,7 @@ function MahjongScorer() {
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
                 {FU_OPTIONS.map(f => (
-                  <button key={f} style={numBtn(cFu===f)} onClick={() => { setCFu(f); setCalcStep(4); }}>{f}符</button>
+                  <button key={f} style={numBtn(cFu===f)} onClick={() => { setCFu(f); setCalcStep(3); }}>{f}符</button>
                 ))}
               </div>
             </>
@@ -1773,34 +1790,85 @@ function MahjongScorer() {
                 </div>
               </div>
               {(() => {
-                const fr = calcFuFromGuide(fuGuide, cTsumo, yakuNaki);
+                const frT = calcFuFromGuide(fuGuide, true, yakuNaki);
+                const frR = calcFuFromGuide(fuGuide, false, yakuNaki);
                 return (
-                  <div style={{ background: t.sf, borderRadius: 10, padding: 12, textAlign: "center", marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: t.dm }}>計算結果</div>
-                    <div style={{ fontSize: 28, fontWeight: 900, color: t.ac }}>{fr.rounded}符</div>
-                    <div style={{ fontSize: 11, color: t.dm, marginTop: 4 }}>
-                      {fr.isPinfuTsumo ? "平和ツモ → 20符固定" : (
-                        <>
-                          基本{cTsumo ? "22 (20+ツモ2)" : (yakuNaki ? "20 (鳴き)" : "30 (門前)")}
-                          {fr.mentsuFu > 0 && ` +面子${fr.mentsuFu}`}
-                          {fr.machiFu > 0 && ` +待ち${fr.machiFu}`}
-                          {fr.jantouFu > 0 && ` +雀頭${fr.jantouFu}`}
-                          {` = ${fr.raw}符 → ${fr.rounded}符`}
-                        </>
-                      )}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                    <div style={{ background: t.gnS, border: `1px solid ${t.gn}55`, borderRadius: 10, padding: 12, textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: t.gn, fontWeight: 700 }}>ツモの場合</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: t.gn }}>{frT.rounded}符</div>
+                      <div style={{ fontSize: 9, color: t.dm, marginTop: 2 }}>{frT.raw}符 → {frT.rounded}符</div>
+                    </div>
+                    <div style={{ background: t.rdS, border: `1px solid ${t.rd}55`, borderRadius: 10, padding: 12, textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: t.rd, fontWeight: 700 }}>ロンの場合</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: t.rd }}>{frR.rounded}符</div>
+                      <div style={{ fontSize: 9, color: t.dm, marginTop: 2 }}>{frR.raw}符 → {frR.rounded}符</div>
                     </div>
                   </div>
                 );
               })()}
-              <button style={actionBtn("p")} onClick={() => { setCFu(calcFuFromGuide(fuGuide, cTsumo, yakuNaki).rounded); setCalcStep(4); }}>この符数で確定</button>
+              <button style={actionBtn("p")} onClick={() => { setCalcStep(3); }}>この符数で確定</button>
             </>
           )}
         </div>
       )}
-      {calcStep === 4 && calcResult && (
+      {calcStep === 3 && calcSimResults && (
         <>
-          <ScoreDisplay han={cHan} fu={cFu} limit={calcLimit} result={calcResult} tsumo={cTsumo} parent={cParent} />
-          <button style={actionBtn("p")} onClick={resetCalc}>もう一度計算する</button>
+          <div style={{ ...card, padding: 16 }}>
+            <div style={{ textAlign: "center", marginBottom: 14 }}>
+              {calcLimit && (
+                <div style={{ display: "inline-block", padding: "4px 16px", borderRadius: 18, fontSize: 13, fontWeight: 800, background: cHan >= 13 ? t.gdS : t.acS, color: cHan >= 13 ? t.gd : t.ac, marginBottom: 8 }}>{calcLimit}</div>
+              )}
+              <div style={{ fontSize: 13, color: t.dm }}>
+                {cHan >= 13 ? "役満" : cHan >= 5 ? `${cHan}翻` : `${cHan}翻`} / {cParent ? "親" : "子"}
+              </div>
+            </div>
+
+            {/* ツモ */}
+            <div style={{ background: `linear-gradient(135deg, ${t.gnS}, ${t.sf})`, border: `2px solid ${t.gn}55`, borderRadius: 14, padding: 16, marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                <div>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: t.gn }}>🎯 ツモ</span>
+                  {cHan < 5 && <span style={{ fontSize: 11, color: t.dm, marginLeft: 8 }}>{calcSimResults.tsumoFu}符</span>}
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: t.gn, fontVariantNumeric: "tabular-nums" }}>
+                  {calcSimResults.tsumo.total.toLocaleString()}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: t.tx, textAlign: "right" }}>
+                {cParent
+                  ? `各子から ${calcSimResults.tsumo.each.toLocaleString()} 点オール`
+                  : `子${calcSimResults.tsumo.fromChild.toLocaleString()} / 親${calcSimResults.tsumo.fromParent.toLocaleString()}`}
+              </div>
+            </div>
+
+            {/* ロン */}
+            <div style={{ background: `linear-gradient(135deg, ${t.rdS}, ${t.sf})`, border: `2px solid ${t.rd}55`, borderRadius: 14, padding: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                <div>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: t.rd }}>💥 ロン</span>
+                  {cHan < 5 && <span style={{ fontSize: 11, color: t.dm, marginLeft: 8 }}>{calcSimResults.ronFu}符</span>}
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: t.rd, fontVariantNumeric: "tabular-nums" }}>
+                  {calcSimResults.ron.total.toLocaleString()}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: t.tx, textAlign: "right" }}>
+                放銃者から {calcSimResults.ron.total.toLocaleString()} 点
+              </div>
+            </div>
+
+            {/* 差分 */}
+            <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 10 }}>
+              {(() => {
+                const diff = Math.abs(calcSimResults.tsumo.total - calcSimResults.ron.total);
+                if (diff === 0) return "ツモ・ロン同点";
+                const better = calcSimResults.tsumo.total > calcSimResults.ron.total ? "ツモ" : "ロン";
+                return `${better}が ${diff.toLocaleString()} 点お得`;
+              })()}
+            </div>
+          </div>
+          <button style={actionBtn("p")} onClick={resetCalc}>もう一度シミュレーション</button>
           <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
         </>
       )}
