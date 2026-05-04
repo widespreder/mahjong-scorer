@@ -1947,12 +1947,54 @@ function MahjongScorer() {
       </div>
     );
 
+    // YouTube動画リンク用ヘルパー（検索結果ページを開く）
+    const ytSearch = (query) => `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const videoBtn = (label, query) => (
+      <a
+        href={ytSearch(query)}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "8px 14px", borderRadius: 8,
+          background: "#dc2626", color: "#fff",
+          fontSize: 12, fontWeight: 700, textDecoration: "none",
+          marginTop: 8,
+        }}
+      >▶ {label}</a>
+    );
+
     return (
       <div style={body}>
         <div style={{ textAlign: "center", padding: "16px 0 12px" }}>
           <div style={{ fontSize: 38, marginBottom: 6 }}>🎮</div>
           <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>麻雀の始め方</h2>
           <p style={{ fontSize: 12, color: t.dm, margin: 0 }}>対局スタートまでの流れを図解で解説</p>
+        </div>
+
+        {/* YouTube総合解説バナー */}
+        <div style={{
+          background: "linear-gradient(135deg, rgba(220,38,38,0.15), rgba(220,38,38,0.05))",
+          border: "1px solid rgba(220,38,38,0.4)",
+          borderRadius: 14, padding: 14, marginBottom: 14,
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <div style={{ fontSize: 28 }}>📺</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: t.tx }}>動画で学ぶ</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 2 }}>YouTubeで麻雀の始め方を動画解説で確認</div>
+          </div>
+          <a
+            href={ytSearch("麻雀 初心者 始め方 ルール 解説")}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: "8px 14px", borderRadius: 8,
+              background: "#dc2626", color: "#fff",
+              fontSize: 12, fontWeight: 800, textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >▶ 動画を見る</a>
         </div>
 
         {/* 1. 席決め */}
@@ -1965,6 +2007,7 @@ function MahjongScorer() {
           <div style={note}>
             🪑 <strong>席の決め方</strong>: 「掴み取り」が一般的。東南西北の4枚を裏向きで混ぜ、各自1枚ずつ取り、引いた風の席に座ります。
           </div>
+          {videoBtn("関連動画を見る", "麻雀 席決め 掴み取り")}
         </div>
 
         {/* 2. 起家決め */}
@@ -1984,6 +2027,7 @@ function MahjongScorer() {
           <div style={note}>
             🎯 例: サイコロの合計が <strong>5</strong> なら、仮親から反時計回りに5番目（仮親=1, 右=2, 対面=3, 左=4, 仮親=5）= <strong>仮親本人</strong> が起家になる。
           </div>
+          {videoBtn("関連動画を見る", "麻雀 起家 サイコロ 決め方")}
         </div>
 
         {/* 3. 牌の積み方 */}
@@ -1996,6 +2040,7 @@ function MahjongScorer() {
           <div style={note}>
             📚 牌は裏向き（白い面が上）に積みます。山が4方向に揃うと、卓中央に正方形の壁ができます。
           </div>
+          {videoBtn("関連動画を見る", "麻雀 牌山 積み方 説明")}
         </div>
 
         {/* 4. 配牌の前のサイコロ */}
@@ -2012,6 +2057,7 @@ function MahjongScorer() {
           <div style={note}>
             💡 例: サイコロの合計が <strong>7</strong> → 親=1, 南=2, 西=3, 北=4, 親=5, 南=6, 西=7 → 西家の山の右端から7枚分左の位置が開ける場所。
           </div>
+          {videoBtn("関連動画を見る", "麻雀 配牌 サイコロ 開け方")}
         </div>
 
         {/* 5. 配牌 */}
@@ -2024,6 +2070,7 @@ function MahjongScorer() {
           <div style={note}>
             🃏 親は最初に取った14枚から、最初の捨て牌を出して13枚に。子は13枚のままスタート。各家の前に並べて手牌として整理します。
           </div>
+          {videoBtn("関連動画を見る", "麻雀 配牌 取り方 チョンチョン")}
         </div>
 
         {/* 6. ドラ表示 */}
@@ -2036,6 +2083,7 @@ function MahjongScorer() {
           <div style={note}>
             🌟 ドラは1枚につき<strong>+1翻</strong>のボーナス。ただし、ドラだけでは和了できません（最低1役が必要）。
           </div>
+          {videoBtn("関連動画を見る", "麻雀 ドラ 表示牌 ルール")}
         </div>
 
         {/* 7. ゲーム開始 */}
@@ -2056,6 +2104,7 @@ function MahjongScorer() {
           <div style={note}>
             🏁 誰かが和了する、または山が無くなって流局するまで続きます。和了形は <strong>4面子+1雀頭</strong>（または七対子・国士無双の特殊形）。
           </div>
+          {videoBtn("関連動画を見る", "麻雀 進行 ルール 初心者")}
         </div>
 
         <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
