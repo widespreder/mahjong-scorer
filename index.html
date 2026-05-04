@@ -190,6 +190,12 @@ function MahjongScorer() {
   // 用語集 state
   const [termCat, setTermCat] = useState("基本");
   const [infoTermIdx, setInfoTermIdx] = useState(null);
+  // 何切る問題 state
+  const [naniKiruOrder, setNaniKiruOrder] = useState([]);
+  const [naniKiruIdx, setNaniKiruIdx] = useState(0);
+  const [naniKiruAnswer, setNaniKiruAnswer] = useState(null);
+  const [naniKiruRevealed, setNaniKiruRevealed] = useState(false);
+  const [naniKiruScore, setNaniKiruScore] = useState({ correct: 0, total: 0 });
   const termLongPressTimerRef = useRef(null);
   const termLongPressFiredRef = useRef(false);
   const handleTermLongPressStart = (idx) => {
@@ -1584,6 +1590,226 @@ function MahjongScorer() {
   };
 
   // ══════════════════════════════════
+  // ── NANI-KIRU (何切る) PUZZLES ──
+  // ══════════════════════════════════
+  const NANI_KIRU_PUZZLES = [
+    {
+      title: "孤立字牌を切る",
+      difficulty: "★",
+      hand: ["2m","3m","4m","5m","6m","7m","2p","3p","4p","5s","6s","7s","7s","東"],
+      answer: "東",
+      explanation: "「東」は孤立した字牌で面子にも雀頭にもならない不要牌です。\n\n切れば 234m + 567m + 234p + 567s の4面子が完成し、7s7s が雀頭で待ちが整います。"
+    },
+    {
+      title: "1・9牌の整理（タンヤオ向け）",
+      difficulty: "★",
+      hand: ["1m","2m","3m","4m","5m","6m","7m","8m","9m","2p","3p","4p","5s","5s"],
+      answer: "1m",
+      explanation: "両端の 1m・9m はタンヤオの邪魔牌。まず 1m を切って 234m + 567m + 234p + 5s5s に整理。\n\n次の巡で 9m も処分してタンヤオ（1翻）を狙うのが王道。役なし手より打点が安定します。"
+    },
+    {
+      title: "ペンチャンより両面残し",
+      difficulty: "★★",
+      hand: ["1m","2m","2m","3m","4m","5m","6m","7m","8m","2p","3p","4p","5p","5p"],
+      answer: "1m",
+      explanation: "1m はペンチャン（12→3待ち）の片方で、和了牌が3mのみと狭い形。\n\n切れば 234m + 234p + 5m6m7m + 5p5p などの広い両面待ちが残り、聴牌までの効率が大幅に改善されます。"
+    },
+    {
+      title: "効率の良い字牌切り",
+      difficulty: "★",
+      hand: ["1m","2m","3m","5m","6m","7m","2p","3p","4p","5p","6p","7p","9p","白"],
+      answer: "白",
+      explanation: "孤立した「白」が一番効率の悪い牌。\n\n切れば 123m + 567m + 234p + 567p の4面子完成、9p は単独なので雀頭候補として残ります。9p をツモれば 9p9p 雀頭で聴牌。"
+    },
+    {
+      title: "三面張の形にする",
+      difficulty: "★★",
+      hand: ["3m","4m","5m","6m","7m","2p","3p","4p","5p","6p","7p","2s","3s","4s"],
+      answer: "3m",
+      explanation: "3m を切れば 4m5m6m7m が残り、4-5-6-7m から 3m or 5m or 8m などの広い待ちに変化できる三面張。\n\n2-3-4-5-6-7p の三面張も保持され、234s と合わせて非常に整った形になります。"
+    },
+    {
+      title: "三色同順を狙う",
+      difficulty: "★★★",
+      hand: ["1m","2m","3m","1p","2p","3p","1s","2s","3s","5m","6m","7s","8s","東"],
+      answer: "東",
+      explanation: "123m + 123p + 123s で三色同順（門前2翻 / 鳴き1翻）の3面子が完成済み！\n\n東を切れば 5m6m + 7s8s の2ターツ。あと1面子+雀頭で和了。三色同順は打点が大きい良役なので狙う価値があります。"
+    },
+    {
+      title: "リャンメン優先",
+      difficulty: "★★",
+      hand: ["2m","2m","3m","4m","5m","6m","7m","2p","3p","4p","5s","5s","6s","7s"],
+      answer: "2m",
+      explanation: "2m が浮き牌になっています。\n\n切れば 234m + 567m + 234p + 567s + 5s5s で 4面子+雀頭の完成形。次に 5s や 8s をツモれば即和了です。"
+    },
+    {
+      title: "タンヤオ崩しを避ける",
+      difficulty: "★★",
+      hand: ["2m","3m","4m","5m","5m","6m","7m","2p","3p","4p","6p","6p","7p","8p","9p"],
+      answer: "9p",
+      explanation: "9p を切ればタンヤオ確定の手になります（手牌は本来14枚なので15枚目は仮想的なツモ牌）。\n\n234m + 567m + 234p + 5m雀頭 + 6p7p8p+6p で6p が浮き、テンパイにあと一歩。9pを切ってタンヤオ追加で打点アップ。"
+    },
+    {
+      title: "対子で迷う",
+      difficulty: "★★",
+      hand: ["3m","3m","4m","5m","6m","2p","3p","4p","5p","6p","7p","2s","3s","4s"],
+      answer: "3m",
+      explanation: "3m対子から1枚切って順子優先。\n\n3m を切れば 345m + 234p + 567p + 234s で4面子、残り 6m + 7p + 3m が雀頭候補に。実は 3m3m 雀頭で4-5-6m順子の方が良い場合もあるので状況次第ですが、シャンテン的には 3m切りで両面化が広い。"
+    },
+    {
+      title: "字牌対子の処理",
+      difficulty: "★★",
+      hand: ["2m","3m","4m","5m","6m","7m","2p","3p","4p","5s","6s","7s","南","南"],
+      answer: null,
+      multiAnswer: ["南"],
+      explanation: "南南は雀頭にできるので、本来は切らずに残すのが基本。\n\nもしどうしても切るなら、自風・場風でない 南（オタ風）なら可。ただし 234m + 567m + 234p + 567s + 南南 の完璧な聴牌形なので、ここは「切らない＝南待ちでテンパイ維持」が最強。次のツモを待ちます。\n\n※ ヒント: この手はすでに聴牌しています！"
+    },
+  ];
+
+  // タイル文字列を Tile props に変換
+  const tileFromCode = (code) => {
+    if (/^\d[mps]$/.test(code)) return { suit: code[1], num: parseInt(code[0]) };
+    return { honor: code };
+  };
+
+  // ══════════════════════════════════
+  // ── NANI-KIRU VIEW ──
+  // ══════════════════════════════════
+  const renderNaniKiru = () => {
+    const realIdx = naniKiruOrder[naniKiruIdx] ?? naniKiruIdx;
+    const puzzle = NANI_KIRU_PUZZLES[realIdx];
+    if (!puzzle) {
+      return (
+        <div style={body}>
+          <div style={{ ...card, textAlign: "center", padding: 32 }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>全問終了！</div>
+            <div style={{ fontSize: 13, color: t.dm, marginTop: 6 }}>{naniKiruScore.correct} / {naniKiruScore.total} 正解</div>
+          </div>
+          <button style={actionBtn("p")} onClick={() => {
+            const order = NANI_KIRU_PUZZLES.map((_, i) => i).sort(() => Math.random() - 0.5);
+            setNaniKiruOrder(order);
+            setNaniKiruIdx(0); setNaniKiruAnswer(null); setNaniKiruRevealed(false);
+            setNaniKiruScore({ correct: 0, total: 0 });
+          }}>もう一度</button>
+          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+    const correctAnswers = puzzle.multiAnswer || (puzzle.answer ? [puzzle.answer] : []);
+    const isCorrect = naniKiruAnswer && correctAnswers.includes(naniKiruAnswer);
+
+    const handleAnswer = (tileCode) => {
+      if (naniKiruRevealed) return;
+      setNaniKiruAnswer(tileCode);
+      setNaniKiruRevealed(true);
+      setNaniKiruScore(s => ({
+        correct: s.correct + (correctAnswers.includes(tileCode) ? 1 : 0),
+        total: s.total + 1,
+      }));
+    };
+
+    return (
+      <div style={body}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <span style={{ fontSize: 13, color: t.dm }}>第 {naniKiruIdx + 1} / {NANI_KIRU_PUZZLES.length} 問</span>
+          <span style={{ fontSize: 13, color: t.gn, fontWeight: 700 }}>{naniKiruScore.correct} / {naniKiruScore.total} 正解</span>
+        </div>
+
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 14, fontWeight: 800 }}>{puzzle.title}</span>
+            <span style={{ fontSize: 11, color: t.gd }}>{puzzle.difficulty}</span>
+          </div>
+          <div style={{ fontSize: 13, color: t.tx, marginBottom: 10, textAlign: "center" }}>
+            この14枚から <strong>1枚</strong> 切るなら？
+          </div>
+          {/* 手牌 */}
+          <div style={{ background: t.sf, borderRadius: 10, padding: 10, marginBottom: 10 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 2, justifyContent: "center" }}>
+              {puzzle.hand.map((tileCode, i) => {
+                const isUserPick = naniKiruRevealed && tileCode === naniKiruAnswer;
+                const isCorrectTile = naniKiruRevealed && correctAnswers.includes(tileCode);
+                let bg = "transparent";
+                let border = "2px solid transparent";
+                if (naniKiruRevealed) {
+                  if (isCorrectTile) { bg = "rgba(34,197,94,0.25)"; border = `2px solid ${t.gn}`; }
+                  else if (isUserPick) { bg = "rgba(239,68,68,0.25)"; border = `2px solid ${t.rd}`; }
+                }
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleAnswer(tileCode)}
+                    disabled={naniKiruRevealed}
+                    style={{
+                      padding: 2, background: bg, borderRadius: 4, border,
+                      cursor: naniKiruRevealed ? "default" : "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    title={tileCode}
+                  >
+                    <Tile {...tileFromCode(tileCode)} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {!naniKiruRevealed && (
+            <div style={{ fontSize: 11, color: t.dm, textAlign: "center" }}>
+              タップして選んでください
+            </div>
+          )}
+        </div>
+
+        {naniKiruRevealed && (
+          <>
+            <div style={{
+              background: isCorrect ? t.gnS : t.rdS,
+              border: `2px solid ${isCorrect ? t.gn : t.rd}`,
+              borderRadius: 12, padding: 14, marginBottom: 10, textAlign: "center"
+            }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: isCorrect ? t.gn : t.rd }}>
+                {isCorrect ? "⭕ 正解！" : "❌ 不正解"}
+              </div>
+              {!isCorrect && correctAnswers.length > 0 && (
+                <div style={{ fontSize: 14, marginTop: 6, color: t.tx }}>
+                  正解: <strong>{correctAnswers.join(" / ")}</strong>
+                </div>
+              )}
+              {puzzle.answer === null && (
+                <div style={{ fontSize: 13, marginTop: 6, color: t.tx }}>
+                  特殊問題（解説を確認してください）
+                </div>
+              )}
+            </div>
+            <div style={{ ...card, padding: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.ac, marginBottom: 8 }}>📖 解説</div>
+              <div style={{ fontSize: 13, lineHeight: 1.8, color: t.tx, whiteSpace: "pre-line" }}>
+                {puzzle.explanation}
+              </div>
+            </div>
+            <button
+              style={actionBtn("p")}
+              onClick={() => {
+                const next = naniKiruIdx + 1;
+                if (next >= NANI_KIRU_PUZZLES.length) {
+                  setNaniKiruIdx(next); // triggers end screen
+                } else {
+                  setNaniKiruIdx(next);
+                  setNaniKiruAnswer(null);
+                  setNaniKiruRevealed(false);
+                }
+              }}
+            >{naniKiruIdx + 1 >= NANI_KIRU_PUZZLES.length ? "結果を見る" : "次の問題"}</button>
+          </>
+        )}
+
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
   // ── HOW TO START VIEW ──
   // ══════════════════════════════════
   const renderHowToStart = () => {
@@ -2060,6 +2286,17 @@ function MahjongScorer() {
 
         {menuItem("🎮", "麻雀の始め方", "席・親決め・牌山・配牌・ドラの全手順", () => {
           setView("howToStart");
+        })}
+
+        {menuItem("🤔", "何切る問題", "効率の良い捨て牌を選ぶ練習問題集", () => {
+          setView("naniKiru");
+          // ランダム順にシャッフル
+          const order = NANI_KIRU_PUZZLES.map((_, i) => i).sort(() => Math.random() - 0.5);
+          setNaniKiruOrder(order);
+          setNaniKiruIdx(0);
+          setNaniKiruAnswer(null);
+          setNaniKiruRevealed(false);
+          setNaniKiruScore({ correct: 0, total: 0 });
         })}
       </div>
     );
@@ -3385,6 +3622,7 @@ function MahjongScorer() {
         {view === "fuQuiz" && renderFuQuiz()}
         {view === "glossary" && renderGlossary()}
         {view === "howToStart" && renderHowToStart()}
+        {view === "naniKiru" && renderNaniKiru()}
         {view === "dict" && renderDict()}
         {showFuHelp && <FuHelpModal />}
 
