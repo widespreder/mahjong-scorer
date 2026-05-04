@@ -196,6 +196,7 @@ function MahjongScorer() {
   const [termTestOrder, setTermTestOrder] = useState([]);
   const [termTestIdx, setTermTestIdx] = useState(0);
   const [termTestRevealed, setTermTestRevealed] = useState(false);
+  const [termTestSelfMark, setTermTestSelfMark] = useState(null); // "knew" | "didnt"
   const [termTestStats, setTermTestStats] = useState({ knew: 0, didnt: 0, didntList: [] });
   const [termTestFinished, setTermTestFinished] = useState(false);
   useEffect(() => { saveLS("mahjong_term_unknown_v1", termTestUnknown); }, [termTestUnknown]);
@@ -2516,30 +2517,37 @@ function MahjongScorer() {
               <button
                 style={{ flex: 1, padding: "16px 0", border: `2px solid ${t.gn}`, borderRadius: 12, background: t.gnS, color: t.gn, fontSize: 16, fontWeight: 800, cursor: "pointer" }}
                 onClick={() => {
-                  // Mark known: remove from unknown set
+                  // 「わかる」: 暫定的に苦手リストから削除、統計加算
                   setTermTestUnknown(prev => prev.filter(i => i !== realIdx));
                   setTermTestStats(s => ({ ...s, knew: s.knew + 1 }));
-                  // Advance
-                  if (termTestIdx + 1 >= termTestOrder.length) {
-                    setTermTestFinished(true);
-                  } else {
-                    setTermTestIdx(termTestIdx + 1);
-                    setTermTestRevealed(false);
-                  }
+                  setTermTestRevealed(true);
+                  setTermTestSelfMark("knew");
                 }}
               >⭕ わかる</button>
               <button
                 style={{ flex: 1, padding: "16px 0", border: `2px solid ${t.rd}`, borderRadius: 12, background: t.rdS, color: t.rd, fontSize: 16, fontWeight: 800, cursor: "pointer" }}
                 onClick={() => {
-                  // Mark unknown: add to set
                   setTermTestUnknown(prev => prev.includes(realIdx) ? prev : [...prev, realIdx]);
                   setTermTestStats(s => ({ ...s, didnt: s.didnt + 1, didntList: [...s.didntList, realIdx] }));
                   setTermTestRevealed(true);
+                  setTermTestSelfMark("didnt");
                 }}
               >❌ わからない</button>
             </div>
           ) : (
             <>
+              {/* 自己判定バッジ */}
+              <div style={{ marginTop: 6, marginBottom: 4 }}>
+                {termTestSelfMark === "knew" ? (
+                  <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 12, background: t.gnS, color: t.gn, fontSize: 12, fontWeight: 800 }}>
+                    ⭕ わかると回答
+                  </span>
+                ) : (
+                  <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 12, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 800 }}>
+                    ❌ わからないと回答
+                  </span>
+                )}
+              </div>
               <div style={{ fontSize: 13, color: t.ac, fontWeight: 700, marginTop: 8 }}>{term.reading}</div>
               <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, background: t.sf, color: t.dm, fontSize: 11, fontWeight: 700, marginTop: 8 }}>
                 カテゴリ: {term.cat}
@@ -2547,14 +2555,36 @@ function MahjongScorer() {
               <div style={{ background: t.sf, borderRadius: 10, padding: 14, fontSize: 14, lineHeight: 1.8, color: t.tx, marginTop: 12, textAlign: "left" }}>
                 {term.desc}
               </div>
+              {/* 「わかる」回答時、思ってたのと違った場合の変更ボタン */}
+              {termTestSelfMark === "knew" && (
+                <button
+                  style={{
+                    width: "100%", marginTop: 12, padding: "10px",
+                    border: `1px solid ${t.rd}55`, background: "transparent",
+                    color: t.rd, borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  }}
+                  onClick={() => {
+                    // わかる → わからないに変更
+                    setTermTestUnknown(prev => prev.includes(realIdx) ? prev : [...prev, realIdx]);
+                    setTermTestStats(s => ({
+                      ...s,
+                      knew: Math.max(0, s.knew - 1),
+                      didnt: s.didnt + 1,
+                      didntList: [...s.didntList, realIdx],
+                    }));
+                    setTermTestSelfMark("didnt");
+                  }}
+                >思っていたのと違った → わからないに変更</button>
+              )}
               <button
-                style={{ ...actionBtn("p"), marginTop: 14 }}
+                style={{ ...actionBtn("p"), marginTop: 12 }}
                 onClick={() => {
                   if (termTestIdx + 1 >= termTestOrder.length) {
                     setTermTestFinished(true);
                   } else {
                     setTermTestIdx(termTestIdx + 1);
                     setTermTestRevealed(false);
+                    setTermTestSelfMark(null);
                   }
                 }}
               >{termTestIdx + 1 >= termTestOrder.length ? "結果を見る" : "次の問題"}</button>
