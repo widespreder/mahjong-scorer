@@ -190,6 +190,7 @@ function MahjongScorer() {
   // 用語集 state
   const [termCat, setTermCat] = useState("基本");
   const [infoTermIdx, setInfoTermIdx] = useState(null);
+  const [glossarySortMode, setGlossarySortMode] = useState("category"); // "category" | "aiueo"
   // ルール説明 state
   const [ruleHelpKey, setRuleHelpKey] = useState(null);
   const RULE_HELP = {
@@ -2235,97 +2236,7 @@ function MahjongScorer() {
   // ══════════════════════════════════
   // ── GLOSSARY VIEW ──
   // ══════════════════════════════════
-  const renderGlossary = () => {
-    const catColor = (cat) => {
-      if (cat === "基本") return t.ac;
-      if (cat === "場・局") return t.gn;
-      if (cat === "牌") return t.gd;
-      if (cat === "進行") return "#f97316";
-      if (cat === "手牌") return "#a855f7";
-      if (cat === "待ち") return "#ec4899";
-      if (cat === "点数") return t.rd;
-      return t.ac;
-    };
-    const items = TERMS_DATA.map((term, idx) => ({ term, idx })).filter(({ term }) => term.cat === termCat);
-    const accent = catColor(termCat);
-
-    return (
-      <div style={body}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>📚 麻雀用語集</div>
-        <div style={{ fontSize: 11, color: t.dm, marginBottom: 12 }}>💡 長押しで意味の詳細を表示</div>
-        <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-          {TERM_CATEGORIES.map(cat => {
-            const c = catColor(cat);
-            return (
-              <button key={cat} style={{
-                padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
-                border: `1px solid ${termCat === cat ? c : t.bd}`,
-                background: termCat === cat ? c + "22" : "transparent",
-                color: termCat === cat ? c : t.dm,
-              }} onClick={() => setTermCat(cat)}>{cat}</button>
-            );
-          })}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 }}>
-          {items.map(({ term, idx }) => (
-            <button
-              key={idx}
-              onMouseDown={() => handleTermLongPressStart(idx)}
-              onMouseUp={handleTermLongPressEnd}
-              onMouseLeave={handleTermLongPressEnd}
-              onTouchStart={() => handleTermLongPressStart(idx)}
-              onTouchEnd={handleTermLongPressEnd}
-              onTouchMove={handleTermLongPressEnd}
-              onContextMenu={(e) => { e.preventDefault(); setInfoTermIdx(idx); }}
-              onClick={(e) => {
-                if (termLongPressFiredRef.current) {
-                  termLongPressFiredRef.current = false;
-                  e.preventDefault();
-                  return;
-                }
-                // 通常タップでも詳細表示（長押し前提だがアクセシビリティのため）
-                setInfoTermIdx(idx);
-              }}
-              style={{
-                padding: "10px 12px",
-                border: `1px solid ${accent}55`,
-                borderLeft: `3px solid ${accent}`,
-                borderRadius: 8,
-                background: "transparent",
-                color: t.tx,
-                cursor: "pointer",
-                textAlign: "left",
-                transition: "all 0.12s",
-              }}
-              title="タップ or 長押しで意味を表示"
-            >
-              <div style={{ fontSize: 14, fontWeight: 800, color: t.tx, lineHeight: 1.3 }}>{term.kanji}</div>
-              <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>{term.reading}</div>
-            </button>
-          ))}
-        </div>
-        <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 10 }}>
-          全 {TERMS_DATA.length} 語 / 「{termCat}」カテゴリ {items.length} 語
-        </div>
-        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
-      </div>
-    );
-  };
-
-  // ══════════════════════════════════
-  // ── DICTIONARY VIEW ──
-  // ══════════════════════════════════
-  // 役名から読み仮名（カナ）を抽出
-  const isAllKana = (s) => /^[゠-ヿー぀-ゟ\s]+$/.test(s);
-  const getYakuKana = (name) => {
-    const m = name.match(/^(.+?)（(.+?)）$/);
-    if (!m) return name;
-    const [, outer, inner] = m;
-    if (isAllKana(inner)) return inner;
-    if (isAllKana(outer)) return outer;
-    return inner;
-  };
-  // 50音行の判定
+  // 50音行と読み仮名抽出（用語集と役一覧で共用）
   const KANA_ROWS = [
     { label: "ア", chars: "アイウエオ" },
     { label: "カ", chars: "カキクケコガギグゲゴ" },
@@ -2338,6 +2249,163 @@ function MahjongScorer() {
     { label: "ラ", chars: "ラリルレロ" },
     { label: "ワ", chars: "ワヲン" },
   ];
+  const isAllKana = (s) => /^[゠-ヿー぀-ゟ\s]+$/.test(s);
+  const getYakuKana = (name) => {
+    const m = name.match(/^(.+?)（(.+?)）$/);
+    if (!m) return name;
+    const [, outer, inner] = m;
+    if (isAllKana(inner)) return inner;
+    if (isAllKana(outer)) return outer;
+    return inner;
+  };
+
+  const renderGlossary = () => {
+    const catColor = (cat) => {
+      if (cat === "基本") return t.ac;
+      if (cat === "場・局") return t.gn;
+      if (cat === "牌") return t.gd;
+      if (cat === "進行") return "#f97316";
+      if (cat === "手牌") return "#a855f7";
+      if (cat === "待ち") return "#ec4899";
+      if (cat === "点数") return t.rd;
+      return t.ac;
+    };
+
+    // 用語カードレンダリング
+    const renderTermCard = (term, idx, accent) => (
+      <button
+        key={idx}
+        onMouseDown={() => handleTermLongPressStart(idx)}
+        onMouseUp={handleTermLongPressEnd}
+        onMouseLeave={handleTermLongPressEnd}
+        onTouchStart={() => handleTermLongPressStart(idx)}
+        onTouchEnd={handleTermLongPressEnd}
+        onTouchMove={handleTermLongPressEnd}
+        onContextMenu={(e) => { e.preventDefault(); setInfoTermIdx(idx); }}
+        onClick={(e) => {
+          if (termLongPressFiredRef.current) {
+            termLongPressFiredRef.current = false;
+            e.preventDefault();
+            return;
+          }
+          setInfoTermIdx(idx);
+        }}
+        style={{
+          padding: "10px 12px",
+          border: `1px solid ${accent}55`,
+          borderLeft: `3px solid ${accent}`,
+          borderRadius: 8,
+          background: "transparent",
+          color: t.tx,
+          cursor: "pointer",
+          textAlign: "left",
+          transition: "all 0.12s",
+        }}
+        title="タップ or 長押しで意味を表示"
+      >
+        <div style={{ fontSize: 14, fontWeight: 800, color: t.tx, lineHeight: 1.3 }}>{term.kanji}</div>
+        <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>{term.reading}</div>
+        {glossarySortMode === "aiueo" && (
+          <div style={{ fontSize: 9, color: accent, marginTop: 2, opacity: 0.8 }}>{term.cat}</div>
+        )}
+      </button>
+    );
+
+    return (
+      <div style={body}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>📚 麻雀用語集</div>
+        <div style={{ fontSize: 11, color: t.dm, marginBottom: 12 }}>💡 長押しで意味の詳細を表示</div>
+
+        {/* 並び順切替 */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 12, background: t.sf, borderRadius: 8, padding: 3 }}>
+          <button
+            onClick={() => setGlossarySortMode("category")}
+            style={{
+              flex: 1, padding: "8px 12px", borderRadius: 6, border: "none", cursor: "pointer",
+              background: glossarySortMode === "category" ? t.ac : "transparent",
+              color: glossarySortMode === "category" ? "#fff" : t.dm,
+              fontSize: 12, fontWeight: 700,
+            }}
+          >📋 カテゴリ別</button>
+          <button
+            onClick={() => setGlossarySortMode("aiueo")}
+            style={{
+              flex: 1, padding: "8px 12px", borderRadius: 6, border: "none", cursor: "pointer",
+              background: glossarySortMode === "aiueo" ? t.ac : "transparent",
+              color: glossarySortMode === "aiueo" ? "#fff" : t.dm,
+              fontSize: 12, fontWeight: 700,
+            }}
+          >🔤 あいうえお順</button>
+        </div>
+
+        {glossarySortMode === "category" ? (() => {
+          const items = TERMS_DATA.map((term, idx) => ({ term, idx })).filter(({ term }) => term.cat === termCat);
+          const accent = catColor(termCat);
+          return (
+            <>
+              <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                {TERM_CATEGORIES.map(cat => {
+                  const c = catColor(cat);
+                  return (
+                    <button key={cat} style={{
+                      padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+                      border: `1px solid ${termCat === cat ? c : t.bd}`,
+                      background: termCat === cat ? c + "22" : "transparent",
+                      color: termCat === cat ? c : t.dm,
+                    }} onClick={() => setTermCat(cat)}>{cat}</button>
+                  );
+                })}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 }}>
+                {items.map(({ term, idx }) => renderTermCard(term, idx, accent))}
+              </div>
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 10 }}>
+                全 {TERMS_DATA.length} 語 / 「{termCat}」カテゴリ {items.length} 語
+              </div>
+            </>
+          );
+        })() : (() => {
+          // あいうえお順（カナ読みでソート、50音行でグループ化）
+          const sortedTerms = TERMS_DATA.map((term, idx) => ({ term, idx }))
+            .sort((a, b) => a.term.reading.localeCompare(b.term.reading, 'ja'));
+          return (
+            <>
+              {KANA_ROWS.map(row => {
+                const items = sortedTerms.filter(({ term }) => getKanaRow(term.reading) === row.label);
+                if (items.length === 0) return null;
+                return (
+                  <div key={row.label} style={{ marginBottom: 14 }}>
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      margin: "12px -20px 8px", padding: "6px 20px",
+                      borderTop: `2px solid ${t.ac}`,
+                      background: `linear-gradient(90deg, ${t.acS}, transparent)`,
+                    }}>
+                      <span style={{ fontSize: 16, fontWeight: 900, color: t.ac, letterSpacing: "0.05em" }}>
+                        {row.label}行
+                      </span>
+                      <span style={{ fontSize: 11, color: t.dm }}>{items.length}語</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                      {items.map(({ term, idx }) => renderTermCard(term, idx, catColor(term.cat)))}
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 14, marginBottom: 10 }}>
+                全 {TERMS_DATA.length} 語
+              </div>
+            </>
+          );
+        })()}
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
+  // ── DICTIONARY VIEW ──
+  // ══════════════════════════════════
   const getKanaRow = (kana) => {
     const c = kana.charAt(0);
     for (const r of KANA_ROWS) {
