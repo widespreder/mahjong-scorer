@@ -712,6 +712,53 @@ function MahjongScorer() {
   const YAKU_CATEGORIES = ["1翻", "2翻", "3翻", "6翻", "役満"];
   const HAN_CHOICES = ["0", "1", "2", "3", "5", "6", "役満"];
 
+  // 各役の例（Unicode麻雀牌）— 萬子🀇〜🀏 索子🀐〜🀘 筒子🀙〜🀡 字牌🀀東🀁南🀂西🀃北🀆白🀅發🀄中
+  // 面子は半角スペースで区切り、雀頭は最後
+  const YAKU_EXAMPLES = {
+    "リーチ（立直）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀝🀞🀟 🀈🀈", note: "テンパイ宣言（門前限定）" },
+    "一発（イッパツ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀝🀞🀟 🀈🀈", note: "リーチ後1巡以内の和了" },
+    "門前清自摸和（メンゼンツモ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀝🀞🀟 🀈🀈", note: "鳴かずにツモ和了" },
+    "平和（ピンフ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀐🀑🀒 🀈🀈", note: "全て順子・雀頭は役牌でない・両面待ち" },
+    "断么九（タンヤオ）": { tiles: "🀈🀉🀊 🀋🀌🀍 🀚🀛🀜 🀒🀓🀔 🀝🀝", note: "1・9・字牌を一切使わない" },
+    "一盃口（イーペーコー）": { tiles: "🀇🀈🀉 🀇🀈🀉 🀚🀛🀜 🀐🀑🀒 🀝🀝", note: "同じ順子が2組（門前限定）" },
+    "役牌 白（ハク）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀆🀆🀆 🀝🀝", note: "白の刻子" },
+    "役牌 發（ハツ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀅🀅🀅 🀝🀝", note: "發の刻子" },
+    "役牌 中（チュン）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀄🀄🀄 🀝🀝", note: "中の刻子" },
+    "場風牌（バカゼハイ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀀🀀🀀 🀝🀝", note: "場風（東場の東）の刻子" },
+    "自風牌（ジカゼハイ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀁🀁🀁 🀝🀝", note: "自風（南家の南）の刻子" },
+    "嶺上開花（リンシャンカイホウ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀝🀝🀝🀝 🀈🀈", note: "カン後の嶺上牌で和了" },
+    "搶槓（チャンカン）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀐🀑🀒 🀝🀝", note: "他家の加槓牌でロン" },
+    "海底摸月（ハイテイ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀐🀑🀒 🀝🀝", note: "局の最後のツモで和了" },
+    "河底撈魚（ホウテイ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀐🀑🀒 🀝🀝", note: "局の最後の捨て牌でロン" },
+    "ダブル立直（ダブルリーチ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀚🀛🀜 🀝🀞🀟 🀈🀈", note: "最初の捨て牌でリーチ宣言" },
+    "三色同順（サンショクドウジュン）": { tiles: "🀇🀈🀉 🀚🀛🀜 🀐🀑🀒 🀋🀌🀍 🀝🀝", note: "萬・筒・索で同じ数の順子（123）" },
+    "一気通貫（イッキツウカン）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀍🀎🀏 🀚🀛🀜 🀝🀝", note: "同種で1-2-3 / 4-5-6 / 7-8-9" },
+    "混全帯么九（チャンタ）": { tiles: "🀇🀈🀉 🀙🀚🀛 🀟🀠🀡 🀀🀀🀀 🀇🀇", note: "全面子と雀頭に1・9・字牌を含む" },
+    "七対子（チートイツ）": { tiles: "🀇🀇 🀊🀊 🀝🀝 🀐🀐 🀒🀒 🀙🀙 🀅🀅", note: "対子7組（門前限定・25符固定）" },
+    "対々和（トイトイ）": { tiles: "🀇🀇🀇 🀋🀋🀋 🀟🀟🀟 🀐🀐🀐 🀅🀅", note: "全て刻子（4刻子+1雀頭）" },
+    "三暗刻（サンアンコー）": { tiles: "🀇🀇🀇 🀋🀋🀋 🀟🀟🀟 🀚🀛🀜 🀅🀅", note: "暗刻が3組" },
+    "三色同刻（サンショクドウコー）": { tiles: "🀋🀋🀋 🀝🀝🀝 🀔🀔🀔 🀇🀈🀉 🀚🀚", note: "萬・筒・索で同じ数の刻子（5筒5索5萬）" },
+    "三槓子（サンカンツ）": { tiles: "🀇🀇🀇🀇 🀟🀟🀟🀟 🀐🀐🀐🀐 🀚🀛🀜 🀅🀅", note: "槓子3組" },
+    "小三元（ショウサンゲン）": { tiles: "🀆🀆🀆 🀅🀅🀅 🀄🀄 🀚🀛🀜 🀐🀑🀒", note: "白・發・中のうち2刻子+1雀頭" },
+    "混老頭（ホンロウトウ）": { tiles: "🀇🀇🀇 🀏🀏🀏 🀙🀙🀙 🀀🀀🀀 🀅🀅", note: "1・9・字牌のみ（順子なし）" },
+    "二盃口（リャンペーコー）": { tiles: "🀇🀈🀉 🀇🀈🀉 🀊🀋🀌 🀊🀋🀌 🀝🀝", note: "一盃口が2組（門前限定）" },
+    "純全帯么九（ジュンチャン）": { tiles: "🀇🀈🀉 🀍🀎🀏 🀙🀚🀛 🀟🀠🀡 🀇🀇", note: "全面子・雀頭に1か9を含み字牌なし" },
+    "混一色（ホンイツ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀍🀎🀏 🀅🀅🀅 🀀🀀", note: "1種の数牌+字牌のみ" },
+    "清一色（チンイツ）": { tiles: "🀇🀈🀉 🀊🀋🀌 🀍🀎🀏 🀇🀈🀉 🀋🀋", note: "1種の数牌のみ" },
+    "国士無双（コクシムソウ）": { tiles: "🀇 🀏 🀙 🀡 🀐 🀘 🀀 🀁 🀂 🀃 🀆 🀅 🀄🀄", note: "1・9・字牌13種 + 任意1枚（門前限定）" },
+    "四暗刻（スーアンコー）": { tiles: "🀇🀇🀇 🀋🀋🀋 🀟🀟🀟 🀐🀐🀐 🀝🀝", note: "暗刻4組（門前限定）" },
+    "大三元（ダイサンゲン）": { tiles: "🀆🀆🀆 🀅🀅🀅 🀄🀄🀄 🀇🀈🀉 🀚🀚", note: "白・發・中の3刻子" },
+    "字一色（ツーイーソー）": { tiles: "🀀🀀🀀 🀁🀁🀁 🀂🀂🀂 🀅🀅🀅 🀄🀄", note: "字牌のみで構成" },
+    "小四喜（ショウスーシー）": { tiles: "🀀🀀🀀 🀁🀁🀁 🀂🀂🀂 🀃🀃 🀇🀈🀉", note: "東南西北の3刻子+1雀頭" },
+    "大四喜（ダイスーシー）": { tiles: "🀀🀀🀀 🀁🀁🀁 🀂🀂🀂 🀃🀃🀃 🀇🀇", note: "東南西北の4刻子" },
+    "緑一色（リューイーソー）": { tiles: "🀑🀒🀓 🀓🀓🀓 🀕🀕🀕 🀗🀗🀗 🀅🀅", note: "索子の2,3,4,6,8と發のみ" },
+    "清老頭（チンロウトウ）": { tiles: "🀇🀇🀇 🀏🀏🀏 🀙🀙🀙 🀡🀡🀡 🀐🀐", note: "1・9数牌のみ（字牌なし）" },
+    "九蓮宝燈（チューレンポウトウ）": { tiles: "🀇🀇🀇 🀈🀉🀊 🀋🀌🀍 🀎🀏🀏🀏 ＋任意1", note: "同種数牌で1112345678999＋任意1枚" },
+    "四槓子（スーカンツ）": { tiles: "🀇🀇🀇🀇 🀋🀋🀋🀋 🀟🀟🀟🀟 🀐🀐🀐🀐 🀚🀚", note: "槓子4組" },
+    "天和（テンホウ）": { tiles: "親の配牌時点で和了形", note: "親が配牌の時点で和了（役満）" },
+    "地和（チーホウ）": { tiles: "子が最初のツモで和了形", note: "子が最初のツモで和了（門前・鳴き不可）" },
+  };
+
   // 得点シミュレーション: ツモ・ロン両方の点数を計算（YAKU_DATA を参照するためここに配置）
   const calcSimResults = useMemo(() => {
     if (cHan === null || cParent === null) return null;
@@ -1579,6 +1626,17 @@ function MahjongScorer() {
           {dictExpanded === y.name && (
             <div style={{ padding: "0 16px 14px", fontSize: 13, color: t.dm, lineHeight: 1.7, borderTop: `1px solid ${t.bd}33` }}>
               <div style={{ paddingTop: 10 }}>{y.desc}</div>
+              {YAKU_EXAMPLES[y.name] && (
+                <div style={{ marginTop: 12, padding: 10, background: t.sf, borderRadius: 8, border: `1px solid ${t.bd}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: t.ac, marginBottom: 6 }}>📌 例</div>
+                  <div style={{ fontSize: 28, lineHeight: 1.4, letterSpacing: "-2px", textAlign: "center", padding: "8px 0", wordBreak: "keep-all" }}>
+                    {YAKU_EXAMPLES[y.name].tiles}
+                  </div>
+                  <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 4 }}>
+                    {YAKU_EXAMPLES[y.name].note}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -3238,6 +3296,18 @@ function MahjongScorer() {
                 <div style={{ background: t.sf, borderRadius: 10, padding: 14, fontSize: 14, lineHeight: 1.7, color: t.tx, marginBottom: 14 }}>
                   {y.desc}
                 </div>
+
+                {YAKU_EXAMPLES[y.name] && (
+                  <div style={{ marginBottom: 14, padding: 12, background: t.bg, borderRadius: 10, border: `1px solid ${t.ac}33` }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: t.ac, marginBottom: 6 }}>📌 例</div>
+                    <div style={{ fontSize: 26, lineHeight: 1.4, letterSpacing: "-2px", textAlign: "center", padding: "6px 0", wordBreak: "keep-all" }}>
+                      {YAKU_EXAMPLES[y.name].tiles}
+                    </div>
+                    <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 4 }}>
+                      {YAKU_EXAMPLES[y.name].note}
+                    </div>
+                  </div>
+                )}
 
                 {requiresNames.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
