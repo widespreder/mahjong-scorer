@@ -712,56 +712,40 @@ function MahjongScorer() {
   const YAKU_CATEGORIES = ["1翻", "2翻", "3翻", "6翻", "役満"];
   const HAN_CHOICES = ["0", "1", "2", "3", "5", "6", "役満"];
 
-  // ── カラー麻雀牌レンダリング ──
+  // ── 画像麻雀牌レンダリング（FluffyStuff/riichi-mahjong-tiles, CC0/Public Domain） ──
+  const TILE_IMG_BASE = "https://cdn.jsdelivr.net/gh/FluffyStuff/riichi-mahjong-tiles@master/Regular";
   const Tile = ({ suit, num, honor }) => {
-    const tileBase = {
-      display: "inline-flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      width: 22,
-      height: 30,
-      background: "linear-gradient(180deg, #fefefa 0%, #e6e6dd 100%)",
-      border: "1px solid #555",
-      borderRadius: 3,
+    const tileWrap = {
+      display: "inline-block",
+      width: 28,
+      height: 40,
       margin: "1px 1px",
-      boxShadow: "0 1px 2px rgba(0,0,0,0.5), inset 0 -2px 0 rgba(0,0,0,0.06)",
-      overflow: "hidden",
-      fontWeight: 800,
       verticalAlign: "middle",
+      boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
+      borderRadius: 3,
+      overflow: "hidden",
+      background: "#fefefa",
+      border: "1px solid #444",
     };
+    let imgName = null;
     if (suit && num) {
-      const numStr = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'][num];
-      const color = suit === 'm' ? '#1f2937' : suit === 'p' ? '#1e40af' : '#166534';
-      const suitChar = suit === 'm' ? '萬' : suit === 'p' ? '筒' : '索';
-      // 5の牌は赤ドラ風に
-      const isRed5 = num === 5;
+      const prefix = suit === 'm' ? 'Man' : suit === 'p' ? 'Pin' : 'Sou';
+      imgName = `${prefix}${num}`;
+    } else if (honor) {
+      const map = { '東': 'Ton', '南': 'Nan', '西': 'Shaa', '北': 'Pei', '白': 'Haku', '發': 'Hatsu', '中': 'Chun' };
+      imgName = map[honor];
+    }
+    if (imgName) {
       return (
-        <span style={tileBase}>
-          <span style={{ fontSize: 12, color: isRed5 ? '#dc2626' : color, lineHeight: 1, marginTop: 2 }}>{numStr}</span>
-          <span style={{ fontSize: 8, color: '#6b7280', lineHeight: 1, marginTop: 1 }}>{suitChar}</span>
-        </span>
+        <img
+          src={`${TILE_IMG_BASE}/${imgName}.svg`}
+          alt={imgName}
+          loading="lazy"
+          style={{ ...tileWrap, objectFit: "contain", display: "inline-block" }}
+        />
       );
     }
-    if (honor) {
-      const honorColors = {
-        '東': '#1f2937', '南': '#1f2937', '西': '#1f2937', '北': '#1f2937',
-        '白': '#94a3b8', '發': '#16a34a', '中': '#dc2626',
-      };
-      if (honor === '白') {
-        return (
-          <span style={tileBase}>
-            <span style={{ width: 11, height: 18, border: "2px solid #94a3b8", borderRadius: 2 }} />
-          </span>
-        );
-      }
-      return (
-        <span style={tileBase}>
-          <span style={{ fontSize: 15, color: honorColors[honor], lineHeight: 1 }}>{honor}</span>
-        </span>
-      );
-    }
-    return <span style={tileBase} />;
+    return <span style={tileWrap} />;
   };
 
   // Unicode 麻雀牌文字列を解析してカラー Tile に変換
