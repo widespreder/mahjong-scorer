@@ -190,6 +190,45 @@ function MahjongScorer() {
   // 用語集 state
   const [termCat, setTermCat] = useState("基本");
   const [infoTermIdx, setInfoTermIdx] = useState(null);
+  // ルール説明 state
+  const [ruleHelpKey, setRuleHelpKey] = useState(null);
+  const RULE_HELP = {
+    tenpaiRenchan: {
+      title: "テンパイ連荘",
+      desc: "流局時、親がテンパイなら親が継続（連荘）、ノーテンなら親流れになるルール。最も一般的な日本麻雀ルール。",
+      examples: "✅ 親テンパイ → 連荘（本場+1）\n✅ 親ノーテン → 親流れ（次の家へ）\n✅ アガリ時は別途連荘判定",
+    },
+    agariRenchan: {
+      title: "あがり連荘のみ",
+      desc: "親アガリのみ連荘とし、流局時はテンパイでも必ず親流れにする厳しいルール。",
+      examples: "✅ 親アガリ → 連荘\n❌ 流局（親テンパイでも） → 親流れ\n❌ 流局（親ノーテン） → 親流れ",
+    },
+    bothOff: {
+      title: "両方OFF（連荘ルールなし）",
+      desc: "テンパイ連荘も、あがり連荘のみもOFFの場合、流局時は親がテンパイ／ノーテンに関わらず必ず連荘（親残留）します。\n\nこれは「親残留」のローカルルール扱いで、標準的な麻雀ルールではありません。\n\n注意: オーラスでは親トップ＋アガリやめONなら終了、それ以外は連荘継続のため、対局終了タイミングが遅くなります。",
+      examples: "🔄 流局・テンパイ → 連荘\n🔄 流局・ノーテン → 連荘\n✅ 親アガリ → 連荘",
+    },
+    kuitan: {
+      title: "食いタンあり",
+      desc: "鳴いてもタンヤオ（断么九）が成立するルール。デフォルトON。\n\nOFFの場合、タンヤオは門前限定の役になります（厳しいルール）。",
+    },
+    atozuke: {
+      title: "後付けあり",
+      desc: "アガリ牌で初めて役が確定するアガリを認めるルール。\n\nOFFの場合、待ち牌時点で役が確定していないとアガれない（先付け必須）。",
+    },
+    tobi: {
+      title: "飛びで終了",
+      desc: "誰かの持ち点が0点未満（マイナス）になった時点で対局終了するルール。\n\nOFFの場合、マイナス点になっても対局を続行します。",
+    },
+    agariYame: {
+      title: "アガリやめあり",
+      desc: "オーラス（最終局）で親がトップで和了したら、その時点で対局終了するルール。\n\nOFFの場合、親トップで和了しても連荘継続します。",
+    },
+    renpuuJantou4: {
+      title: "連風牌雀頭 +4符",
+      desc: "場風と自風が同じ風牌（東場の東家の東など）を雀頭にすると +4符（通常は +2符）になるルール。\n\n地域差ありのローカルルール。",
+    },
+  };
   // 席決め state
   const [seatMethod, setSeatMethod] = useState(null); // null | "auto" | "manual"
   const [seatTilesShuffled, setSeatTilesShuffled] = useState([]); // 4風のシャッフル順
@@ -590,12 +629,28 @@ function MahjongScorer() {
   const backBtn = { background: "none", border: "none", color: t.dm, fontSize: 13, cursor: "pointer", padding: "4px 0", marginBottom: 8 };
   const inputStyle = { background: t.sf, border: `1px solid ${t.bd}`, borderRadius: 10, padding: "10px 14px", color: t.tx, fontSize: 14, width: "100%", boxSizing: "border-box", outline: "none" };
   const selectStyle = { ...inputStyle, appearance: "none", WebkitAppearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 };
-  const toggleRow = (label, on, onToggle) => (
+  const toggleRow = (label, on, onToggle, helpKey) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
-      <span style={{ fontSize: 14 }}>{label}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+        <span style={{ fontSize: 14 }}>{label}</span>
+        {helpKey && (
+          <button
+            onClick={() => setRuleHelpKey(helpKey)}
+            style={{
+              width: 18, height: 18, borderRadius: "50%",
+              border: `1px solid ${t.ac}55`, background: t.acS, color: t.ac,
+              fontSize: 11, fontWeight: 700, cursor: "pointer", lineHeight: 1,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: 0,
+            }}
+            title="ルール説明"
+          >?</button>
+        )}
+      </div>
       <button onClick={onToggle} style={{
         width: 48, height: 26, borderRadius: 13, border: "none", cursor: "pointer",
         background: on ? t.ac : t.bd, position: "relative", transition: "background 0.2s",
+        flexShrink: 0,
       }}>
         <div style={{
           width: 20, height: 20, borderRadius: "50%", background: "#fff",
@@ -3033,17 +3088,31 @@ function MahjongScorer() {
 
           <div style={{ marginBottom: 8 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>連荘・流局</div>
-            {toggleRow("テンパイ連荘", rules.tenpaiRenchan, () => setRules(r => ({ ...r, tenpaiRenchan: !r.tenpaiRenchan, agariRenchan: !r.tenpaiRenchan ? false : r.agariRenchan })))}
-            {toggleRow("あがり連荘のみ", rules.agariRenchan, () => setRules(r => ({ ...r, agariRenchan: !r.agariRenchan, tenpaiRenchan: !r.agariRenchan ? false : r.tenpaiRenchan })))}
+            {toggleRow("テンパイ連荘", rules.tenpaiRenchan, () => setRules(r => ({ ...r, tenpaiRenchan: !r.tenpaiRenchan, agariRenchan: !r.tenpaiRenchan ? false : r.agariRenchan })), "tenpaiRenchan")}
+            {toggleRow("あがり連荘のみ", rules.agariRenchan, () => setRules(r => ({ ...r, agariRenchan: !r.agariRenchan, tenpaiRenchan: !r.agariRenchan ? false : r.tenpaiRenchan })), "agariRenchan")}
+            {!rules.tenpaiRenchan && !rules.agariRenchan && (
+              <button
+                onClick={() => setRuleHelpKey("bothOff")}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "6px 10px", marginTop: 6,
+                  background: t.gdS, border: `1px solid ${t.gd}55`, borderRadius: 6,
+                  color: t.gd, fontSize: 11, fontWeight: 700,
+                  cursor: "pointer", width: "100%",
+                }}
+              >
+                ⚠️ 両方OFFの挙動を確認 →
+              </button>
+            )}
           </div>
 
           <div style={{ marginBottom: 8, marginTop: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>その他</div>
-            {toggleRow("食いタンあり", rules.kuitan, () => setRules(r => ({ ...r, kuitan: !r.kuitan })))}
-            {toggleRow("後付けあり", rules.atozuke, () => setRules(r => ({ ...r, atozuke: !r.atozuke })))}
-            {toggleRow("飛びで終了（誰かが0点未満）", rules.tobi, () => setRules(r => ({ ...r, tobi: !r.tobi })))}
-            {toggleRow("アガリやめあり（オーラス親トップで終了）", rules.agariYame, () => setRules(r => ({ ...r, agariYame: !r.agariYame })))}
-            {toggleRow("連風牌雀頭 +4符", rules.renpuuJantou4, () => setRules(r => ({ ...r, renpuuJantou4: !r.renpuuJantou4 })))}
+            {toggleRow("食いタンあり", rules.kuitan, () => setRules(r => ({ ...r, kuitan: !r.kuitan })), "kuitan")}
+            {toggleRow("後付けあり", rules.atozuke, () => setRules(r => ({ ...r, atozuke: !r.atozuke })), "atozuke")}
+            {toggleRow("飛びで終了（誰かが0点未満）", rules.tobi, () => setRules(r => ({ ...r, tobi: !r.tobi })), "tobi")}
+            {toggleRow("アガリやめあり（オーラス親トップで終了）", rules.agariYame, () => setRules(r => ({ ...r, agariYame: !r.agariYame })), "agariYame")}
+            {toggleRow("連風牌雀頭 +4符", rules.renpuuJantou4, () => setRules(r => ({ ...r, renpuuJantou4: !r.renpuuJantou4 })), "renpuuJantou4")}
           </div>
 
           <div style={{ marginTop: 16, marginBottom: 8 }}>
@@ -3942,6 +4011,37 @@ function MahjongScorer() {
         {view === "naniKiru" && renderNaniKiru()}
         {view === "dict" && renderDict()}
         {showFuHelp && <FuHelpModal />}
+
+        {/* ルール説明モーダル */}
+        {ruleHelpKey && RULE_HELP[ruleHelpKey] && (
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 290, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+            onClick={() => setRuleHelpKey(null)}
+          >
+            <div
+              style={{ background: t.card, borderRadius: 14, padding: 22, maxWidth: 380, width: "100%", border: `1px solid ${t.bd}`, maxHeight: "85vh", overflowY: "auto" }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: t.ac }}>📖 {RULE_HELP[ruleHelpKey].title}</div>
+                <button style={{ background: "none", border: "none", color: t.dm, fontSize: 22, cursor: "pointer", padding: 4 }} onClick={() => setRuleHelpKey(null)}>✕</button>
+              </div>
+              <div style={{ background: t.sf, borderRadius: 10, padding: 14, fontSize: 13, lineHeight: 1.8, color: t.tx, marginBottom: 12, whiteSpace: "pre-line" }}>
+                {RULE_HELP[ruleHelpKey].desc}
+              </div>
+              {RULE_HELP[ruleHelpKey].examples && (
+                <div style={{ background: t.bg, border: `1px solid ${t.ac}33`, borderRadius: 10, padding: 12, fontSize: 12, color: t.tx, lineHeight: 1.9, marginBottom: 12, whiteSpace: "pre-line" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: t.ac, marginBottom: 4 }}>具体例</div>
+                  {RULE_HELP[ruleHelpKey].examples}
+                </div>
+              )}
+              <button
+                style={{ width: "100%", padding: "12px", border: "none", borderRadius: 10, background: t.ac, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                onClick={() => setRuleHelpKey(null)}
+              >閉じる</button>
+            </div>
+          </div>
+        )}
 
         {/* 用語詳細モーダル */}
         {infoTermIdx !== null && (() => {
