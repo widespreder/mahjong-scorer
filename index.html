@@ -190,6 +190,31 @@ function MahjongScorer() {
   // 用語集 state
   const [termCat, setTermCat] = useState("基本");
   const [infoTermIdx, setInfoTermIdx] = useState(null);
+  // 席決め state
+  const [seatMethod, setSeatMethod] = useState(null); // null | "auto" | "manual"
+  const [seatTilesShuffled, setSeatTilesShuffled] = useState([]); // 4風のシャッフル順
+  const [seatRevealedAt, setSeatRevealedAt] = useState([null,null,null,null]); // 各位置の引き手 (player idx)
+  const [seatAssignments, setSeatAssignments] = useState([null,null,null,null]); // [winds] for [playerIdx]
+  const [currentPicker, setCurrentPicker] = useState(0);
+  const startSeatAuto = () => {
+    const shuffled = ["東","南","西","北"].sort(() => Math.random() - 0.5);
+    setSeatTilesShuffled(shuffled);
+    setSeatRevealedAt([null,null,null,null]);
+    setSeatAssignments([null,null,null,null]);
+    setCurrentPicker(0);
+    setSeatMethod("auto");
+  };
+  const startSeatManual = () => {
+    setSeatAssignments([null,null,null,null]);
+    setSeatMethod("manual");
+  };
+  const resetSeat = () => {
+    setSeatMethod(null);
+    setSeatTilesShuffled([]);
+    setSeatRevealedAt([null,null,null,null]);
+    setSeatAssignments([null,null,null,null]);
+    setCurrentPicker(0);
+  };
   // 何切る問題 state
   const [naniKiruOrder, setNaniKiruOrder] = useState([]);
   const [naniKiruIdx, setNaniKiruIdx] = useState(0);
@@ -2592,7 +2617,7 @@ function MahjongScorer() {
       {/* Step 0: 対局日 */}
       {setupStep === 0 && (
         <div style={card}>
-          <Dots total={4} cur={0} />
+          <Dots total={5} cur={0} />
           <div style={question}>対局日は？</div>
           <div style={{ padding: "0 4px" }}>
             <input
@@ -2615,7 +2640,7 @@ function MahjongScorer() {
       {setupStep === 1 && (
         <div style={card}>
           <Back onClick={() => setSetupStep(0)} />
-          <Dots total={4} cur={1} />
+          <Dots total={5} cur={1} />
           <div style={question}>試合形式は？</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button
@@ -2647,7 +2672,7 @@ function MahjongScorer() {
       {setupStep === 2 && (
         <div style={card}>
           <Back onClick={() => setSetupStep(1)} />
-          <Dots total={4} cur={2} />
+          <Dots total={5} cur={2} />
           <div style={question}>プレイヤー名</div>
           <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 14 }}>各家をタップ → 名前がクリアされ、入力 or 登録から選択</div>
           {players.map((p, i) => (
@@ -2795,11 +2820,215 @@ function MahjongScorer() {
         </div>
       )}
 
-      {/* Step 3: ルール設定 */}
+      {/* Step 3: 席決め */}
       {setupStep === 3 && (
         <div style={card}>
-          <Back onClick={() => setSetupStep(2)} />
-          <Dots total={4} cur={3} />
+          <Back onClick={() => { resetSeat(); setSetupStep(2); }} />
+          <Dots total={5} cur={3} />
+          <div style={question}>席を決める</div>
+
+          {!seatMethod && (
+            <>
+              <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 16, lineHeight: 1.7 }}>
+                4人それぞれの席（東家・南家・西家・北家）を決めます。<br/>
+                方法を選んでください。
+              </div>
+              <button
+                style={{ ...actionBtn("p"), padding: "16px 12px", marginBottom: 10 }}
+                onClick={startSeatAuto}
+              >
+                <div style={{ fontSize: 15, fontWeight: 800 }}>🎲 自動で決める（牌引き）</div>
+                <div style={{ fontSize: 11, opacity: 0.8, fontWeight: 400, marginTop: 4 }}>順番に牌を引いてランダムに席を決定</div>
+              </button>
+              <button
+                style={{ ...actionBtn(), padding: "16px 12px", marginBottom: 10 }}
+                onClick={startSeatManual}
+              >
+                <div style={{ fontSize: 15, fontWeight: 800 }}>✋ 自分で席を決める</div>
+                <div style={{ fontSize: 11, color: t.dm, fontWeight: 400, marginTop: 4 }}>各家にプレーヤーを手動で割り当て</div>
+              </button>
+              <button
+                style={{ ...actionBtn(), opacity: 0.7, fontSize: 12 }}
+                onClick={() => {
+                  // 席決めをスキップ（現在のplayer順を東南西北に）
+                  setSeatAssignments(["東","南","西","北"]);
+                  setSetupStep(4);
+                }}
+              >スキップして次へ（現在の並びで）</button>
+            </>
+          )}
+
+          {seatMethod === "auto" && (() => {
+            const allRevealed = seatRevealedAt.every(v => v !== null);
+            return (
+              <>
+                <div style={{ background: t.sf, borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                  {!allRevealed ? (
+                    <div style={{ fontSize: 14, fontWeight: 800, textAlign: "center", color: t.gd }}>
+                      <span style={{ color: t.tx }}>{players[currentPicker]}</span> さん、牌を選んでください
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 14, fontWeight: 800, textAlign: "center", color: t.gn }}>
+                      ✨ 全員の席が決まりました！
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+                  {seatTilesShuffled.map((wind, i) => {
+                    const pickerIdx = seatRevealedAt[i];
+                    const isRevealed = pickerIdx !== null;
+                    return (
+                      <button
+                        key={i}
+                        disabled={isRevealed || allRevealed}
+                        onClick={() => {
+                          if (isRevealed || allRevealed) return;
+                          // 現在の引き手を記録
+                          const newRevealed = [...seatRevealedAt];
+                          newRevealed[i] = currentPicker;
+                          setSeatRevealedAt(newRevealed);
+                          // プレーヤーごとの風を記録
+                          const newAssign = [...seatAssignments];
+                          newAssign[currentPicker] = wind;
+                          setSeatAssignments(newAssign);
+                          // 次の引き手へ（最後なら自動で残り1枚）
+                          if (currentPicker < 3) {
+                            const nextPicker = currentPicker + 1;
+                            // 残り1枚なら自動で割り当て
+                            const remaining = newRevealed.map((r, idx) => r === null ? idx : null).filter(x => x !== null);
+                            if (remaining.length === 1 && nextPicker === 3) {
+                              const lastIdx = remaining[0];
+                              const finalRevealed = [...newRevealed];
+                              finalRevealed[lastIdx] = nextPicker;
+                              setSeatRevealedAt(finalRevealed);
+                              const finalAssign = [...newAssign];
+                              finalAssign[nextPicker] = seatTilesShuffled[lastIdx];
+                              setSeatAssignments(finalAssign);
+                            } else {
+                              setCurrentPicker(nextPicker);
+                            }
+                          }
+                        }}
+                        style={{
+                          width: 64, height: 80,
+                          borderRadius: 8,
+                          border: `2px solid ${isRevealed ? t.gd : t.bd}`,
+                          background: isRevealed ? t.gdS : "linear-gradient(135deg, #374151, #1f2937)",
+                          cursor: isRevealed || allRevealed ? "default" : "pointer",
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                          fontWeight: 900, padding: 4,
+                        }}
+                      >
+                        {isRevealed ? (
+                          <>
+                            <div style={{ fontSize: 22, color: t.gd }}>{wind}</div>
+                            <div style={{ fontSize: 9, color: t.dm, marginTop: 4 }}>{players[pickerIdx]}</div>
+                          </>
+                        ) : (
+                          <div style={{ fontSize: 28, color: "#94a3b8" }}>?</div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 結果サマリ */}
+                {allRevealed && (
+                  <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>📋 席の割り当て</div>
+                    {["東","南","西","北"].map(w => {
+                      const playerIdx = seatAssignments.indexOf(w);
+                      return (
+                        <div key={w} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${t.bd}33`, fontSize: 13 }}>
+                          <span style={{ fontWeight: 800, color: w === "東" ? t.gd : t.tx, width: 30 }}>{w}家</span>
+                          <span>{playerIdx >= 0 ? players[playerIdx] : "—"}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <button
+                  style={{ ...actionBtn("p"), opacity: allRevealed ? 1 : 0.4 }}
+                  disabled={!allRevealed}
+                  onClick={() => {
+                    // playersをseatAssignmentsに従って並び替え
+                    const ordered = ["東","南","西","北"].map(w => {
+                      const idx = seatAssignments.indexOf(w);
+                      return idx >= 0 ? players[idx] : "";
+                    });
+                    setPlayers(ordered);
+                    setSetupStep(4);
+                  }}
+                >この席で確定</button>
+                <button style={actionBtn()} onClick={resetSeat}>やり直す</button>
+              </>
+            );
+          })()}
+
+          {seatMethod === "manual" && (() => {
+            const allAssigned = seatAssignments.filter(Boolean).length === 4 &&
+                                new Set(seatAssignments).size === 4;
+            return (
+              <>
+                <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 14 }}>
+                  各プレーヤーに席（風）を割り当ててください
+                </div>
+                {players.map((p, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{p}</span>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {["東","南","西","北"].map(w => {
+                        const isSel = seatAssignments[i] === w;
+                        const usedByOther = seatAssignments.some((s, idx) => idx !== i && s === w);
+                        return (
+                          <button
+                            key={w}
+                            disabled={usedByOther}
+                            onClick={() => {
+                              const newAssign = [...seatAssignments];
+                              newAssign[i] = isSel ? null : w;
+                              setSeatAssignments(newAssign);
+                            }}
+                            style={{
+                              width: 36, height: 36, borderRadius: 6,
+                              border: `2px solid ${isSel ? (w === "東" ? t.gd : t.ac) : t.bd}`,
+                              background: isSel ? (w === "東" ? t.gdS : t.acS) : "transparent",
+                              color: isSel ? (w === "東" ? t.gd : t.ac) : usedByOther ? t.dm : t.tx,
+                              fontWeight: 800, fontSize: 14,
+                              cursor: usedByOther ? "not-allowed" : "pointer",
+                              opacity: usedByOther ? 0.4 : 1,
+                            }}
+                          >{w}</button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                <button
+                  style={{ ...actionBtn("p"), opacity: allAssigned ? 1 : 0.4, marginTop: 10 }}
+                  disabled={!allAssigned}
+                  onClick={() => {
+                    const ordered = ["東","南","西","北"].map(w => {
+                      const idx = seatAssignments.indexOf(w);
+                      return idx >= 0 ? players[idx] : "";
+                    });
+                    setPlayers(ordered);
+                    setSetupStep(4);
+                  }}
+                >この席で確定</button>
+                <button style={actionBtn()} onClick={resetSeat}>方法を変える</button>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Step 4: ルール設定 */}
+      {setupStep === 4 && (
+        <div style={card}>
+          <Back onClick={() => setSetupStep(3)} />
+          <Dots total={5} cur={4} />
           <div style={question}>ルール設定</div>
 
           <div style={{ marginBottom: 8 }}>
@@ -2844,13 +3073,13 @@ function MahjongScorer() {
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <button style={actionBtn("p")} onClick={() => setSetupStep(4)}>確認へ</button>
+            <button style={actionBtn("p")} onClick={() => setSetupStep(5)}>確認へ</button>
           </div>
         </div>
       )}
 
-      {/* Step 4: 確認 */}
-      {setupStep === 4 && (
+      {/* Step 5: 確認 */}
+      {setupStep === 5 && (
         <div>
           <div style={card}>
             <div style={question}>対局設定の確認</div>
@@ -2896,7 +3125,7 @@ function MahjongScorer() {
           </div>
 
           <button style={actionBtn("p")} onClick={startGame}>対局開始！</button>
-          <button style={actionBtn()} onClick={() => setSetupStep(3)}>設定を修正する</button>
+          <button style={actionBtn()} onClick={() => setSetupStep(4)}>設定を修正する</button>
         </div>
       )}
     </div>
