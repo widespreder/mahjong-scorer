@@ -1368,6 +1368,7 @@ function MahjongScorer() {
   // ── Dictionary state ──
   const [dictCat, setDictCat] = useState("1翻");
   const [dictExpanded, setDictExpanded] = useState(null);
+  const [dictSortMode, setDictSortMode] = useState("category"); // "category" | "aiueo"
 
   // ══════════════════════════════════
   // ── QUIZ VIEW ──
@@ -2314,52 +2315,145 @@ function MahjongScorer() {
   // ══════════════════════════════════
   // ── DICTIONARY VIEW ──
   // ══════════════════════════════════
-  const renderDict = () => (
-    <div style={body}>
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>役一覧</div>
-      <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-        {YAKU_CATEGORIES.map(cat => (
-          <button key={cat} style={{
-            padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
-            border: `1px solid ${dictCat === cat ? t.ac : t.bd}`,
-            background: dictCat === cat ? t.acS : "transparent",
-            color: dictCat === cat ? t.ac : t.dm,
-          }} onClick={() => { setDictCat(cat); setDictExpanded(null); }}>{cat}</button>
-        ))}
-      </div>
-      {YAKU_DATA.filter(y => y.cat === dictCat).map((y, idx) => (
-        <div key={idx} style={{ ...card, padding: 0, marginBottom: 8, cursor: "pointer", border: `1px solid ${dictExpanded === y.name ? t.ac + "55" : t.bd}` }}>
-          <button onClick={() => setDictExpanded(dictExpanded === y.name ? null : y.name)}
-            style={{ width: "100%", padding: "12px 16px", background: "transparent", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", textAlign: "left" }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: t.tx }}>{y.name}</div>
-              <div style={{ fontSize: 12, color: t.dm, marginTop: 2 }}>
-                門前 {y.han >= 13 ? "役満" : `${y.han}翻`}
-                {y.naki !== null ? <span style={{ color: t.gn, marginLeft: 8 }}>鳴き {y.naki >= 13 ? "役満" : `${y.naki}翻`}</span>
-                  : <span style={{ color: t.rd, marginLeft: 8 }}>鳴き ✕</span>}
+  // 役名から読み仮名（カナ）を抽出
+  const isAllKana = (s) => /^[゠-ヿー぀-ゟ\s]+$/.test(s);
+  const getYakuKana = (name) => {
+    const m = name.match(/^(.+?)（(.+?)）$/);
+    if (!m) return name;
+    const [, outer, inner] = m;
+    if (isAllKana(inner)) return inner;
+    if (isAllKana(outer)) return outer;
+    return inner;
+  };
+  // 50音行の判定
+  const KANA_ROWS = [
+    { label: "ア", chars: "アイウエオ" },
+    { label: "カ", chars: "カキクケコガギグゲゴ" },
+    { label: "サ", chars: "サシスセソザジズゼゾ" },
+    { label: "タ", chars: "タチツテトダヂヅデド" },
+    { label: "ナ", chars: "ナニヌネノ" },
+    { label: "ハ", chars: "ハヒフヘホバビブベボパピプペポ" },
+    { label: "マ", chars: "マミムメモ" },
+    { label: "ヤ", chars: "ヤユヨ" },
+    { label: "ラ", chars: "ラリルレロ" },
+    { label: "ワ", chars: "ワヲン" },
+  ];
+  const getKanaRow = (kana) => {
+    const c = kana.charAt(0);
+    for (const r of KANA_ROWS) {
+      if (r.chars.includes(c)) return r.label;
+    }
+    return "他";
+  };
+
+  // 役カードレンダリングヘルパー
+  const renderYakuCard = (y, idx) => (
+    <div key={idx} style={{ ...card, padding: 0, marginBottom: 8, cursor: "pointer", border: `1px solid ${dictExpanded === y.name ? t.ac + "55" : t.bd}` }}>
+      <button onClick={() => setDictExpanded(dictExpanded === y.name ? null : y.name)}
+        style={{ width: "100%", padding: "12px 16px", background: "transparent", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", textAlign: "left" }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: t.tx }}>{y.name}</div>
+          <div style={{ fontSize: 12, color: t.dm, marginTop: 2 }}>
+            門前 {y.han >= 13 ? "役満" : `${y.han}翻`}
+            {y.naki !== null ? <span style={{ color: t.gn, marginLeft: 8 }}>鳴き {y.naki >= 13 ? "役満" : `${y.naki}翻`}</span>
+              : <span style={{ color: t.rd, marginLeft: 8 }}>鳴き ✕</span>}
+            {dictSortMode === "aiueo" && (
+              <span style={{ color: t.dm, marginLeft: 8 }}>／ {y.cat}</span>
+            )}
+          </div>
+        </div>
+        <span style={{ fontSize: 14, color: t.dm }}>{dictExpanded === y.name ? "▲" : "▼"}</span>
+      </button>
+      {dictExpanded === y.name && (
+        <div style={{ padding: "0 16px 14px", fontSize: 13, color: t.dm, lineHeight: 1.7, borderTop: `1px solid ${t.bd}33` }}>
+          <div style={{ paddingTop: 10 }}>{y.desc}</div>
+          {YAKU_EXAMPLES[y.name] && (
+            <div style={{ marginTop: 12, padding: 10, background: t.sf, borderRadius: 8, border: `1px solid ${t.bd}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.ac, marginBottom: 6 }}>📌 例</div>
+              {renderColoredTiles(YAKU_EXAMPLES[y.name].tiles)}
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 4 }}>
+                {YAKU_EXAMPLES[y.name].note}
               </div>
-            </div>
-            <span style={{ fontSize: 14, color: t.dm }}>{dictExpanded === y.name ? "▲" : "▼"}</span>
-          </button>
-          {dictExpanded === y.name && (
-            <div style={{ padding: "0 16px 14px", fontSize: 13, color: t.dm, lineHeight: 1.7, borderTop: `1px solid ${t.bd}33` }}>
-              <div style={{ paddingTop: 10 }}>{y.desc}</div>
-              {YAKU_EXAMPLES[y.name] && (
-                <div style={{ marginTop: 12, padding: 10, background: t.sf, borderRadius: 8, border: `1px solid ${t.bd}` }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: t.ac, marginBottom: 6 }}>📌 例</div>
-                  {renderColoredTiles(YAKU_EXAMPLES[y.name].tiles)}
-                  <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 4 }}>
-                    {YAKU_EXAMPLES[y.name].note}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
-      ))}
-      <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+      )}
     </div>
   );
+
+  const renderDict = () => {
+    // あいうえお順にソート
+    const sortedYaku = [...YAKU_DATA].sort((a, b) =>
+      getYakuKana(a.name).localeCompare(getYakuKana(b.name), 'ja')
+    );
+
+    return (
+      <div style={body}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>役一覧</div>
+        {/* 並び順切替 */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 12, background: t.sf, borderRadius: 8, padding: 3 }}>
+          <button
+            onClick={() => { setDictSortMode("category"); setDictExpanded(null); }}
+            style={{
+              flex: 1, padding: "8px 12px", borderRadius: 6, border: "none", cursor: "pointer",
+              background: dictSortMode === "category" ? t.ac : "transparent",
+              color: dictSortMode === "category" ? "#fff" : t.dm,
+              fontSize: 12, fontWeight: 700,
+            }}
+          >📋 翻数別</button>
+          <button
+            onClick={() => { setDictSortMode("aiueo"); setDictExpanded(null); }}
+            style={{
+              flex: 1, padding: "8px 12px", borderRadius: 6, border: "none", cursor: "pointer",
+              background: dictSortMode === "aiueo" ? t.ac : "transparent",
+              color: dictSortMode === "aiueo" ? "#fff" : t.dm,
+              fontSize: 12, fontWeight: 700,
+            }}
+          >🔤 あいうえお順</button>
+        </div>
+
+        {dictSortMode === "category" ? (
+          <>
+            <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              {YAKU_CATEGORIES.map(cat => (
+                <button key={cat} style={{
+                  padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+                  border: `1px solid ${dictCat === cat ? t.ac : t.bd}`,
+                  background: dictCat === cat ? t.acS : "transparent",
+                  color: dictCat === cat ? t.ac : t.dm,
+                }} onClick={() => { setDictCat(cat); setDictExpanded(null); }}>{cat}</button>
+              ))}
+            </div>
+            {YAKU_DATA.filter(y => y.cat === dictCat).map((y, idx) => renderYakuCard(y, idx))}
+          </>
+        ) : (
+          <>
+            {KANA_ROWS.map(row => {
+              const items = sortedYaku.filter(y => getKanaRow(getYakuKana(y.name)) === row.label);
+              if (items.length === 0) return null;
+              return (
+                <div key={row.label} style={{ marginBottom: 14 }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    margin: "16px -20px 8px", padding: "6px 20px",
+                    borderTop: `2px solid ${t.ac}`,
+                    background: `linear-gradient(90deg, ${t.acS}, transparent)`,
+                  }}>
+                    <span style={{ fontSize: 16, fontWeight: 900, color: t.ac, letterSpacing: "0.05em" }}>
+                      {row.label}行
+                    </span>
+                    <span style={{ fontSize: 11, color: t.dm }}>{items.length}役</span>
+                  </div>
+                  {items.map((y, idx) => renderYakuCard(y, `${row.label}-${idx}`))}
+                </div>
+              );
+            })}
+          </>
+        )}
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
   const renderHome = () => {
     const menuItem = (icon, label, sub, onClick, highlight) => (
       <button
