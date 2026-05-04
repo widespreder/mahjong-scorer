@@ -191,6 +191,14 @@ function MahjongScorer() {
   const [termCat, setTermCat] = useState("基本");
   const [infoTermIdx, setInfoTermIdx] = useState(null);
   const [glossarySortMode, setGlossarySortMode] = useState("category"); // "category" | "aiueo"
+  // 用語テスト state
+  const [termTestUnknown, setTermTestUnknown] = useState(() => loadLS("mahjong_term_unknown_v1", []));
+  const [termTestOrder, setTermTestOrder] = useState([]);
+  const [termTestIdx, setTermTestIdx] = useState(0);
+  const [termTestRevealed, setTermTestRevealed] = useState(false);
+  const [termTestStats, setTermTestStats] = useState({ knew: 0, didnt: 0, didntList: [] });
+  const [termTestFinished, setTermTestFinished] = useState(false);
+  useEffect(() => { saveLS("mahjong_term_unknown_v1", termTestUnknown); }, [termTestUnknown]);
   // ルール説明 state
   const [ruleHelpKey, setRuleHelpKey] = useState(null);
   const RULE_HELP = {
@@ -2404,6 +2412,162 @@ function MahjongScorer() {
   };
 
   // ══════════════════════════════════
+  // ── TERM TEST VIEW ──
+  // ══════════════════════════════════
+  const renderTermTest = () => {
+    if (termTestOrder.length === 0) {
+      return (
+        <div style={body}>
+          <div style={{ ...card, textAlign: "center", padding: 24 }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>📝</div>
+            <div>用語テストを準備中...</div>
+          </div>
+          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+
+    if (termTestFinished) {
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: 42, marginBottom: 8 }}>🎯</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>テスト終了</h2>
+          </div>
+          <div style={{ ...card, padding: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-around", marginBottom: 14 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 12, color: t.dm }}>わかる</div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: t.gn }}>{termTestStats.knew}</div>
+                <div style={{ fontSize: 10, color: t.dm }}>/ {termTestOrder.length} 問</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 12, color: t.dm }}>わからない</div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: t.rd }}>{termTestStats.didnt}</div>
+                <div style={{ fontSize: 10, color: t.dm }}>/ {termTestOrder.length} 問</div>
+              </div>
+            </div>
+            {termTestStats.didntList.length > 0 && (
+              <div style={{ background: t.sf, borderRadius: 10, padding: 12, fontSize: 12 }}>
+                <div style={{ fontWeight: 700, color: t.rd, marginBottom: 6 }}>📌 苦手語（次回も出題）</div>
+                <div style={{ color: t.tx, lineHeight: 1.7 }}>
+                  {termTestStats.didntList.map(i => TERMS_DATA[i]?.kanji).filter(Boolean).join("、")}
+                </div>
+              </div>
+            )}
+            {termTestUnknown.length > 0 && (
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 10 }}>
+                合計 {termTestUnknown.length} 語が苦手リストに登録されています
+              </div>
+            )}
+          </div>
+          <button style={actionBtn("p")} onClick={() => {
+            const all = [...Array(TERMS_DATA.length).keys()];
+            const unknowns = termTestUnknown.filter(i => i < TERMS_DATA.length);
+            const shuffledUnknown = [...unknowns].sort(() => Math.random() - 0.5);
+            const others = all.filter(i => !unknowns.includes(i)).sort(() => Math.random() - 0.5);
+            const order = [...shuffledUnknown, ...others].slice(0, 10);
+            setTermTestOrder(order);
+            setTermTestIdx(0);
+            setTermTestRevealed(false);
+            setTermTestStats({ knew: 0, didnt: 0, didntList: [] });
+            setTermTestFinished(false);
+          }}>もう一度（次のセット）</button>
+          {termTestUnknown.length > 0 && (
+            <button
+              style={actionBtn()}
+              onClick={() => {
+                if (window.confirm("苦手リスト全消去でよろしいですか？")) setTermTestUnknown([]);
+              }}
+            >🗑 苦手リストをクリア</button>
+          )}
+          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+
+    const realIdx = termTestOrder[termTestIdx];
+    const term = TERMS_DATA[realIdx];
+    if (!term) return null;
+    const isRecurringUnknown = termTestUnknown.includes(realIdx) && !termTestRevealed;
+
+    return (
+      <div style={body}>
+        {/* Progress */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <span style={{ fontSize: 13, color: t.dm }}>第 {termTestIdx + 1} / {termTestOrder.length} 問</span>
+          <span style={{ fontSize: 11, color: t.gn }}>○{termTestStats.knew}　×{termTestStats.didnt}</span>
+        </div>
+        <div style={{ height: 4, background: t.bd, borderRadius: 2, marginBottom: 16 }}>
+          <div style={{ height: 4, background: t.ac, borderRadius: 2, width: `${((termTestIdx) / termTestOrder.length) * 100}%`, transition: "width 0.3s" }} />
+        </div>
+
+        <div style={{ ...card, padding: 22, textAlign: "center" }}>
+          {isRecurringUnknown && (
+            <div style={{ fontSize: 10, color: t.gd, marginBottom: 6 }}>📌 苦手語（前回 わからない）</div>
+          )}
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>この用語の意味は？</div>
+          <div style={{ fontSize: 32, fontWeight: 900, color: t.tx, lineHeight: 1.2, marginBottom: 8 }}>
+            {term.kanji}
+          </div>
+
+          {!termTestRevealed ? (
+            <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+              <button
+                style={{ flex: 1, padding: "16px 0", border: `2px solid ${t.gn}`, borderRadius: 12, background: t.gnS, color: t.gn, fontSize: 16, fontWeight: 800, cursor: "pointer" }}
+                onClick={() => {
+                  // Mark known: remove from unknown set
+                  setTermTestUnknown(prev => prev.filter(i => i !== realIdx));
+                  setTermTestStats(s => ({ ...s, knew: s.knew + 1 }));
+                  // Advance
+                  if (termTestIdx + 1 >= termTestOrder.length) {
+                    setTermTestFinished(true);
+                  } else {
+                    setTermTestIdx(termTestIdx + 1);
+                    setTermTestRevealed(false);
+                  }
+                }}
+              >⭕ わかる</button>
+              <button
+                style={{ flex: 1, padding: "16px 0", border: `2px solid ${t.rd}`, borderRadius: 12, background: t.rdS, color: t.rd, fontSize: 16, fontWeight: 800, cursor: "pointer" }}
+                onClick={() => {
+                  // Mark unknown: add to set
+                  setTermTestUnknown(prev => prev.includes(realIdx) ? prev : [...prev, realIdx]);
+                  setTermTestStats(s => ({ ...s, didnt: s.didnt + 1, didntList: [...s.didntList, realIdx] }));
+                  setTermTestRevealed(true);
+                }}
+              >❌ わからない</button>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: 13, color: t.ac, fontWeight: 700, marginTop: 8 }}>{term.reading}</div>
+              <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, background: t.sf, color: t.dm, fontSize: 11, fontWeight: 700, marginTop: 8 }}>
+                カテゴリ: {term.cat}
+              </div>
+              <div style={{ background: t.sf, borderRadius: 10, padding: 14, fontSize: 14, lineHeight: 1.8, color: t.tx, marginTop: 12, textAlign: "left" }}>
+                {term.desc}
+              </div>
+              <button
+                style={{ ...actionBtn("p"), marginTop: 14 }}
+                onClick={() => {
+                  if (termTestIdx + 1 >= termTestOrder.length) {
+                    setTermTestFinished(true);
+                  } else {
+                    setTermTestIdx(termTestIdx + 1);
+                    setTermTestRevealed(false);
+                  }
+                }}
+              >{termTestIdx + 1 >= termTestOrder.length ? "結果を見る" : "次の問題"}</button>
+            </>
+          )}
+        </div>
+
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る（中断）</button>
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
   // ── DICTIONARY VIEW ──
   // ══════════════════════════════════
   const getKanaRow = (kana) => {
@@ -2612,6 +2776,21 @@ function MahjongScorer() {
         {menuItem("📚", "麻雀用語集", "漢字・読み・意味（長押しで詳細）", () => {
           setView("glossary");
           setTermCat("基本");
+        })}
+
+        {menuItem("📝", "用語テスト", `わかる／わからないで覚える（${termTestUnknown.length}語苦手中）`, () => {
+          // 出題順を作成: 苦手語を優先、残りはランダム
+          const all = [...Array(TERMS_DATA.length).keys()];
+          const unknowns = termTestUnknown.filter(i => i < TERMS_DATA.length);
+          const shuffledUnknown = [...unknowns].sort(() => Math.random() - 0.5);
+          const others = all.filter(i => !unknowns.includes(i)).sort(() => Math.random() - 0.5);
+          const order = [...shuffledUnknown, ...others].slice(0, 10);
+          setTermTestOrder(order);
+          setTermTestIdx(0);
+          setTermTestRevealed(false);
+          setTermTestStats({ knew: 0, didnt: 0, didntList: [] });
+          setTermTestFinished(false);
+          setView("termTest");
         })}
 
         {menuItem("🎮", "麻雀の始め方", "席・親決め・牌山・配牌・ドラの全手順", () => {
@@ -4171,6 +4350,7 @@ function MahjongScorer() {
         {view === "glossary" && renderGlossary()}
         {view === "howToStart" && renderHowToStart()}
         {view === "naniKiru" && renderNaniKiru()}
+        {view === "termTest" && renderTermTest()}
         {view === "dict" && renderDict()}
         {showFuHelp && <FuHelpModal />}
 
