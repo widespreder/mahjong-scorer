@@ -1584,6 +1584,260 @@ function MahjongScorer() {
   };
 
   // ══════════════════════════════════
+  // ── HOW TO START VIEW ──
+  // ══════════════════════════════════
+  const renderHowToStart = () => {
+    // 共通スタイル
+    const sectionCard = { ...card, padding: 16 };
+    const sectionTitle = (n, title, color) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, paddingBottom: 8, borderBottom: `2px solid ${color}` }}>
+        <span style={{
+          width: 30, height: 30, borderRadius: "50%", background: color, color: "#fff",
+          display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 14, flexShrink: 0,
+        }}>{n}</span>
+        <span style={{ fontSize: 16, fontWeight: 800, color }}>{title}</span>
+      </div>
+    );
+    const stepText = { fontSize: 13, lineHeight: 1.8, color: t.tx, marginBottom: 8 };
+    const note = { fontSize: 11, color: t.dm, lineHeight: 1.6, padding: 8, background: t.sf, borderRadius: 6, borderLeft: `3px solid ${t.ac}55` };
+    const arrow = { fontSize: 20, color: t.dm, textAlign: "center", margin: "4px 0" };
+
+    // 席配置図 — 4風の正方形配置
+    const seatDiagram = (
+      <div style={{ background: t.sf, borderRadius: 10, padding: 16, marginBottom: 10 }}>
+        <div style={{ position: "relative", width: 240, height: 240, margin: "0 auto" }}>
+          {/* テーブル中央 */}
+          <div style={{ position: "absolute", inset: 60, background: t.bg, borderRadius: 12, border: `2px solid ${t.bd}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: t.dm, lineHeight: 1.4, textAlign: "center" }}>
+            卓<br/>(中央)
+          </div>
+          {/* 東 (右) */}
+          <div style={{ position: "absolute", top: 95, right: 0, width: 50, height: 50, background: t.gdS, border: `2px solid ${t.gd}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+            <div style={{ fontSize: 18, color: t.gd }}>東</div>
+            <div style={{ fontSize: 9, color: t.dm }}>親</div>
+          </div>
+          {/* 南 (下) */}
+          <div style={{ position: "absolute", bottom: 0, left: 95, width: 50, height: 50, background: t.acS, border: `2px solid ${t.ac}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+            <div style={{ fontSize: 18, color: t.ac }}>南</div>
+            <div style={{ fontSize: 9, color: t.dm }}>右隣</div>
+          </div>
+          {/* 西 (左) */}
+          <div style={{ position: "absolute", top: 95, left: 0, width: 50, height: 50, background: t.acS, border: `2px solid ${t.ac}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+            <div style={{ fontSize: 18, color: t.ac }}>西</div>
+            <div style={{ fontSize: 9, color: t.dm }}>対面</div>
+          </div>
+          {/* 北 (上) */}
+          <div style={{ position: "absolute", top: 0, left: 95, width: 50, height: 50, background: t.acS, border: `2px solid ${t.ac}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+            <div style={{ fontSize: 18, color: t.ac }}>北</div>
+            <div style={{ fontSize: 9, color: t.dm }}>左隣</div>
+          </div>
+          {/* 反時計回り矢印 */}
+          <svg style={{ position: "absolute", inset: 0, pointerEvents: "none" }} viewBox="0 0 240 240">
+            <defs>
+              <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <polygon points="0 0, 6 3, 0 6" fill={t.gn} />
+              </marker>
+            </defs>
+            <path d="M 200 90 Q 160 60, 145 50" stroke={t.gn} strokeWidth="2" fill="none" markerEnd="url(#arr)" />
+            <path d="M 95 50 Q 60 90, 50 145" stroke={t.gn} strokeWidth="2" fill="none" markerEnd="url(#arr)" />
+            <path d="M 50 195 Q 90 230, 145 200" stroke={t.gn} strokeWidth="2" fill="none" markerEnd="url(#arr)" />
+          </svg>
+        </div>
+        <div style={{ fontSize: 11, color: t.gn, textAlign: "center", marginTop: 6, fontWeight: 700 }}>
+          ⤴ 反時計回りに進行（東→南→西→北→東…）
+        </div>
+      </div>
+    );
+
+    // 牌山図 — 17枚×2段の表現
+    const wallDiagram = (
+      <div style={{ background: t.sf, borderRadius: 10, padding: 14, marginBottom: 10 }}>
+        <div style={{ fontSize: 11, color: t.dm, marginBottom: 8, textAlign: "center" }}>各家の前に <strong style={{ color: t.tx }}>17枚×2段</strong> の山を作る（合計 136枚）</div>
+        <div style={{ background: t.bg, borderRadius: 6, padding: 10, marginBottom: 6 }}>
+          <div style={{ fontSize: 10, color: t.dm, marginBottom: 4 }}>上段 ↓</div>
+          <div style={{ display: "flex", gap: 1, justifyContent: "center", flexWrap: "wrap" }}>
+            {[...Array(17)].map((_, i) => (
+              <div key={i} style={{ width: 14, height: 18, background: "#374151", border: "1px solid #1f2937", borderRadius: 2 }} />
+            ))}
+          </div>
+          <div style={{ fontSize: 10, color: t.dm, marginTop: 6, marginBottom: 4 }}>下段 ↓</div>
+          <div style={{ display: "flex", gap: 1, justifyContent: "center", flexWrap: "wrap" }}>
+            {[...Array(17)].map((_, i) => (
+              <div key={i} style={{ width: 14, height: 18, background: "#374151", border: "1px solid #1f2937", borderRadius: 2 }} />
+            ))}
+          </div>
+        </div>
+        <div style={{ fontSize: 10, color: t.dm, textAlign: "center" }}>
+          17×2=34枚 × 4家 = 136枚（全牌）
+        </div>
+      </div>
+    );
+
+    // 配牌の取り方図
+    const dealDiagram = (
+      <div style={{ background: t.sf, borderRadius: 10, padding: 14, marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", flexWrap: "wrap", gap: 10 }}>
+          {[
+            { label: "親", count: "4枚", times: "× 3", total: "= 12" },
+            { label: "南家", count: "4枚", times: "× 3", total: "= 12" },
+            { label: "西家", count: "4枚", times: "× 3", total: "= 12" },
+            { label: "北家", count: "4枚", times: "× 3", total: "= 12" },
+          ].map((p, i) => (
+            <div key={i} style={{ background: t.bg, borderRadius: 8, padding: 10, minWidth: 60, textAlign: "center", border: `1px solid ${t.bd}` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? t.gd : t.tx, marginBottom: 2 }}>{p.label}</div>
+              <div style={{ fontSize: 10, color: t.dm }}>{p.count}</div>
+              <div style={{ fontSize: 10, color: t.dm }}>{p.times}</div>
+              <div style={{ fontSize: 11, color: t.ac, fontWeight: 700, marginTop: 2 }}>{p.total}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 8 }}>
+          各家4枚ずつ取るのを<strong style={{ color: t.tx }}>3周</strong>。最後に親だけ1枚多く取って <strong style={{ color: t.gd }}>親=14枚 / 子=13枚</strong>
+        </div>
+      </div>
+    );
+
+    // ドラ表示牌 → ドラの対応図
+    const doraDiagram = (
+      <div style={{ background: t.sf, borderRadius: 10, padding: 14, marginBottom: 10 }}>
+        <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>
+          王牌の左から3枚目をめくる →「次の牌」がドラ
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: t.dm, marginBottom: 4 }}>表示牌</div>
+            <Tile suit="m" num={3} />
+          </div>
+          <div style={{ fontSize: 18, color: t.gd }}>→</div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: t.gd, marginBottom: 4, fontWeight: 700 }}>ドラ</div>
+            <Tile suit="m" num={4} />
+          </div>
+        </div>
+        <div style={{ marginTop: 12, fontSize: 11, color: t.dm, lineHeight: 1.7 }}>
+          <div><strong style={{ color: t.tx }}>数牌</strong>: 1→2→3→…→9→1（一巡）</div>
+          <div><strong style={{ color: t.tx }}>風牌</strong>: 東→南→西→北→東（一巡）</div>
+          <div><strong style={{ color: t.tx }}>三元牌</strong>: 白→發→中→白（一巡）</div>
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={body}>
+        <div style={{ textAlign: "center", padding: "16px 0 12px" }}>
+          <div style={{ fontSize: 38, marginBottom: 6 }}>🎮</div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>麻雀の始め方</h2>
+          <p style={{ fontSize: 12, color: t.dm, margin: 0 }}>対局スタートまでの流れを図解で解説</p>
+        </div>
+
+        {/* 1. 席決め */}
+        <div style={sectionCard}>
+          {sectionTitle("1", "席を決める", t.gd)}
+          <div style={stepText}>
+            4人で正方形の卓を囲み、<strong>東・南・西・北</strong> の4つの席に座ります。
+          </div>
+          {seatDiagram}
+          <div style={note}>
+            🪑 <strong>席の決め方</strong>: 「掴み取り」が一般的。東南西北の4枚を裏向きで混ぜ、各自1枚ずつ取り、引いた風の席に座ります。
+          </div>
+        </div>
+
+        {/* 2. 起家決め */}
+        <div style={sectionCard}>
+          {sectionTitle("2", "起家（親）を決める", "#f97316")}
+          <div style={stepText}>
+            1局目の親（<strong>起家＝チーチャ</strong>）をサイコロで決めます。
+          </div>
+          <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>🎲 サイコロの振り方</div>
+            <ol style={{ fontSize: 12, color: t.dm, paddingLeft: 18, lineHeight: 1.8, margin: 0 }}>
+              <li>仮親が <strong style={{ color: t.tx }}>サイコロ2個</strong> を振る</li>
+              <li>出た目の数だけ、仮親から反時計回りに数える（仮親=1、右隣=2、対面=3...）</li>
+              <li>当たった人が <strong style={{ color: "#f97316" }}>本当の起家（東家）</strong> になる</li>
+            </ol>
+          </div>
+          <div style={note}>
+            🎯 例: サイコロの合計が <strong>5</strong> なら、仮親から反時計回りに5番目（仮親=1, 右=2, 対面=3, 左=4, 仮親=5）= <strong>仮親本人</strong> が起家になる。
+          </div>
+        </div>
+
+        {/* 3. 牌の積み方 */}
+        <div style={sectionCard}>
+          {sectionTitle("3", "牌山を積む", t.ac)}
+          <div style={stepText}>
+            各家の前に <strong>17枚×2段</strong> の山を積みます。全員で同時に作業します。
+          </div>
+          {wallDiagram}
+          <div style={note}>
+            📚 牌は裏向き（白い面が上）に積みます。山が4方向に揃うと、卓中央に正方形の壁ができます。
+          </div>
+        </div>
+
+        {/* 4. 配牌の前のサイコロ */}
+        <div style={sectionCard}>
+          {sectionTitle("4", "配牌のスタート位置", "#a855f7")}
+          <div style={stepText}>
+            親がもう一度サイコロを2個振り、<strong>どの山のどこから配牌を取るか</strong> を決めます。
+          </div>
+          <ol style={{ fontSize: 12, color: t.dm, paddingLeft: 18, lineHeight: 1.8, margin: "6px 0 10px" }}>
+            <li>サイコロの目の合計を出す</li>
+            <li>親から反時計回りに数えて山を選ぶ（親=1, 右=2, 対面=3, 左=4, 親=5...）</li>
+            <li>選ばれた家の山の<strong style={{ color: "#a855f7" }}>右端から、サイコロの目の数だけ</strong>左へ進んだ場所が「開ける場所」</li>
+          </ol>
+          <div style={note}>
+            💡 例: サイコロの合計が <strong>7</strong> → 親=1, 南=2, 西=3, 北=4, 親=5, 南=6, 西=7 → 西家の山の右端から7枚分左の位置が開ける場所。
+          </div>
+        </div>
+
+        {/* 5. 配牌 */}
+        <div style={sectionCard}>
+          {sectionTitle("5", "配牌（ハイパイ）を取る", "#06b6d4")}
+          <div style={stepText}>
+            親から順に、<strong>4枚ずつ3周</strong>取った後、最後に親だけ1枚追加で取ります。
+          </div>
+          {dealDiagram}
+          <div style={note}>
+            🃏 親は最初に取った14枚から、最初の捨て牌を出して13枚に。子は13枚のままスタート。各家の前に並べて手牌として整理します。
+          </div>
+        </div>
+
+        {/* 6. ドラ表示 */}
+        <div style={sectionCard}>
+          {sectionTitle("6", "ドラを決める", t.rd)}
+          <div style={stepText}>
+            王牌（残った14枚）の<strong>左から3枚目</strong>をめくり、その牌の「次の牌」がドラになります。
+          </div>
+          {doraDiagram}
+          <div style={note}>
+            🌟 ドラは1枚につき<strong>+1翻</strong>のボーナス。ただし、ドラだけでは和了できません（最低1役が必要）。
+          </div>
+        </div>
+
+        {/* 7. ゲーム開始 */}
+        <div style={sectionCard}>
+          {sectionTitle("7", "ゲーム開始！", t.gn)}
+          <div style={stepText}>
+            親から最初のツモをして、捨て牌をします。以降、<strong style={{ color: t.gn }}>反時計回り</strong>に1枚ずつツモ＆捨てを繰り返します。
+          </div>
+          <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>🔄 1巡の流れ</div>
+            <ol style={{ fontSize: 12, color: t.dm, paddingLeft: 18, lineHeight: 1.8, margin: 0 }}>
+              <li><strong style={{ color: t.gn }}>ツモ</strong>: 山から1枚引く（手牌13→14枚）</li>
+              <li>必要に応じて <strong>ポン・チー・カン・ロン</strong> を宣言</li>
+              <li>不要な牌を捨てる（手牌14→13枚）</li>
+              <li>次の家へ（反時計回り）</li>
+            </ol>
+          </div>
+          <div style={note}>
+            🏁 誰かが和了する、または山が無くなって流局するまで続きます。和了形は <strong>4面子+1雀頭</strong>（または七対子・国士無双の特殊形）。
+          </div>
+        </div>
+
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
+
+  // ══════════════════════════════════
   // ── GLOSSARY VIEW ──
   // ══════════════════════════════════
   const renderGlossary = () => {
@@ -1802,6 +2056,10 @@ function MahjongScorer() {
         {menuItem("📚", "麻雀用語集", "漢字・読み・意味（長押しで詳細）", () => {
           setView("glossary");
           setTermCat("基本");
+        })}
+
+        {menuItem("🎮", "麻雀の始め方", "席・親決め・牌山・配牌・ドラの全手順", () => {
+          setView("howToStart");
         })}
       </div>
     );
@@ -3126,6 +3384,7 @@ function MahjongScorer() {
         {view === "quiz" && renderQuiz()}
         {view === "fuQuiz" && renderFuQuiz()}
         {view === "glossary" && renderGlossary()}
+        {view === "howToStart" && renderHowToStart()}
         {view === "dict" && renderDict()}
         {showFuHelp && <FuHelpModal />}
 
