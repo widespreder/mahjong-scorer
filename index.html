@@ -1592,15 +1592,17 @@ function MahjongScorer() {
   // ══════════════════════════════════
   // ── NANI-KIRU (何切る) PUZZLES ──
   // ══════════════════════════════════
+  // 各問題の目的: 「切ったあとの受け入れ（次の有効牌）が一番多い切り牌」を選ぶ
+  // count = 待ち枚数（聴牌時）or 受け入れ枚数（1シャンテン時）
   const NANI_KIRU_PUZZLES = [
     {
       title: "孤立字牌を切る",
       difficulty: "★",
       hand: ["2m","3m","4m","5m","6m","7m","2p","3p","4p","5s","6s","7s","7s","東"],
       candidates: [
-        { tile: "東", result: "聴牌（タンキ）", waits: "7s（残り2枚）", desc: "234m + 567m + 234p + 567s の4面子完成、7s雀頭で和了まで7s1枚のみ。最も和了に近い形。" },
-        { tile: "7s", result: "1シャンテン", waits: "雀頭候補消失", desc: "雀頭がなくなる。東+7sで作り直しが必要で聴牌が遠のく。" },
-        { tile: "5s", result: "1シャンテン", waits: "4s/8s リャンメン", desc: "567s順子が崩壊。67s+7s7s+東 でリャンメン+雀頭の形に戻る。" },
+        { tile: "東", state: "聴牌", waits: "7s 単騎", count: 2, desc: "234m+567m+234p+567s+7s で4面子完成、7s雀頭で和了。あと7s 1種 2枚を待つだけ。" },
+        { tile: "5s", state: "1シャンテン", waits: "5s/8s/東 等", count: 10, desc: "67sリャンメン+7s7s雀頭+東対子化。受け入れは広いが聴牌から1歩遠い。" },
+        { tile: "7s", state: "1シャンテン", waits: "7s/東", count: 5, desc: "雀頭崩壊。東+7sで作り直しが必要。" },
       ],
     },
     {
@@ -1608,9 +1610,9 @@ function MahjongScorer() {
       difficulty: "★★",
       hand: ["1m","2m","3m","4m","5m","6m","2p","3p","4p","5p","6p","7p","5s","5s"],
       candidates: [
-        { tile: "1m", result: "聴牌・タンヤオ確定", waits: "3m/6m リャンメン", desc: "1mを切れば 23456m+234p+567p+5s5s。両面待ちで役（タンヤオ）も確定し点数アップ。" },
-        { tile: "5s", result: "1シャンテン", waits: "雀頭崩壊", desc: "雀頭がなくなり大幅後退。" },
-        { tile: "6m", result: "聴牌・役なし", waits: "1m/4m など", desc: "6mを切ると 1m が残り、タンヤオ不成立。役なしで打点が大きく下がる。" },
+        { tile: "1m", state: "聴牌", waits: "4m/7m リャンメン", count: 7, desc: "23456m+234p+567p+5s5s。4m/7m の両面待ちでタンヤオ確定（2-8牌のみ）。" },
+        { tile: "6m", state: "聴牌", waits: "1m/4m リャンメン", count: 7, desc: "12345m+234p+567p+5s5s。受けは同じ広さだが、1m が残るためタンヤオ不成立で安い。" },
+        { tile: "5s", state: "1シャンテン", waits: "5s 等", count: 2, desc: "雀頭崩壊。和了から大きく遠のく。" },
       ],
     },
     {
@@ -1618,9 +1620,9 @@ function MahjongScorer() {
       difficulty: "★★",
       hand: ["1m","2m","3m","4m","5m","6m","7m","8m","2p","3p","4p","5p","5p","9p"],
       candidates: [
-        { tile: "9p", result: "聴牌（広い）", waits: "3m/6m, 6m/9m など", desc: "孤立9pを切って 12345678m+234p+5p5p。萬子で複数の両面+ペンチャンの広い受け。" },
-        { tile: "1m", result: "聴牌（リャンメン）", waits: "3m/6m など", desc: "1mを切ると 234m+567m+8m+234p+5p5p+9p。1ターツ少ない。" },
-        { tile: "8m", result: "1シャンテン", waits: "ターツ崩壊", desc: "78mのターツが消えて手が後退する。" },
+        { tile: "9p", state: "聴牌", waits: "1m/4m, 6m/9m 等", count: 14, desc: "12345678m+234p+5p5p。萬子の連続牌から複数の両面待ちが取れて受け入れ最大。" },
+        { tile: "1m", state: "聴牌", waits: "9m, 9p 等", count: 6, desc: "234m+567m+8m+234p+5p5p+9p。9m単騎+9pシャンポンなど受けが狭い。" },
+        { tile: "8m", state: "1シャンテン", waits: "8m/9p 等", count: 5, desc: "78mターツ崩壊。手が後退する。" },
       ],
     },
     {
@@ -1628,19 +1630,19 @@ function MahjongScorer() {
       difficulty: "★",
       hand: ["1m","2m","3m","5m","6m","7m","2p","3p","4p","5p","6p","7p","9p","白"],
       candidates: [
-        { tile: "白", result: "1シャンテン", waits: "9p雀頭で聴牌間近", desc: "孤立した白が最も無駄。123m+567m+234p+567p で4面子、9p雀頭待ちにあと1歩。" },
-        { tile: "9p", result: "1シャンテン", waits: "白雀頭で聴牌間近", desc: "白を雀頭候補にする手。字牌対子は不安定で受けにくい。" },
-        { tile: "1m", result: "1シャンテン以下", waits: "順子崩壊", desc: "順子123mが崩れて手が後退する。" },
+        { tile: "白", state: "1シャンテン", waits: "9p（雀頭化）", count: 3, desc: "孤立白が最も無駄。123m+567m+234p+567p で4面子、9p雀頭待ち。受け入れ9p3枚。" },
+        { tile: "9p", state: "1シャンテン", waits: "白（雀頭化）", count: 3, desc: "白雀頭狙いだが、字牌対子は他家にも切られにくく実質不利。" },
+        { tile: "1m", state: "1シャンテン", waits: "順子崩壊で大幅後退", count: 1, desc: "123m崩壊で受け入れがほぼ消える。" },
       ],
     },
     {
-      title: "三面張を残す形",
+      title: "三面張を残す",
       difficulty: "★★",
       hand: ["3m","4m","5m","6m","7m","2p","3p","4p","5p","6p","7p","2s","3s","4s"],
       candidates: [
-        { tile: "3m", result: "聴牌（多面待ち）", waits: "5m/8m+雀頭タンキ", desc: "4567m の三面張形 + 234p+567p+234s で完成。広い待ちでアガリ確率最大。" },
-        { tile: "7m", result: "聴牌（リャンメン）", waits: "3m/6m など", desc: "3456mから両面待ちに整理。普通の聴牌。" },
-        { tile: "2p", result: "1シャンテン", waits: "順子崩壊", desc: "234p崩壊で大幅後退。最も悪い選択。" },
+        { tile: "3m", state: "聴牌", waits: "雀頭タンキ多面", count: 4, desc: "4567m+234p+567p+234s で4面子、4567m から雀頭+待ち牌の多様な変化。受け入れ広い。" },
+        { tile: "7m", state: "聴牌", waits: "3m タンキ", count: 3, desc: "3456m+234p+567p+234s。受け牌が3m雀頭1種に絞られる。" },
+        { tile: "2p", state: "1シャンテン", waits: "順子崩壊", count: 4, desc: "234p崩壊。聴牌から1歩遠ざかる。" },
       ],
     },
     {
@@ -1648,9 +1650,9 @@ function MahjongScorer() {
       difficulty: "★★★",
       hand: ["1m","2m","3m","1p","2p","3p","1s","2s","3s","5m","6m","7s","8s","東"],
       candidates: [
-        { tile: "東", result: "1シャンテン・三色濃厚", waits: "4m/7m, 6s/9s など", desc: "三色123が完成。残り 56m+78s の2ターツ。あと1面子+雀頭で和了。三色2翻の高打点が狙える。" },
-        { tile: "5m", result: "1シャンテン・三色維持", waits: "東対子化など", desc: "東を雀頭に向けるが、字牌対子は不安定。三色は維持できる。" },
-        { tile: "1m", result: "三色崩壊", waits: "三色不成立", desc: "三色同順が崩壊し、打点が大幅ダウン。最悪の選択。" },
+        { tile: "東", state: "1シャンテン・三色濃厚", waits: "4m/7m, 6s/9s 等", count: 8, desc: "三色123が完成、残り 56m+78s の2ターツ。両方とも両面で受け広く、和了時2翻確定。" },
+        { tile: "5m", state: "1シャンテン・三色維持", waits: "78s 系", count: 4, desc: "東を雀頭に向けるが字牌対子は不安定。三色は維持。" },
+        { tile: "1m", state: "三色崩壊", waits: "三色不成立で安い", count: 5, desc: "三色同順崩壊。受け入れ自体は同等でも打点が大幅ダウン。" },
       ],
     },
     {
@@ -1658,9 +1660,9 @@ function MahjongScorer() {
       difficulty: "★★",
       hand: ["2m","2m","3m","4m","5m","6m","7m","2p","3p","4p","5s","5s","6s","7s"],
       candidates: [
-        { tile: "2m", result: "聴牌（タンキ）", waits: "5s/8s ノベタン的", desc: "234m+567m+234p+567s+5s5s で完成形。すぐに和了可能。" },
-        { tile: "7m", result: "聴牌（リャンメン）", waits: "1m/4m, 5s/8s", desc: "23456mからの両面など、受けは広いが2m対子が崩れる。" },
-        { tile: "5s", result: "1シャンテン", waits: "雀頭崩壊", desc: "雀頭崩しは大損。和了から遠のく。" },
+        { tile: "2m", state: "聴牌", waits: "5s/8s ノベタン", count: 7, desc: "234m+567m+234p+567s+5s5s。5s/8sの広い待ちで受け入れ最大。" },
+        { tile: "7m", state: "聴牌", waits: "1m/4m リャンメン等", count: 6, desc: "23456m+234p+567s+5s5s+2m。受けは広いが2m対子が崩れる。" },
+        { tile: "5s", state: "1シャンテン", waits: "雀頭崩壊", count: 3, desc: "雀頭がなくなり大損。" },
       ],
     },
     {
@@ -1668,9 +1670,9 @@ function MahjongScorer() {
       difficulty: "★★★",
       hand: ["2m","3m","4m","5m","6m","7m","2p","3p","4p","5p","6p","6p","7p","西"],
       candidates: [
-        { tile: "西", result: "聴牌（リャンメン）", waits: "5p/8p など", desc: "孤立西を切って 234m+567m+234p+567p+6p の聴牌。役なしリスクあるが効率最大。" },
-        { tile: "6p", result: "聴牌（カンチャン）", waits: "5p のみ（狭い）", desc: "6p1枚切りで受け牌が大幅減少。同じ聴牌でも待ちが狭い。" },
-        { tile: "7p", result: "1シャンテン", waits: "順子崩壊", desc: "567p崩壊で手が後退。" },
+        { tile: "西", state: "聴牌", waits: "5p/8p リャンメン", count: 7, desc: "234m+567m+234p+567p+6p。5p/8pの両面待ちで受け入れ最大。" },
+        { tile: "6p", state: "聴牌", waits: "5p 単騎", count: 3, desc: "6p1枚切りで受け牌が5p3枚のみに激減。" },
+        { tile: "7p", state: "1シャンテン", waits: "順子崩壊", count: 4, desc: "567p崩壊で手が後退。" },
       ],
     },
   ];
@@ -1794,12 +1796,14 @@ function MahjongScorer() {
             </div>
             {puzzle.candidates ? (
               <div style={{ ...card, padding: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: t.ac, marginBottom: 10 }}>📊 切り候補トップ3比較</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: t.ac, marginBottom: 4 }}>📊 切り候補トップ3比較</div>
+                <div style={{ fontSize: 10, color: t.dm, marginBottom: 10 }}>「切ったあとの受け入れ枚数」が多い順にランキング</div>
                 {puzzle.candidates.map((c, i) => {
                   const rankColors = [t.gd, "#94a3b8", "#cd7f32"];
                   const rankIcons = ["🥇", "🥈", "🥉"];
                   const rankColor = rankColors[i] || t.dm;
                   const isUserPick = c.tile === naniKiruAnswer;
+                  const isTenpai = c.state && c.state.includes("聴牌");
                   return (
                     <div key={i} style={{
                       display: "flex", gap: 10, padding: 10, marginBottom: 8,
@@ -1811,9 +1815,16 @@ function MahjongScorer() {
                         <Tile {...tileFromCode(c.tile)} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: rankColor }}>{c.result}</div>
-                        <div style={{ fontSize: 11, color: t.tx, marginTop: 2 }}>
-                          <strong style={{ color: t.dm }}>待ち:</strong> {c.waits}
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: rankColor }}>{c.state}</span>
+                          {c.count !== undefined && (
+                            <span style={{ fontSize: 12, fontWeight: 800, color: isTenpai ? t.gn : t.ac, background: isTenpai ? t.gnS : t.acS, padding: "2px 8px", borderRadius: 10 }}>
+                              {isTenpai ? "待ち" : "受け入れ"} {c.count}枚
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: t.tx, marginTop: 4 }}>
+                          <strong style={{ color: t.dm }}>{isTenpai ? "待ち牌" : "受け牌"}:</strong> {c.waits}
                         </div>
                         <div style={{ fontSize: 11, color: t.dm, marginTop: 4, lineHeight: 1.7 }}>{c.desc}</div>
                         {isUserPick && (
