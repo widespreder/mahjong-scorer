@@ -196,6 +196,7 @@ function MahjongScorer() {
   const [termTestOrder, setTermTestOrder] = useState([]);
   const [termTestIdx, setTermTestIdx] = useState(0);
   const [termTestRevealed, setTermTestRevealed] = useState(false);
+  const [termTestShowReading, setTermTestShowReading] = useState(false);
   const [termTestSelfMark, setTermTestSelfMark] = useState(null); // "knew" | "didnt"
   const [termTestStats, setTermTestStats] = useState({ knew: 0, didnt: 0, didntList: [] });
   const [termTestFinished, setTermTestFinished] = useState(false);
@@ -2513,27 +2514,43 @@ function MahjongScorer() {
           </div>
 
           {!termTestRevealed ? (
-            <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-              <button
-                style={{ flex: 1, padding: "16px 0", border: `2px solid ${t.gn}`, borderRadius: 12, background: t.gnS, color: t.gn, fontSize: 16, fontWeight: 800, cursor: "pointer" }}
-                onClick={() => {
-                  // 「わかる」: 暫定的に苦手リストから削除、統計加算
-                  setTermTestUnknown(prev => prev.filter(i => i !== realIdx));
-                  setTermTestStats(s => ({ ...s, knew: s.knew + 1 }));
-                  setTermTestRevealed(true);
-                  setTermTestSelfMark("knew");
-                }}
-              >⭕ わかる</button>
-              <button
-                style={{ flex: 1, padding: "16px 0", border: `2px solid ${t.rd}`, borderRadius: 12, background: t.rdS, color: t.rd, fontSize: 16, fontWeight: 800, cursor: "pointer" }}
-                onClick={() => {
-                  setTermTestUnknown(prev => prev.includes(realIdx) ? prev : [...prev, realIdx]);
-                  setTermTestStats(s => ({ ...s, didnt: s.didnt + 1, didntList: [...s.didntList, realIdx] }));
-                  setTermTestRevealed(true);
-                  setTermTestSelfMark("didnt");
-                }}
-              >❌ わからない</button>
-            </div>
+            <>
+              {/* 読み仮名表示エリア */}
+              {termTestShowReading ? (
+                <div style={{ marginTop: 8, marginBottom: 8 }}>
+                  <div style={{ fontSize: 16, color: t.ac, fontWeight: 700 }}>{term.reading}</div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setTermTestShowReading(true)}
+                  style={{
+                    background: "transparent", border: `1px dashed ${t.ac}55`,
+                    borderRadius: 8, padding: "6px 14px", marginTop: 10, marginBottom: 6,
+                    color: t.ac, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                  }}
+                >🔤 読み仮名を見る</button>
+              )}
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <button
+                  style={{ flex: 1, padding: "16px 0", border: `2px solid ${t.gn}`, borderRadius: 12, background: t.gnS, color: t.gn, fontSize: 16, fontWeight: 800, cursor: "pointer" }}
+                  onClick={() => {
+                    setTermTestUnknown(prev => prev.filter(i => i !== realIdx));
+                    setTermTestStats(s => ({ ...s, knew: s.knew + 1 }));
+                    setTermTestRevealed(true);
+                    setTermTestSelfMark("knew");
+                  }}
+                >⭕ わかる</button>
+                <button
+                  style={{ flex: 1, padding: "16px 0", border: `2px solid ${t.rd}`, borderRadius: 12, background: t.rdS, color: t.rd, fontSize: 16, fontWeight: 800, cursor: "pointer" }}
+                  onClick={() => {
+                    setTermTestUnknown(prev => prev.includes(realIdx) ? prev : [...prev, realIdx]);
+                    setTermTestStats(s => ({ ...s, didnt: s.didnt + 1, didntList: [...s.didntList, realIdx] }));
+                    setTermTestRevealed(true);
+                    setTermTestSelfMark("didnt");
+                  }}
+                >❌ わからない</button>
+              </div>
+            </>
           ) : (
             <>
               {/* 自己判定バッジ */}
@@ -2585,6 +2602,7 @@ function MahjongScorer() {
                     setTermTestIdx(termTestIdx + 1);
                     setTermTestRevealed(false);
                     setTermTestSelfMark(null);
+                    setTermTestShowReading(false);
                   }
                 }}
               >{termTestIdx + 1 >= termTestOrder.length ? "結果を見る" : "次の問題"}</button>
@@ -2818,6 +2836,8 @@ function MahjongScorer() {
           setTermTestOrder(order);
           setTermTestIdx(0);
           setTermTestRevealed(false);
+          setTermTestShowReading(false);
+          setTermTestSelfMark(null);
           setTermTestStats({ knew: 0, didnt: 0, didntList: [] });
           setTermTestFinished(false);
           setView("termTest");
