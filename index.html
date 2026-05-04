@@ -1502,7 +1502,7 @@ function MahjongScorer() {
         <div style={body}>
           <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>🧮</div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>符計算練習</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>符計算テスト</h2>
             <p style={{ fontSize: 13, color: t.dm }}>ランダムに出される手牌の符を当てよう</p>
           </div>
           <div style={card}>
@@ -1684,87 +1684,87 @@ function MahjongScorer() {
   // ══════════════════════════════════
   // ── NANI-KIRU (何切る) PUZZLES ──
   // ══════════════════════════════════
-  // 各問題の目的: 「切ったあとの受け入れ（次の有効牌）が一番多い切り牌」を選ぶ
-  // count = 待ち枚数（聴牌時）or 受け入れ枚数（1シャンテン時）
+  // 何切るテスト: 2シャンテン → 1シャンテンへの最大効率化
+  // 「切ったあとの受け入れ枚数（次にテンパイへ進める牌の枚数）」が多い順にランキング
   const NANI_KIRU_PUZZLES = [
     {
-      title: "孤立字牌を切る",
-      difficulty: "★",
-      hand: ["2m","3m","4m","5m","6m","7m","2p","3p","4p","5s","6s","7s","7s","東"],
-      candidates: [
-        { tile: "東", state: "聴牌", waits: "7s 単騎", count: 2, desc: "234m+567m+234p+567s+7s で4面子完成、7s雀頭で和了。あと7s 1種 2枚を待つだけ。" },
-        { tile: "5s", state: "1シャンテン", waits: "5s/8s/東 等", count: 10, desc: "67sリャンメン+7s7s雀頭+東対子化。受け入れは広いが聴牌から1歩遠い。" },
-        { tile: "7s", state: "1シャンテン", waits: "7s/東", count: 5, desc: "雀頭崩壊。東+7sで作り直しが必要。" },
-      ],
-    },
-    {
-      title: "タンヤオに向けて整理",
-      difficulty: "★★",
-      hand: ["1m","2m","3m","4m","5m","6m","2p","3p","4p","5p","6p","7p","5s","5s"],
-      candidates: [
-        { tile: "1m", state: "聴牌", waits: "4m/7m リャンメン", count: 7, desc: "23456m+234p+567p+5s5s。4m/7m の両面待ちでタンヤオ確定（2-8牌のみ）。" },
-        { tile: "6m", state: "聴牌", waits: "1m/4m リャンメン", count: 7, desc: "12345m+234p+567p+5s5s。受けは同じ広さだが、1m が残るためタンヤオ不成立で安い。" },
-        { tile: "5s", state: "1シャンテン", waits: "5s 等", count: 2, desc: "雀頭崩壊。和了から大きく遠のく。" },
-      ],
-    },
-    {
-      title: "ペンチャンより両面残し",
-      difficulty: "★★",
-      hand: ["1m","2m","3m","4m","5m","6m","7m","8m","2p","3p","4p","5p","5p","9p"],
-      candidates: [
-        { tile: "9p", state: "聴牌", waits: "1m/4m, 6m/9m 等", count: 14, desc: "12345678m+234p+5p5p。萬子の連続牌から複数の両面待ちが取れて受け入れ最大。" },
-        { tile: "1m", state: "聴牌", waits: "9m, 9p 等", count: 6, desc: "234m+567m+8m+234p+5p5p+9p。9m単騎+9pシャンポンなど受けが狭い。" },
-        { tile: "8m", state: "1シャンテン", waits: "8m/9p 等", count: 5, desc: "78mターツ崩壊。手が後退する。" },
-      ],
-    },
-    {
-      title: "効率優先の字牌切り",
-      difficulty: "★",
-      hand: ["1m","2m","3m","5m","6m","7m","2p","3p","4p","5p","6p","7p","9p","白"],
-      candidates: [
-        { tile: "白", state: "1シャンテン", waits: "9p（雀頭化）", count: 3, desc: "孤立白が最も無駄。123m+567m+234p+567p で4面子、9p雀頭待ち。受け入れ9p3枚。" },
-        { tile: "9p", state: "1シャンテン", waits: "白（雀頭化）", count: 3, desc: "白雀頭狙いだが、字牌対子は他家にも切られにくく実質不利。" },
-        { tile: "1m", state: "1シャンテン", waits: "順子崩壊で大幅後退", count: 1, desc: "123m崩壊で受け入れがほぼ消える。" },
-      ],
-    },
-    {
-      title: "三面張を残す",
-      difficulty: "★★",
-      hand: ["3m","4m","5m","6m","7m","2p","3p","4p","5p","6p","7p","2s","3s","4s"],
-      candidates: [
-        { tile: "3m", state: "聴牌", waits: "雀頭タンキ多面", count: 4, desc: "4567m+234p+567p+234s で4面子、4567m から雀頭+待ち牌の多様な変化。受け入れ広い。" },
-        { tile: "7m", state: "聴牌", waits: "3m タンキ", count: 3, desc: "3456m+234p+567p+234s。受け牌が3m雀頭1種に絞られる。" },
-        { tile: "2p", state: "1シャンテン", waits: "順子崩壊", count: 4, desc: "234p崩壊。聴牌から1歩遠ざかる。" },
-      ],
-    },
-    {
-      title: "三色同順を狙う",
+      title: "浮き牌の処理（2→1シャンテン）",
       difficulty: "★★★",
-      hand: ["1m","2m","3m","1p","2p","3p","1s","2s","3s","5m","6m","7s","8s","東"],
+      hand: ["1m","2m","3m","4m","5m","6m","8m","9m","2p","4p","5p","1s","2s","3s"],
       candidates: [
-        { tile: "東", state: "1シャンテン・三色濃厚", waits: "4m/7m, 6s/9s 等", count: 8, desc: "三色123が完成、残り 56m+78s の2ターツ。両方とも両面で受け広く、和了時2翻確定。" },
-        { tile: "5m", state: "1シャンテン・三色維持", waits: "78s 系", count: 4, desc: "東を雀頭に向けるが字牌対子は不安定。三色は維持。" },
-        { tile: "1m", state: "三色崩壊", waits: "三色不成立で安い", count: 5, desc: "三色同順崩壊。受け入れ自体は同等でも打点が大幅ダウン。" },
+        { tile: "5p", state: "1シャンテン化", waits: "3p/7m/雀頭ペア", count: 14, desc: "5p孤立を切る。123m+456m+89m(ペン)+24p(カン)+123s で3面子+2ターツ+雀頭待ち。最多受け入れ。" },
+        { tile: "4p", state: "1シャンテン化", waits: "3p/5pペア/7m", count: 9, desc: "4p切りで24p崩壊、5pが孤立化。受けが狭くなるが進行可。" },
+        { tile: "9m", state: "2シャンテン据え置き", waits: "ターツ崩壊", count: 5, desc: "89mペンチャン崩壊。8m単独で受けが大幅減。" },
       ],
     },
     {
-      title: "リャンメン優先",
-      difficulty: "★★",
-      hand: ["2m","2m","3m","4m","5m","6m","7m","2p","3p","4p","5s","5s","6s","7s"],
-      candidates: [
-        { tile: "2m", state: "聴牌", waits: "5s/8s ノベタン", count: 7, desc: "234m+567m+234p+567s+5s5s。5s/8sの広い待ちで受け入れ最大。" },
-        { tile: "7m", state: "聴牌", waits: "1m/4m リャンメン等", count: 6, desc: "23456m+234p+567s+5s5s+2m。受けは広いが2m対子が崩れる。" },
-        { tile: "5s", state: "1シャンテン", waits: "雀頭崩壊", count: 3, desc: "雀頭がなくなり大損。" },
-      ],
-    },
-    {
-      title: "ドラ受けを残す",
+      title: "雀頭固定 vs 受け広げ（2→1シャンテン）",
       difficulty: "★★★",
-      hand: ["2m","3m","4m","5m","6m","7m","2p","3p","4p","5p","6p","6p","7p","西"],
+      hand: ["1m","2m","3m","5m","6m","2p","3p","5p","7p","2s","3s","4s","東","東"],
       candidates: [
-        { tile: "西", state: "聴牌", waits: "5p/8p リャンメン", count: 7, desc: "234m+567m+234p+567p+6p。5p/8pの両面待ちで受け入れ最大。" },
-        { tile: "6p", state: "聴牌", waits: "5p 単騎", count: 3, desc: "6p1枚切りで受け牌が5p3枚のみに激減。" },
-        { tile: "7p", state: "1シャンテン", waits: "順子崩壊", count: 4, desc: "567p崩壊で手が後退。" },
+        { tile: "5p", state: "1シャンテン化", waits: "4m/7m/1p/4p/8p多面", count: 22, desc: "東東雀頭固定。123m+56m+23p+7p+234s で 4m7m + 1p4p + 8p などの広い受け。最多。" },
+        { tile: "7p", state: "1シャンテン化", waits: "4m/7m/3p/4p/6p等", count: 17, desc: "5p浮きを残し57pカンチャン化。受けは広いが5pほど効率良くない。" },
+        { tile: "東", state: "シャンテン後退", waits: "雀頭崩壊", count: 6, desc: "雀頭崩壊で大幅後退。受け入れが激減。" },
+      ],
+    },
+    {
+      title: "順子主体への切替（2→1シャンテン）",
+      difficulty: "★★★",
+      hand: ["1m","2m","3m","4m","5m","6m","6m","2p","3p","5p","6p","2s","3s","東"],
+      candidates: [
+        { tile: "東", state: "1シャンテン化", waits: "1p/4p, 4p/7p, 1s/4s, 6m雀頭", count: 18, desc: "孤立東切り。123m+456m+6m雀頭候補+23p+56p+23s で複数の両面受け。最広。" },
+        { tile: "6m", state: "1シャンテン化", waits: "1p/4p, 4p/7p, 1s/4s", count: 14, desc: "雀頭候補を崩すが他は維持。受けが少し狭くなる。" },
+        { tile: "5p", state: "2シャンテン据え置き", waits: "ターツ崩壊", count: 8, desc: "56pターツ崩壊で進行が遅れる。" },
+      ],
+    },
+    {
+      title: "対子4組の判断（チートイ vs 順子）",
+      difficulty: "★★★",
+      hand: ["1m","1m","3m","3m","5m","5m","2p","4p","5p","6p","2s","2s","東","南"],
+      candidates: [
+        { tile: "南", state: "1シャンテン化（チートイ向け）", waits: "東/4p/5p/6p等", count: 18, desc: "南切りで 1m対+3m対+5m対+2s対+456p順子+東対子化候補。チートイ4対子+順子1組で進行最広。" },
+        { tile: "東", state: "1シャンテン化（チートイ向け）", waits: "南/4p/5p/6p等", count: 18, desc: "対称的に同等の選択。場風・自風で重要度は変わるが受け数は同じ。" },
+        { tile: "2p", state: "シャンテン後退", waits: "順子崩壊", count: 9, desc: "456p順子候補崩壊。チートイ進行も順子整形も両方遅れる。" },
+      ],
+    },
+    {
+      title: "ターツの取捨（2→1シャンテン）",
+      difficulty: "★★★",
+      hand: ["1m","2m","4m","5m","6m","7m","2p","3p","5p","6p","7p","2s","3s","東"],
+      candidates: [
+        { tile: "東", state: "1シャンテン化", waits: "3m/6m, 1p/4p, 1s/4s, 4p/7p等", count: 24, desc: "東切りで12m+456m+567p+23p+23s。多数の両面待ちで受け最広。" },
+        { tile: "1m", state: "1シャンテン化", waits: "3m, 1p/4p, 1s/4s等", count: 14, desc: "12mペンチャン崩壊。受けは少し狭くなる。" },
+        { tile: "2s", state: "シャンテン後退", waits: "ターツ崩壊", count: 6, desc: "23s崩壊で3s孤立化。手が後退する。" },
+      ],
+    },
+    {
+      title: "役狙い vs 効率優先（2→1シャンテン）",
+      difficulty: "★★★",
+      hand: ["2m","3m","4m","5m","6m","2p","3p","4p","6p","7p","2s","3s","4s","南"],
+      candidates: [
+        { tile: "南", state: "1シャンテン化（タンヤオ）", waits: "1m/4m, 5p/8p等", count: 16, desc: "南切りで234m+56m+234p+67p+234s。タンヤオ確定で打点アップ。受けも広い。" },
+        { tile: "5m", state: "1シャンテン化（役なし）", waits: "1m/4m, 5p/8p等", count: 14, desc: "5m切ると 234m+6m+234p+67p+234s+南。南が浮いてタンヤオ不成立、安い。" },
+        { tile: "2s", state: "シャンテン後退", waits: "順子崩壊", count: 4, desc: "234s崩壊で大幅後退。最も悪い選択。" },
+      ],
+    },
+    {
+      title: "三色狙いの整理（2→1シャンテン）",
+      difficulty: "★★★",
+      hand: ["1m","2m","1p","2p","1s","2s","3s","4m","5m","6m","6p","7p","8p","東"],
+      candidates: [
+        { tile: "東", state: "1シャンテン化（三色123）", waits: "3m/3p/678p系", count: 16, desc: "東切りで12m+12p+123s+456m+678p で 3m+3p揃えば三色123完成。役満級の打点期待。" },
+        { tile: "8p", state: "1シャンテン化（役なし）", waits: "3m/3p/6p雀頭", count: 12, desc: "8p切りで三色は崩壊しないが67p崩壊。受けは狭い。" },
+        { tile: "1m", state: "三色崩壊", waits: "受け入れ自体は", count: 14, desc: "1m切ると三色123が崩壊。受けは似てるが打点が大幅ダウン。" },
+      ],
+    },
+    {
+      title: "暗刻候補の判断（2→1シャンテン）",
+      difficulty: "★★★",
+      hand: ["3m","3m","4m","5m","6m","7m","8m","2p","3p","4p","2s","3s","4s","東"],
+      candidates: [
+        { tile: "東", state: "1シャンテン化", waits: "3m雀頭+5m/8m, 1p/4p, 1s/4s等", count: 20, desc: "東切りで33m+456m+78m+234p+234s。3m3m雀頭+78m両面+完成順子2組で受け広い。" },
+        { tile: "8m", state: "1シャンテン化", waits: "3m雀頭+1p/4p等", count: 12, desc: "78m崩壊で7m孤立化。受け牌大幅減。" },
+        { tile: "3m", state: "シャンテン後退", waits: "雀頭崩壊", count: 8, desc: "3m対子崩壊で雀頭候補消失。大損。" },
       ],
     },
   ];
@@ -2323,7 +2323,7 @@ function MahjongScorer() {
 
     return (
       <div style={body}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>📚 麻雀用語集</div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>📚 麻雀用語一覧</div>
         <div style={{ fontSize: 11, color: t.dm, marginBottom: 12 }}>💡 長押しで意味の詳細を表示</div>
 
         {/* 並び順切替 */}
@@ -2779,6 +2779,7 @@ function MahjongScorer() {
           setView("game");
         }, true)}
 
+        {/* 1. 対局を始める */}
         {menuItem("▶", "対局を始める", suspendedGame ? "※ 保留中の対局があります" : "対局設定 → スコア管理", () => {
           if (suspendedGame) {
             if (!window.confirm("保留中の対局があります。破棄して新しい対局を始めますか？")) return;
@@ -2787,27 +2788,30 @@ function MahjongScorer() {
           setView("game");
           setSetupStep(0);
           setMatchType(null);
-          // 前回の対局メンバーを引き継ぐ（無ければデフォルト）
           setPlayers(Array.isArray(lastPlayers) && lastPlayers.length === 4 ? lastPlayers : ["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
           setPlayerMode([false, false, false, false]);
           setGameStarted(false);
         })}
 
+        {/* 2. 対局履歴 */}
         {menuItem("📋", "対局履歴", `${gameHistory.length}件の記録`, () => {
           setView("history");
         })}
 
+        {/* 3. 得点シミュレーション */}
         {menuItem("🔢", "得点シミュレーション", "ツモ・ロン両方の点数を比較", () => {
           setView("calc");
           resetCalc();
         })}
 
+        {/* 4. 翻数テスト */}
         {menuItem("🎯", "翻数テスト", "役の翻数クイズで腕試し", () => {
           setView("quiz");
           setQuizMode(null);
         })}
 
-        {menuItem("🧮", "符計算練習", "ランダム手牌の符を当てるクイズ", () => {
+        {/* 5. 符計算テスト */}
+        {menuItem("🧮", "符計算テスト", "ランダム手牌の符を当てるクイズ", () => {
           setView("fuQuiz");
           setFuQuizScenario(null);
           setFuQuizAnswer(null);
@@ -2815,19 +2819,8 @@ function MahjongScorer() {
           setFuQuizScore({ correct: 0, total: 0 });
         })}
 
-        {menuItem("📖", "役一覧", "全ての役の解説と翻数", () => {
-          setView("dict");
-          setDictCat("1翻");
-          setDictExpanded(null);
-        })}
-
-        {menuItem("📚", "麻雀用語集", "漢字・読み・意味（長押しで詳細）", () => {
-          setView("glossary");
-          setTermCat("基本");
-        })}
-
+        {/* 6. 用語テスト */}
         {menuItem("📝", "用語テスト", `わかる／わからないで覚える（${termTestUnknown.length}語苦手中）`, () => {
-          // 出題順を作成: 苦手語を優先、残りはランダム
           const all = [...Array(TERMS_DATA.length).keys()];
           const unknowns = termTestUnknown.filter(i => i < TERMS_DATA.length);
           const shuffledUnknown = [...unknowns].sort(() => Math.random() - 0.5);
@@ -2843,19 +2836,33 @@ function MahjongScorer() {
           setView("termTest");
         })}
 
-        {menuItem("🎮", "麻雀の始め方", "席・親決め・牌山・配牌・ドラの全手順", () => {
-          setView("howToStart");
-        })}
-
-        {menuItem("🤔", "何切る問題", "効率の良い捨て牌を選ぶ練習問題集", () => {
+        {/* 7. 何切るテスト */}
+        {menuItem("🤔", "何切るテスト", "2シャンテンから1シャンテン化の効率問題", () => {
           setView("naniKiru");
-          // ランダム順にシャッフル
           const order = NANI_KIRU_PUZZLES.map((_, i) => i).sort(() => Math.random() - 0.5);
           setNaniKiruOrder(order);
           setNaniKiruIdx(0);
           setNaniKiruAnswer(null);
           setNaniKiruRevealed(false);
           setNaniKiruScore({ correct: 0, total: 0 });
+        })}
+
+        {/* 8. 役一覧 */}
+        {menuItem("📖", "役一覧", "全ての役の解説と翻数", () => {
+          setView("dict");
+          setDictCat("1翻");
+          setDictExpanded(null);
+        })}
+
+        {/* 9. 麻雀用語一覧 */}
+        {menuItem("📚", "麻雀用語一覧", "漢字・読み・意味（長押しで詳細）", () => {
+          setView("glossary");
+          setTermCat("基本");
+        })}
+
+        {/* 10. 麻雀の始め方 */}
+        {menuItem("🎮", "麻雀の始め方", "席・親決め・牌山・配牌・ドラの全手順", () => {
+          setView("howToStart");
         })}
       </div>
     );
