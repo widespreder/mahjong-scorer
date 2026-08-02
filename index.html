@@ -639,6 +639,297 @@ function MahjongScorer() {
       <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
     </div>
   );
+
+  // ══════════════════════════════════
+  // ── FU LEARNING COURSE ──
+  // ══════════════════════════════════
+  const FU_LESSONS = [
+    {
+      title: "レベル1: 基本符（キホンフ）",
+      content: [
+        { type: "text", text: "符計算の土台は「基本符（フテイ）」です。あがり方によって決まります。" },
+        { type: "box", items: [
+          "ロンあがり（門前）→ 30符",
+          "ツモあがり → 20符 + ツモ符2 = 22符",
+          "鳴いてロン → 20符（副底のみ）",
+        ]},
+        { type: "text", text: "まずはこの3パターンを覚えましょう。" },
+      ],
+      questions: [
+        { q: "門前（メンゼン）でロンした時の基本符は？", choices: ["20符","30符","40符"], answer: "30符" },
+        { q: "ツモあがりの基本符は？（ツモ符込み）", choices: ["20符","22符","30符"], answer: "22符" },
+        { q: "鳴いてロンした時の基本符は？", choices: ["20符","25符","30符"], answer: "20符" },
+      ]
+    },
+    {
+      title: "レベル2: 刻子（コーツ）の符",
+      content: [
+        { type: "text", text: "同じ牌3枚の組を「刻子」といいます。作り方と牌の種類で符が変わります。" },
+        { type: "box", items: [
+          "明刻（ポン） 中張牌(2〜8) → 2符",
+          "明刻（ポン） 么九牌(1,9,字) → 4符",
+          "暗刻（自力） 中張牌(2〜8) → 4符",
+          "暗刻（自力） 么九牌(1,9,字) → 8符",
+        ]},
+        { type: "text", text: "ポイント: 暗刻は明刻の2倍！么九牌は中張牌の2倍！" },
+      ],
+      questions: [
+        { q: "5萬をポンした時（明刻・中張牌）の符は？", choices: ["2符","4符","8符"], answer: "2符" },
+        { q: "東を自力で3枚揃えた時（暗刻・么九牌）の符は？", choices: ["4符","8符","16符"], answer: "8符" },
+        { q: "9筒をポンした時（明刻・么九牌）の符は？", choices: ["2符","4符","8符"], answer: "4符" },
+        { q: "3索を自力で3枚揃えた時（暗刻・中張牌）の符は？", choices: ["2符","4符","8符"], answer: "4符" },
+      ]
+    },
+    {
+      title: "レベル3: 槓子（カンツ）の符",
+      content: [
+        { type: "text", text: "同じ牌4枚の組を「槓子」といいます。刻子の4倍の符がつきます。" },
+        { type: "box", items: [
+          "明槓 中張牌(2〜8) → 8符",
+          "明槓 么九牌(1,9,字) → 16符",
+          "暗槓 中張牌(2〜8) → 16符",
+          "暗槓 么九牌(1,9,字) → 32符 ← 最大！",
+        ]},
+        { type: "text", text: "暗槓の么九牌は32符。これだけで一気に符が跳ね上がります。" },
+      ],
+      questions: [
+        { q: "6萬を明槓した時（中張牌）の符は？", choices: ["4符","8符","16符"], answer: "8符" },
+        { q: "白を暗槓した時（么九牌）の符は？", choices: ["16符","32符","64符"], answer: "32符" },
+        { q: "1萬を明槓した時（么九牌）の符は？", choices: ["8符","16符","32符"], answer: "16符" },
+      ]
+    },
+    {
+      title: "レベル4: 待ち（マチ）の符",
+      content: [
+        { type: "text", text: "あがる時の「待ち方」でも符がつきます。" },
+        { type: "box", items: [
+          "両面（リャンメン）待ち → 0符（例: 45で3,6待ち）",
+          "シャンポン待ち → 0符（2組の対子でどちらか）",
+          "カンチャン待ち → 2符（例: 46で5待ち）",
+          "ペンチャン待ち → 2符（例: 12で3待ち）",
+          "タンキ待ち → 2符（雀頭の1枚待ち）",
+        ]},
+        { type: "text", text: "両面とシャンポンは0符。それ以外は2符です。" },
+      ],
+      questions: [
+        { q: "両面（リャンメン）待ちの符は？", choices: ["0符","2符","4符"], answer: "0符" },
+        { q: "カンチャン待ち（例: 46で5待ち）の符は？", choices: ["0符","2符","4符"], answer: "2符" },
+        { q: "タンキ待ち（雀頭の1枚待ち）の符は？", choices: ["0符","2符","4符"], answer: "2符" },
+        { q: "シャンポン待ちの符は？", choices: ["0符","2符","4符"], answer: "0符" },
+      ]
+    },
+    {
+      title: "レベル5: 雀頭（ジャントウ）の符",
+      content: [
+        { type: "text", text: "あがりの形にある2枚のペア（アタマ）を「雀頭」といいます。" },
+        { type: "box", items: [
+          "数牌(1〜9)の雀頭 → 0符",
+          "オタ風（役がつかない風牌）→ 0符",
+          "役牌（白・發・中・場風・自風）→ 2符",
+        ]},
+        { type: "text", text: "役牌が雀頭の時だけ2符プラスです。" },
+      ],
+      questions: [
+        { q: "5萬が雀頭の時の符は？", choices: ["0符","2符","4符"], answer: "0符" },
+        { q: "白が雀頭の時の符は？", choices: ["0符","2符","4符"], answer: "2符" },
+        { q: "自分の風牌が雀頭の時の符は？", choices: ["0符","2符","4符"], answer: "2符" },
+      ]
+    },
+    {
+      title: "レベル6: 総合問題",
+      content: [
+        { type: "text", text: "全てを組み合わせた符計算に挑戦！合計を10符単位に切り上げます。" },
+        { type: "box", items: [
+          "基本符 + 面子の符 + 待ちの符 + 雀頭の符",
+          "→ 合計を10の倍数に切り上げ",
+          "例: 30 + 4 + 2 + 0 = 36 → 40符",
+        ]},
+      ],
+      questions: [
+        { q: "門前ロン、暗刻(中張)1つ、両面待ち、数牌雀頭。合計符は？\n(30+4+0+0=34→切上)", choices: ["30符","40符","50符"], answer: "40符" },
+        { q: "ツモ、暗刻(么九)1つ、カンチャン待ち、役牌雀頭。合計符は？\n(20+2+8+2+2=34→切上)", choices: ["30符","40符","50符"], answer: "40符" },
+        { q: "門前ロン、暗刻(么九)2つ、タンキ待ち、数牌雀頭。合計符は？\n(30+8+8+2+0=48→切上)", choices: ["40符","50符","60符"], answer: "50符" },
+        { q: "門前ロン、明刻(中張)1つ、明刻(么九)1つ、両面、数牌雀頭。符は？\n→鳴いているので門前ではない！基本20符\n(20+2+4+0+0=26→切上)", choices: ["30符","40符","50符"], answer: "30符" },
+      ]
+    },
+  ];
+
+  const [fuLessonIdx, setFuLessonIdx] = useState(0);
+  const [fuLessonPhase, setFuLessonPhase] = useState("menu"); // menu, lecture, test, result
+  const [fuTestIdx, setFuTestIdx] = useState(0);
+  const [fuTestAnswer, setFuTestAnswer] = useState(null);
+  const [fuTestRevealed, setFuTestRevealed] = useState(false);
+  const [fuTestScore, setFuTestScore] = useState({ correct: 0, total: 0 });
+  const [fuClearedLevels, setFuClearedLevels] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("mj_fu_cleared") || "[]"); } catch { return []; }
+  });
+  const saveFuCleared = (arr) => { setFuClearedLevels(arr); try { localStorage.setItem("mj_fu_cleared", JSON.stringify(arr)); } catch {} };
+
+  const renderFuCourse = () => {
+    const lesson = FU_LESSONS[fuLessonIdx];
+
+    if (fuLessonPhase === "menu") {
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "20px 0 16px" }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>📐</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>符計算講座</h2>
+            <p style={{ fontSize: 13, color: t.dm }}>レベル別に学んでマスターしよう</p>
+          </div>
+          {FU_LESSONS.map((l, idx) => {
+            const cleared = fuClearedLevels.includes(idx);
+            const locked = idx > 0 && !fuClearedLevels.includes(idx - 1);
+            return (
+              <button key={idx} disabled={locked} onClick={() => { if (!locked) { setFuLessonIdx(idx); setFuLessonPhase("lecture"); } }}
+                style={{
+                  ...card, width: "100%", textAlign: "left", cursor: locked ? "default" : "pointer", padding: 16, marginBottom: 8,
+                  opacity: locked ? 0.4 : 1, border: `1px solid ${cleared ? t.gn + "55" : t.bd}`,
+                  background: cleared ? t.gnS : t.card,
+                }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 20 }}>{cleared ? "✅" : locked ? "🔒" : "📖"}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: locked ? t.dm : t.tx }}>{l.title}</div>
+                    <div style={{ fontSize: 11, color: t.dm }}>{l.questions.length}問のテスト</div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+
+    if (fuLessonPhase === "lecture") {
+      return (
+        <div style={body}>
+          <button style={backBtn} onClick={() => setFuLessonPhase("menu")}>← レベル選択</button>
+          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16 }}>{lesson.title}</div>
+          <div style={card}>
+            {lesson.content.map((c, ci) => {
+              if (c.type === "text") return <div key={ci} style={{ fontSize: 14, lineHeight: 1.8, marginBottom: 12, color: t.tx }}>{c.text}</div>;
+              if (c.type === "box") return (
+                <div key={ci} style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                  {c.items.map((item, ii) => <div key={ii} style={{ fontSize: 13, lineHeight: 1.8, color: t.tx, padding: "2px 0" }}>{item}</div>)}
+                </div>
+              );
+              return null;
+            })}
+          </div>
+          <button style={actionBtn("p")} onClick={() => { setFuLessonPhase("test"); setFuTestIdx(0); setFuTestAnswer(null); setFuTestRevealed(false); setFuTestScore({ correct: 0, total: 0 }); }}>
+            テストに挑戦 →
+          </button>
+        </div>
+      );
+    }
+
+    if (fuLessonPhase === "test") {
+      const q = lesson.questions[fuTestIdx];
+      if (!q) { setFuLessonPhase("result"); return null; }
+      return (
+        <div style={body}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 13, color: t.dm }}>{lesson.title}</span>
+            <span style={{ fontSize: 13, color: t.ac }}>{fuTestIdx + 1}/{lesson.questions.length}</span>
+          </div>
+          <div style={{ height: 4, background: t.bd, borderRadius: 2, marginBottom: 16 }}>
+            <div style={{ height: 4, background: t.ac, borderRadius: 2, width: `${(fuTestIdx / lesson.questions.length) * 100}%`, transition: "width 0.3s" }} />
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, lineHeight: 1.6, whiteSpace: "pre-line" }}>{q.q}</div>
+            {!fuTestRevealed ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {q.choices.map(ch => (
+                  <button key={ch} style={{ ...actionBtn(), textAlign: "center" }} onClick={() => {
+                    setFuTestAnswer(ch); setFuTestRevealed(true);
+                    setFuTestScore(s => ({ correct: s.correct + (ch === q.answer ? 1 : 0), total: s.total + 1 }));
+                  }}>{ch}</button>
+                ))}
+              </div>
+            ) : (
+              <div>
+                <div style={{
+                  textAlign: "center", padding: 14, borderRadius: 12, marginBottom: 12,
+                  background: fuTestAnswer === q.answer ? t.gnS : t.rdS,
+                  border: `2px solid ${fuTestAnswer === q.answer ? t.gn : t.rd}`,
+                }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: fuTestAnswer === q.answer ? t.gn : t.rd }}>
+                    {fuTestAnswer === q.answer ? "⭕ 正解！" : `❌ 正解は ${q.answer}`}
+                  </div>
+                </div>
+                <button style={actionBtn("p")} onClick={() => {
+                  if (fuTestIdx + 1 >= lesson.questions.length) setFuLessonPhase("result");
+                  else { setFuTestIdx(fuTestIdx + 1); setFuTestAnswer(null); setFuTestRevealed(false); }
+                }}>{fuTestIdx + 1 >= lesson.questions.length ? "結果を見る" : "次の問題"}</button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (fuLessonPhase === "result") {
+      const pct = fuTestScore.total > 0 ? Math.round(fuTestScore.correct / fuTestScore.total * 100) : 0;
+      const passed = pct >= 70;
+      if (passed && !fuClearedLevels.includes(fuLessonIdx)) {
+        const newCleared = [...fuClearedLevels, fuLessonIdx];
+        saveFuCleared(newCleared);
+      }
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>{passed ? "🎉" : "📚"}</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>{lesson.title}</h2>
+            <p style={{ fontSize: 13, color: t.dm }}>{passed ? "クリア！次のレベルが解放されました" : "70%以上で合格です。もう一度挑戦！"}</p>
+          </div>
+          <div style={{ ...card, textAlign: "center" }}>
+            <div style={{ fontSize: 40, fontWeight: 900, color: passed ? t.gn : t.rd }}>{pct}%</div>
+            <div style={{ fontSize: 16, color: t.dm }}>{fuTestScore.correct} / {fuTestScore.total} 正解</div>
+          </div>
+          {!passed && <button style={actionBtn("p")} onClick={() => { setFuLessonPhase("lecture"); }}>もう一度講座を見る</button>}
+          {passed && fuLessonIdx < FU_LESSONS.length - 1 && <button style={actionBtn("p")} onClick={() => { setFuLessonIdx(fuLessonIdx + 1); setFuLessonPhase("lecture"); }}>次のレベルへ →</button>}
+          <button style={actionBtn()} onClick={() => setFuLessonPhase("menu")}>レベル選択に戻る</button>
+          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // ── Score correction ──
+  const [editingRoundIdx, setEditingRoundIdx] = useState(null);
+
+  const deleteRound = useCallback((idx) => {
+    const cfg = gameConfig || {};
+    const sp = cfg.rules?.startPoints || 30000;
+    let newScores = [sp, sp, sp, sp];
+    const newRounds = rounds.filter((_, i) => i !== idx);
+    newRounds.forEach(r => {
+      if (r.draw) {
+        const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
+        const nc = 4 - tc;
+        if (tc > 0 && tc < 4) {
+          const np = Math.floor(3000 / nc), tg = Math.floor(3000 / tc);
+          for (let i = 0; i < 4; i++) { if (r.tenpai[i]) newScores[i] += tg; else newScores[i] -= np; }
+        }
+      } else {
+        const result = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo);
+        const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
+        if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
+        const hb = r.honba * 300;
+        if (r.tsumo) {
+          if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += result.each * 3 + hb + rc * 1000; else newScores[i] -= result.each + Math.floor(hb / 3); } }
+          else { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += result.total + hb + rc * 1000; else if (i === r.dealer) newScores[i] -= result.fromParent + Math.floor(hb / 3); else newScores[i] -= result.fromChild + Math.floor(hb / 3); } }
+        } else { newScores[r.winner] += result.total + hb + rc * 1000; newScores[r.loser] -= result.total + hb; }
+      }
+    });
+    setRounds(newRounds); setScores(newScores); setEditingRoundIdx(null);
+  }, [rounds, gameConfig]);
+
+  // ══════════════════════════════════
+  // ── HOME ──
+  // ══════════════════════════════════
   const renderHome = () => {
     const menuItem = (icon, label, sub, onClick, highlight) => (
       <button
@@ -715,6 +1006,11 @@ function MahjongScorer() {
           setView("dict");
           setDictCat("1翻");
           setDictExpanded(null);
+        })}
+
+        {menuItem("📐", "符計算講座", "レベル別に符を学ぶ", () => {
+          setView("fucourse");
+          setFuLessonPhase("menu");
         })}
       </div>
     );
@@ -1414,26 +1710,42 @@ function MahjongScorer() {
       {/* History */}
       {rounds.length > 0 && (
         <div style={card}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>対局履歴</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, letterSpacing: "0.05em" }}>対局履歴</div>
+            <div style={{ fontSize: 10, color: t.dm }}>タップで修正</div>
+          </div>
           {rounds.map((r, idx) => (
-            <div key={idx} style={{ padding: "6px 0", borderBottom: `1px solid ${t.bd}33`, fontSize: 12, display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: t.dm }}>{r.wind}{r.dealer + 1}局{r.honba > 0 ? ` ${r.honba}本場` : ""}</span>
-              {r.draw ? (
-                <span style={{ color: t.dm }}>
-                  流局
-                  {r.tenpai && r.tenpai.some(Boolean) && (
-                    <span style={{ marginLeft: 4, color: t.gn }}>
-                      聴{r.tenpai.map((tp, i) => tp ? players[i]?.charAt(0) : null).filter(Boolean).join("")}
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span>
-                  <span style={{ color: t.ac, fontWeight: 600 }}>{players[r.winner]}</span>
-                  {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
-                  {" "}<span style={{ fontWeight: 700 }}>{r.score?.toLocaleString()}</span>
-                  {r.limitName && <span style={{ color: t.gd, marginLeft: 4 }}>{r.limitName}</span>}
-                </span>
+            <div key={idx}>
+              <button onClick={() => setEditingRoundIdx(editingRoundIdx === idx ? null : idx)}
+                style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, fontSize: 12, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
+                <span style={{ color: t.dm }}>{r.wind}{r.dealer + 1}局{r.honba > 0 ? ` ${r.honba}本場` : ""}</span>
+                {r.draw ? (
+                  <span style={{ color: t.dm }}>
+                    流局
+                    {r.tenpai && r.tenpai.some(Boolean) && (
+                      <span style={{ marginLeft: 4, color: t.gn }}>
+                        聴{r.tenpai.map((tp, i) => tp ? players[i]?.charAt(0) : null).filter(Boolean).join("")}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span>
+                    <span style={{ color: t.ac, fontWeight: 600 }}>{players[r.winner]}</span>
+                    {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
+                    {" "}<span style={{ fontWeight: 700, color: t.tx }}>{r.score?.toLocaleString()}</span>
+                    {r.limitName && <span style={{ color: t.gd, marginLeft: 4 }}>{r.limitName}</span>}
+                  </span>
+                )}
+              </button>
+              {editingRoundIdx === idx && (
+                <div style={{ padding: "8px 0 12px", display: "flex", gap: 8 }}>
+                  <button style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                    onClick={() => { if (window.confirm(`${r.wind}${r.dealer+1}局のスコアを取り消しますか？\nスコアが再計算されます。`)) deleteRound(idx); }}>
+                    🗑 この局を取り消す
+                  </button>
+                  <button style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
+                    onClick={() => setEditingRoundIdx(null)}>キャンセル</button>
+                </div>
               )}
             </div>
           ))}
@@ -1718,6 +2030,7 @@ function MahjongScorer() {
         {view === "history" && renderHistory()}
         {view === "quiz" && renderQuiz()}
         {view === "dict" && renderDict()}
+        {view === "fucourse" && renderFuCourse()}
         {showFuHelp && <FuHelpModal />}
       </div>
     </>
