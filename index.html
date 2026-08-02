@@ -1738,13 +1738,31 @@ function MahjongScorer() {
                 )}
               </button>
               {editingRoundIdx === idx && (
-                <div style={{ padding: "8px 0 12px", display: "flex", gap: 8 }}>
-                  <button style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                    onClick={() => { if (window.confirm(`${r.wind}${r.dealer+1}局のスコアを取り消しますか？\nスコアが再計算されます。`)) deleteRound(idx); }}>
-                    🗑 この局を取り消す
-                  </button>
-                  <button style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
-                    onClick={() => setEditingRoundIdx(null)}>キャンセル</button>
+                <div style={{ padding: "8px 0 12px" }}>
+                  {editingRoundIdx === idx && !r._confirmDelete ? (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                        onClick={() => { const nr = [...rounds]; nr[idx] = { ...nr[idx], _confirmDelete: true }; setRounds(nr); }}>
+                        ✏️ この局を修正
+                      </button>
+                      <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
+                        onClick={() => setEditingRoundIdx(null)}>キャンセル</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize: 12, color: t.rd, textAlign: "center", marginBottom: 8, fontWeight: 700 }}>
+                        {r.wind}{r.dealer+1}局を取り消してスコアを再計算します
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rd, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                          onClick={() => deleteRound(idx)}>
+                          取り消して再入力
+                        </button>
+                        <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
+                          onClick={() => { const nr = [...rounds]; nr[idx] = { ...nr[idx], _confirmDelete: false }; setRounds(nr); setEditingRoundIdx(null); }}>やめる</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
