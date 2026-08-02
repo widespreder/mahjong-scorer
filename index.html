@@ -147,7 +147,26 @@ function MahjongScorer() {
     const total = base + mentsuFu + (machiOpt?.fu || 0) + (jantouOpt?.fu || 0);
     return Math.ceil(total / 10) * 10; // 切り上げ
   };
-  const resetGW = useCallback(() => { setGStep(0); setGWinner(null); setGTsumo(null); setGLoser(null); setGHan(null); setGFu(null); setGRiichi([false,false,false,false]); setFuGuide(null); setShowGW(false); }, []);
+  const resetGW = useCallback(() => { setGStep(0); setGWinner(null); setGTsumo(null); setGLoser(null); setGHan(null); setGFu(null); setGRiichi([false,false,false,false]); setFuGuide(null); setShowGW(false); setCorrectingIdx(null); }, []);
+
+  // Score correction: which round index is being corrected
+  const [correctingIdx, setCorrectingIdx] = useState(null);
+
+  const openCorrectionWizard = (idx) => {
+    const r = rounds[idx];
+    if (!r || r.draw) return;
+    setGWinner(r.winner);
+    setGTsumo(r.tsumo);
+    setGLoser(r.loser !== undefined ? r.loser : null);
+    setGHan(r.han);
+    setGFu(r.fu || (r.han >= 5 ? 30 : 30));
+    setGRiichi(r.riichi || [false,false,false,false]);
+    setFuGuide(null);
+    setCorrectingIdx(idx);
+    setEditingRoundIdx(null);
+    setShowGW(true);
+    setGStep(7);
+  };
 
   // Draw (ryuukyoku) wizard
   const [showDrawWiz, setShowDrawWiz] = useState(false);
@@ -162,6 +181,43 @@ function MahjongScorer() {
 
   const applyRound = useCallback(() => {
     if (gWinner === null || !gResult) return;
+
+    if (correctingIdx !== null) {
+      // CORRECTION MODE: replace the old round and recalculate everything
+      const cfg = gameConfig || {};
+      const sp = cfg.rules?.startPoints || 30000;
+      const correctedRound = { ...rounds[correctingIdx], winner: gWinner, loser: gLoser, han: gHan, fu: gHan >= 5 ? null : gFu, score: gResult.total, tsumo: gTsumo, limitName: gLimit, riichi: [...gRiichi] };
+      const newRounds = [...rounds];
+      newRounds[correctingIdx] = correctedRound;
+
+      // Recalculate all scores from scratch
+      let newScores = [sp, sp, sp, sp];
+      newRounds.forEach(r => {
+        if (r.draw) {
+          const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
+          const nc = 4 - tc;
+          if (tc > 0 && tc < 4) {
+            const nPay = Math.floor(3000 / nc), tGet = Math.floor(3000 / tc);
+            for (let i = 0; i < 4; i++) { if (r.tenpai[i]) newScores[i] += tGet; else newScores[i] -= nPay; }
+          }
+        } else {
+          const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo);
+          const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
+          if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
+          const hb2 = r.honba * 300;
+          if (r.tsumo) {
+            if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.each * 3 + hb2 + rc * 1000; else newScores[i] -= res.each + Math.floor(hb2 / 3); } }
+            else { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.total + hb2 + rc * 1000; else if (i === r.dealer) newScores[i] -= res.fromParent + Math.floor(hb2 / 3); else newScores[i] -= res.fromChild + Math.floor(hb2 / 3); } }
+          } else { newScores[r.winner] += res.total + hb2 + rc * 1000; newScores[r.loser] -= res.total + hb2; }
+        }
+      });
+      setRounds(newRounds);
+      setScores(newScores);
+      resetGW();
+      return;
+    }
+
+    // NORMAL MODE
     const ns = [...scores], hb = honba * 300;
     // Riichi: deduct 1000 from each riichi declarer
     const riichiThisRound = gRiichi.filter(Boolean).length;
@@ -218,7 +274,7 @@ function MahjongScorer() {
     }
     setRiichiBets(0);
     resetGW();
-  }, [gWinner, gLoser, gResult, gTsumo, gParent, gHan, gFu, gLimit, gRiichi, scores, honba, riichiBets, dealerIdx, rounds, roundWind, resetGW, gameConfig]);
+  }, [gWinner, gLoser, gResult, gTsumo, gParent, gHan, gFu, gLimit, gRiichi, scores, honba, riichiBets, dealerIdx, rounds, roundWind, resetGW, gameConfig, correctingIdx]);
 
   // Handle ryuukyoku (draw) - called after tenpai selection
   const applyDraw = useCallback(() => {
@@ -1584,6 +1640,36 @@ function MahjongScorer() {
             )}
             {gStep === 7 && gResult && (
               <>
+                {correctingIdx !== null && (
+                  <div style={{ textAlign: "center", padding: "6px 12px", marginBottom: 10, borderRadius: 8, background: t.gdS, border: `1px solid ${t.gd}44` }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: t.gd }}>✏️ 修正モード — 変更箇所をタップ</span>
+                  </div>
+                )}
+                <div style={card}>
+                  {/* Editable summary - tap each row to jump to that step */}
+                  <button onClick={() => setGStep(1)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
+                    <span style={{ fontSize: 12, color: t.dm }}>アガリ者</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{players[gWinner]} ▸</span>
+                  </button>
+                  <button onClick={() => setGStep(2)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
+                    <span style={{ fontSize: 12, color: t.dm }}>あがり方</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: gTsumo ? t.gn : t.rd }}>{gTsumo ? "ツモ" : "ロン"}{!gTsumo && gLoser !== null ? ` ← ${players[gLoser]}` : ""} ▸</span>
+                  </button>
+                  <button onClick={() => setGStep(4)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
+                    <span style={{ fontSize: 12, color: t.dm }}>リーチ棒</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: gRiichi.some(Boolean) ? t.gd : t.dm }}>{gRiichi.some(Boolean) ? `${gRiichi.filter(Boolean).length}本` : "なし"} ▸</span>
+                  </button>
+                  <button onClick={() => setGStep(5)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
+                    <span style={{ fontSize: 12, color: t.dm }}>翻数</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gHan >= 13 ? "役満" : `${gHan}翻`} ▸</span>
+                  </button>
+                  {gHan < 5 && (
+                    <button onClick={() => setGStep(6)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
+                      <span style={{ fontSize: 12, color: t.dm }}>符数</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gFu}符 ▸</span>
+                    </button>
+                  )}
+                </div>
                 <ScoreDisplay han={gHan} fu={gFu} limit={gLimit} result={gResult} tsumo={gTsumo} parent={gParent}
                   extra={
                     <>
@@ -1600,7 +1686,7 @@ function MahjongScorer() {
                     </>
                   }
                 />
-                <button style={actionBtn("p")} onClick={applyRound}>スコアに反映</button>
+                <button style={actionBtn("p")} onClick={applyRound}>{correctingIdx !== null ? "修正を反映" : "スコアに反映"}</button>
                 <button style={actionBtn()} onClick={resetGW}>キャンセル</button>
               </>
             )}
@@ -1738,31 +1824,20 @@ function MahjongScorer() {
                 )}
               </button>
               {editingRoundIdx === idx && (
-                <div style={{ padding: "8px 0 12px" }}>
-                  {editingRoundIdx === idx && !r._confirmDelete ? (
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                        onClick={() => { const nr = [...rounds]; nr[idx] = { ...nr[idx], _confirmDelete: true }; setRounds(nr); }}>
-                        ✏️ この局を修正
-                      </button>
-                      <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
-                        onClick={() => setEditingRoundIdx(null)}>キャンセル</button>
-                    </div>
+                <div style={{ padding: "8px 0 12px", display: "flex", gap: 8 }}>
+                  {!r.draw ? (
+                    <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.ac}`, background: t.acS, color: t.ac, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      onClick={() => openCorrectionWizard(idx)}>
+                      ✏️ この局を修正
+                    </button>
                   ) : (
-                    <div>
-                      <div style={{ fontSize: 12, color: t.rd, textAlign: "center", marginBottom: 8, fontWeight: 700 }}>
-                        {r.wind}{r.dealer+1}局を取り消してスコアを再計算します
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rd, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                          onClick={() => deleteRound(idx)}>
-                          取り消して再入力
-                        </button>
-                        <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
-                          onClick={() => { const nr = [...rounds]; nr[idx] = { ...nr[idx], _confirmDelete: false }; setRounds(nr); setEditingRoundIdx(null); }}>やめる</button>
-                      </div>
-                    </div>
+                    <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      onClick={() => deleteRound(idx)}>
+                      🗑 この局を取り消す
+                    </button>
                   )}
+                  <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
+                    onClick={() => setEditingRoundIdx(null)}>キャンセル</button>
                 </div>
               )}
             </div>
