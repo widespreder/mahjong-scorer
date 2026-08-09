@@ -69,8 +69,8 @@ function MahjongScorer() {
   const [players, setPlayers] = useState(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
   const [playerMode, setPlayerMode] = useState([false, false, false, false]); // false=text display, true=editing
   const [rules, setRules] = useState({
-    tenpaiRenchan: true,    // テンパイ連荘
-    agariRenchan: false,    // あがり連荘のみ
+    tenpaiRenchan: false,   // テンパイ連荘
+    agariRenchan: true,     // あがり連荘のみ
     kuitan: true,           // 食いタン
     atozuke: true,          // 後付け
     startPoints: 30000,     // 持ち点
