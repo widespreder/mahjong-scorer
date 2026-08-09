@@ -86,7 +86,8 @@ function MahjongScorer() {
   const [honba, setHonba] = useState(0);
   const [riichiBets, setRiichiBets] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
-  const [gameFinished, setGameFinished] = useState(false); // natural game end
+  const [gameFinished, setGameFinished] = useState(false);
+  const [showExtendConfirm, setShowExtendConfirm] = useState(false); // tonpu → hanchan extension // natural game end
 
   // ── Calc wizard ──
   const [calcStep, setCalcStep] = useState(0);
@@ -249,7 +250,7 @@ function MahjongScorer() {
       // Dealer rotates (child won)
       const next = (dealerIdx + 1) % 4;
       if (cfg.matchType === "tonpu" && next === 0) {
-        setGameFinished(true);
+        setShowExtendConfirm(true);
       } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
         setGameFinished(true);
       } else {
@@ -260,11 +261,11 @@ function MahjongScorer() {
     } else {
       // Parent won (renchan candidate)
       if (isOrlast) {
-        // Orlast: parent top → end, otherwise renchan
         const parentScore = ns[dealerIdx];
         const isTop = ns.every((s, i) => i === dealerIdx || parentScore > s);
         if (isTop) {
-          setGameFinished(true);
+          if (cfg.matchType === "tonpu") setShowExtendConfirm(true);
+          else setGameFinished(true);
         } else {
           setHonba(h => h + 1);
         }
@@ -314,7 +315,7 @@ function MahjongScorer() {
     if (dealerRotates) {
       const next = (dealerIdx + 1) % 4;
       if (cfg.matchType === "tonpu" && next === 0) {
-        setGameFinished(true);
+        setShowExtendConfirm(true);
       } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
         setGameFinished(true);
       } else {
@@ -322,13 +323,12 @@ function MahjongScorer() {
         if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
       }
     } else if (isOrlast) {
-      // Orlast: dealer stays (tenpai renchan), but if dealer is top → end
       const parentScore = ns[dealerIdx];
       const isTop = ns.every((s, i) => i === dealerIdx || parentScore > s);
       if (isTop) {
-        setGameFinished(true);
+        if (cfg.matchType === "tonpu") setShowExtendConfirm(true);
+        else setGameFinished(true);
       }
-      // not top → renchan continues (honba already incremented)
     }
 
     resetDrawWiz();
@@ -1842,6 +1842,42 @@ function MahjongScorer() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Extend to Hanchan Confirm ── */}
+      {showExtendConfirm && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div style={{ width: "100%", maxWidth: 400 }}>
+            <div style={card}>
+              <div style={{ textAlign: "center", marginBottom: 16 }}>
+                <div style={{ fontSize: 40, marginBottom: 8 }}>🀄</div>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>東風戦 終了</div>
+                <div style={{ fontSize: 13, color: t.dm }}>半荘戦に延長しますか？</div>
+              </div>
+              {/* Current scores preview */}
+              <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                {players.map((p, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13 }}>
+                    <span>{p}</span>
+                    <span style={{ fontWeight: 700, color: scores[i] < 0 ? t.rd : t.tx }}>{scores[i].toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+              <button style={{ ...actionBtn("p"), marginBottom: 8 }} onClick={() => {
+                // Extend to hanchan
+                setShowExtendConfirm(false);
+                setGameConfig(prev => ({ ...prev, matchType: "hanchan" }));
+                setRoundWind("南");
+                setDealerIdx(0);
+                setHonba(0);
+              }}>🔄 半荘戦に延長する</button>
+              <button style={actionBtn()} onClick={() => {
+                setShowExtendConfirm(false);
+                setGameFinished(true);
+              }}>終了して結果を見る</button>
+            </div>
+          </div>
         </div>
       )}
 
