@@ -709,8 +709,138 @@ function MahjongScorer() {
   );
 
   // ══════════════════════════════════
-  // ── FU LEARNING COURSE ──
+  // ── SCORE MATRIX TABLE ──
   // ══════════════════════════════════
+  const [tableParent, setTableParent] = useState(false);
+  const [tableTsumo, setTableTsumo] = useState(false);
+
+  const renderTable = () => {
+    const fuList = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+    const hanList = [1, 2, 3, 4];
+    const limits = [
+      { label: "満貫", han: 5 },
+      { label: "跳満", han: 6 },
+      { label: "倍満", han: 8 },
+      { label: "三倍満", han: 11 },
+      { label: "役満", han: 13 },
+    ];
+
+    const cellValue = (fu, han) => {
+      // 存在しない組み合わせ
+      if (fu === 20 && !tableTsumo) return "—";      // 20符ロンは存在しない(平和ツモのみ)
+      if (fu === 20 && han >= 3) return "—";          // 平和ツモは2翻まで(リーチ等除く)
+      if (fu === 25 && han === 1) return "—";         // 七対子は2翻から
+      const r = calcScore(fu, han, tableParent, tableTsumo);
+      if (tableTsumo) {
+        if (tableParent) return `${r.each.toLocaleString()}∀`;
+        return `${r.fromChild.toLocaleString()}/${r.fromParent.toLocaleString()}`;
+      }
+      return r.total.toLocaleString();
+    };
+
+    const limitValue = (han) => {
+      const r = calcScore(30, han, tableParent, tableTsumo);
+      if (tableTsumo) {
+        if (tableParent) return `${r.each.toLocaleString()}∀`;
+        return `${r.fromChild.toLocaleString()}/${r.fromParent.toLocaleString()}`;
+      }
+      return r.total.toLocaleString();
+    };
+
+    const isMangan = (fu, han) => {
+      if (han === 4 && fu >= 30) return true;
+      if (han === 3 && fu >= 60) return true;
+      return false;
+    };
+
+    return (
+      <div style={body}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>点数早見表</div>
+
+        {/* Toggles */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+          <button style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${!tableParent ? t.ac : t.bd}`, background: !tableParent ? t.acS : "transparent", color: !tableParent ? t.ac : t.dm }}
+            onClick={() => setTableParent(false)}>子</button>
+          <button style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${tableParent ? t.gd : t.bd}`, background: tableParent ? t.gdS : "transparent", color: tableParent ? t.gd : t.dm }}
+            onClick={() => setTableParent(true)}>親</button>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+          <button style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${!tableTsumo ? t.rd : t.bd}`, background: !tableTsumo ? t.rdS : "transparent", color: !tableTsumo ? t.rd : t.dm }}
+            onClick={() => setTableTsumo(false)}>ロン</button>
+          <button style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${tableTsumo ? t.gn : t.bd}`, background: tableTsumo ? t.gnS : "transparent", color: tableTsumo ? t.gn : t.dm }}
+            onClick={() => setTableTsumo(true)}>ツモ</button>
+        </div>
+
+        <div style={{ fontSize: 11, color: t.dm, marginBottom: 8, textAlign: "center" }}>
+          {tableTsumo ? (tableParent ? "∀ = 全員から（オール）" : "子から / 親から") : "放銃者から受け取る点数"}
+        </div>
+
+        {/* Main table */}
+        <div style={{ ...card, padding: 10, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <thead>
+              <tr>
+                <th style={{ padding: "6px 4px", color: t.dm, fontSize: 10, fontWeight: 700, borderBottom: `1px solid ${t.bd}`, textAlign: "left", position: "sticky", left: 0, background: t.card }}>符\翻</th>
+                {hanList.map(h => (
+                  <th key={h} style={{ padding: "6px 4px", color: t.ac, fontSize: 11, fontWeight: 700, borderBottom: `1px solid ${t.bd}`, textAlign: "center" }}>{h}翻</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {fuList.map(fu => (
+                <tr key={fu}>
+                  <td style={{ padding: "7px 4px", color: t.gd, fontWeight: 700, fontSize: 11, borderBottom: `1px solid ${t.bd}22`, position: "sticky", left: 0, background: t.card }}>{fu}</td>
+                  {hanList.map(h => {
+                    const v = cellValue(fu, h);
+                    const mangan = isMangan(fu, h);
+                    return (
+                      <td key={h} style={{
+                        padding: "7px 3px", textAlign: "center", borderBottom: `1px solid ${t.bd}22`,
+                        color: v === "—" ? t.bd : mangan ? t.gd : t.tx,
+                        fontWeight: mangan ? 700 : 500,
+                        fontVariantNumeric: "tabular-nums",
+                        background: mangan ? t.gdS : "transparent",
+                        fontSize: tableTsumo && !tableParent ? 10 : 11,
+                      }}>{v}</td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Limit hands */}
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 10 }}>満貫以上</div>
+          {limits.map(l => (
+            <div key={l.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${t.bd}22` }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: l.han >= 13 ? t.gd : t.tx }}>
+                {l.label}
+                <span style={{ fontSize: 10, color: t.dm, marginLeft: 6, fontWeight: 400 }}>
+                  {l.han === 13 ? "13翻〜" : l.han === 11 ? "11〜12翻" : l.han === 8 ? "8〜10翻" : l.han === 6 ? "6〜7翻" : "5翻"}
+                </span>
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: t.ac, fontVariantNumeric: "tabular-nums" }}>{limitValue(l.han)}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Notes */}
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>補足</div>
+          <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.8 }}>
+            <div>・<span style={{ color: t.gd }}>金色のセル</span> = 満貫扱い（切り上げ満貫）</div>
+            <div>・20符は平和ツモのみ（ロンは存在しない）</div>
+            <div>・25符は七対子のみ（2翻から）</div>
+            <div>・4翻30符以上、3翻60符以上は満貫</div>
+          </div>
+        </div>
+
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
   const FU_LESSONS = [
     {
       title: "レベル1: 基本符（キホンフ）",
@@ -1085,6 +1215,10 @@ function MahjongScorer() {
         {menuItem("📐", "符計算講座", "レベル別に符を学ぶ", () => {
           setView("fucourse");
           setFuLessonPhase("menu");
+        })}
+
+        {menuItem("📊", "点数早見表", "符×翻のマトリックス表", () => {
+          setView("table");
         })}
       </div>
     );
@@ -2204,6 +2338,7 @@ function MahjongScorer() {
         {view === "quiz" && renderQuiz()}
         {view === "dict" && renderDict()}
         {view === "fucourse" && renderFuCourse()}
+        {view === "table" && renderTable()}
         {showFuHelp && <FuHelpModal />}
       </div>
     </>
