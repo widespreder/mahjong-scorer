@@ -139,14 +139,17 @@ function MahjongScorer() {
   ];
   const calcFuFromGuide = (guide) => {
     if (!guide) return 30;
-    let base = (gTsumo) ? 20 : 30; // ツモ20, 門前ロン30
-    if (gTsumo) base += 2; // ツモ符
+    // 鳴き判定: 明刻・明槓があれば門前ではない
+    const hasNaki = guide.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_"));
+    let base = 20; // 副底（全員共通）
+    if (gTsumo) base += 2;                    // ツモ符
+    else if (!hasNaki) base += 10;            // 門前加符（門前ロンのみ）
     let mentsuFu = 0;
     guide.mentsu.forEach(m => { const opt = MENTSU_OPTIONS.find(o => o.id === m); if (opt) mentsuFu += opt.fu; });
     const machiOpt = MACHI_OPTIONS.find(o => o.id === guide.machi);
     const jantouOpt = JANTOU_OPTIONS.find(o => o.id === guide.jantou);
     const total = base + mentsuFu + (machiOpt?.fu || 0) + (jantouOpt?.fu || 0);
-    return Math.ceil(total / 10) * 10; // 切り上げ
+    return Math.ceil(total / 10) * 10; // 10符単位に切り上げ
   };
   const resetGW = useCallback(() => { setGStep(0); setGWinner(null); setGTsumo(null); setGLoser(null); setGHan(null); setGFu(null); setGRiichi([false,false,false,false]); setFuGuide(null); setShowGW(false); setCorrectingIdx(null); }, []);
 
@@ -703,13 +706,19 @@ function MahjongScorer() {
     {
       title: "レベル1: 基本符（キホンフ）",
       content: [
-        { type: "text", text: "符計算の土台は「基本符（フテイ）」です。あがり方によって決まります。" },
+        { type: "text", text: "符計算の土台は「副底（フテイ）」20符。ここにあがり方で加符がつきます。" },
         { type: "box", items: [
-          "ロンあがり（門前）→ 30符",
-          "ツモあがり → 20符 + ツモ符2 = 22符",
-          "鳴いてロン → 20符（副底のみ）",
+          "副底（全員共通）→ 20符",
+          "＋門前加符（門前ロンのみ）→ +10符",
+          "＋ツモ符（ツモあがり）→ +2符",
         ]},
-        { type: "text", text: "まずはこの3パターンを覚えましょう。" },
+        { type: "text", text: "結果として、この3パターンになります。" },
+        { type: "box", items: [
+          "門前ロン → 20+10 = 30符",
+          "ツモあがり → 20+2 = 22符",
+          "鳴いてロン → 20符のみ",
+        ]},
+        { type: "text", text: "ポイント: ポン・チーをすると門前加符10符がつきません。" },
       ],
       questions: [
         { q: "門前（メンゼン）でロンした時の基本符は？", choices: ["20符","30符","40符"], answer: "30符" },
@@ -805,7 +814,7 @@ function MahjongScorer() {
         { q: "門前ロン、暗刻(中張)1つ、両面待ち、数牌雀頭。合計符は？\n(30+4+0+0=34→切上)", choices: ["30符","40符","50符"], answer: "40符" },
         { q: "ツモ、暗刻(么九)1つ、カンチャン待ち、役牌雀頭。合計符は？\n(20+2+8+2+2=34→切上)", choices: ["30符","40符","50符"], answer: "40符" },
         { q: "門前ロン、暗刻(么九)2つ、タンキ待ち、数牌雀頭。合計符は？\n(30+8+8+2+0=48→切上)", choices: ["40符","50符","60符"], answer: "50符" },
-        { q: "門前ロン、明刻(中張)1つ、明刻(么九)1つ、両面、数牌雀頭。符は？\n→鳴いているので門前ではない！基本20符\n(20+2+4+0+0=26→切上)", choices: ["30符","40符","50符"], answer: "30符" },
+        { q: "ロン（ポンあり）、明刻(中張)1つ、明刻(么九)1つ、両面、数牌雀頭。符は？\n※鳴いているので門前加符なし → 基本20符\n(20+2+4+0+0=26→切上)", choices: ["30符","40符","50符"], answer: "30符" },
       ]
     },
   ];
@@ -1626,7 +1635,7 @@ function MahjongScorer() {
                       <div style={{ fontSize: 12, color: t.dm }}>計算結果</div>
                       <div style={{ fontSize: 28, fontWeight: 900, color: t.ac }}>{calcFuFromGuide(fuGuide)}符</div>
                       <div style={{ fontSize: 11, color: t.dm, marginTop: 2 }}>
-                        基本{gTsumo ? "20" : "30"}{gTsumo ? " +ツモ2" : ""}
+                        副底20{gTsumo ? " +ツモ2" : (fuGuide.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_")) ? "" : " +門前10")}
                         {fuGuide.mentsu.length > 0 && ` +面子${fuGuide.mentsu.reduce((s, m) => s + (MENTSU_OPTIONS.find(o => o.id === m)?.fu || 0), 0)}`}
                         {(MACHI_OPTIONS.find(o => o.id === fuGuide.machi)?.fu || 0) > 0 && ` +待ち${MACHI_OPTIONS.find(o => o.id === fuGuide.machi)?.fu}`}
                         {(JANTOU_OPTIONS.find(o => o.id === fuGuide.jantou)?.fu || 0) > 0 && ` +雀頭${JANTOU_OPTIONS.find(o => o.id === fuGuide.jantou)?.fu}`}
