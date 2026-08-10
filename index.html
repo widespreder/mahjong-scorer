@@ -1032,6 +1032,43 @@ function MahjongScorer() {
   };
 
   // ── Dictionary state ──
+  // ══════════════════════════════════
+  // ── SCORE PROBLEMS (100問) ──
+  // ══════════════════════════════════
+  const SCORE_PROBLEMS = [{"mentsu":[{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","萬"],["3","萬"],["4","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["南",""],["南",""],["南",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["白",""],["白",""],["白",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["南",""],["南",""]],"fu":0,"label":"オタ風"},"machi":"タンキ","machiFu":2,"tsumo":true,"parent":true,"han":1,"fu":40,"score":2100,"each":700,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["5","筒"],["6","筒"],["7","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","筒"],["3","筒"],["4","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["白",""],["白",""],["白",""],["白",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["4","萬"],["4","萬"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":false,"han":3,"fu":40,"score":5200,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["中",""],["中",""],["中",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["白",""],["白",""],["白",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["1","索"],["1","索"],["1","索"],["1","索"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["白",""],["白",""]],"fu":2,"label":"役牌"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":90,"score":5800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["4","筒"],["4","筒"],["4","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["4","筒"],["4","筒"],["4","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["南",""],["南",""],["南",""],["南",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["5","筒"],["5","筒"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":70,"score":4700,"each":null,"fromChild":1200,"fromParent":2300,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["1","索"],["2","索"],["3","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","索"],["6","索"],["6","索"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["北",""],["北",""],["北",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["9","索"],["9","索"],["9","索"],["9","索"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["8","索"],["8","索"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":60,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["4","筒"],["4","筒"],["4","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["東",""],["東",""],["東",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["北",""],["北",""],["北",""],["北",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["西",""],["西",""]],"fu":0,"label":"オタ風"},"machi":"タンキ","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":70,"score":4700,"each":null,"fromChild":1200,"fromParent":2300,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["6","索"],["7","索"],["8","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["6","萬"],["7","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","萬"],["2","萬"],["2","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["白",""],["白",""],["白",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["2","索"],["2","索"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":true,"parent":false,"han":1,"fu":40,"score":1500,"each":null,"fromChild":400,"fromParent":700,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["西",""],["西",""],["西",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["9","索"],["9","索"],["9","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["2","萬"],["2","萬"],["2","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["發",""],["發",""],["發",""],["發",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["4","索"],["4","索"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":true,"parent":false,"han":2,"fu":80,"score":5200,"each":null,"fromChild":1300,"fromParent":2600,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["東",""],["東",""],["東",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["西",""],["西",""],["西",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["南",""],["南",""],["南",""],["南",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["9","萬"],["9","萬"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":false,"han":1,"fu":70,"score":2300,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","索"],["3","索"],["3","索"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"}],"jantou":{"tiles":[["2","萬"],["2","萬"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":false,"han":2,"fu":30,"score":2000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["西",""],["西",""]],"fu":0,"label":"オタ風"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":false,"han":3,"fu":40,"score":5200,"each":null,"fromChild":1300,"fromParent":2600,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","筒"],["6","筒"],["7","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["2","萬"],["3","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["7","索"],["7","索"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":true,"parent":false,"han":1,"fu":30,"score":1100,"each":null,"fromChild":300,"fromParent":500,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","索"],["4","索"],["4","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["1","索"],["1","索"],["1","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["2","萬"],["2","萬"],["2","萬"],["2","萬"]],"label":"明槓(中張)","naki":true,"fu":8,"type":"minkan"}],"jantou":{"tiles":[["中",""],["中",""]],"fu":2,"label":"役牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":true,"han":2,"fu":50,"score":4800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["8","萬"],["8","萬"],["8","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["9","萬"],["9","萬"],["9","萬"],["9","萬"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["6","萬"],["6","萬"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":true,"parent":false,"han":2,"fu":60,"score":4000,"each":null,"fromChild":1000,"fromParent":2000,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["9","索"],["9","索"],["9","索"]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["東",""],["東",""],["東",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["4","萬"],["4","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":true,"han":2,"fu":40,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","索"],["6","索"],["6","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["北",""],["北",""],["北",""],["北",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["中",""],["中",""]],"fu":2,"label":"役牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":true,"han":2,"fu":50,"score":4800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["8","筒"],["8","筒"],["8","筒"],["8","筒"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["9","筒"],["9","筒"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":true,"parent":false,"han":3,"fu":40,"score":5200,"each":null,"fromChild":1300,"fromParent":2600,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","筒"],["6","筒"],["7","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["中",""],["中",""],["中",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["7","萬"],["7","萬"],["7","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["1","筒"],["1","筒"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":true,"parent":false,"han":3,"fu":40,"score":5200,"each":null,"fromChild":1300,"fromParent":2600,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["東",""],["東",""],["東",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["西",""],["西",""],["西",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["8","筒"],["8","筒"],["8","筒"],["8","筒"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"両面","machiFu":0,"tsumo":true,"parent":false,"han":1,"fu":60,"score":2000,"each":null,"fromChild":500,"fromParent":1000,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["1","索"],["2","索"],["3","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","萬"],["3","萬"],["4","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["9","索"],["9","索"],["9","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["7","萬"],["7","萬"],["7","萬"],["7","萬"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["3","筒"],["3","筒"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":true,"han":1,"fu":60,"score":2900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","索"],["4","索"],["4","索"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["發",""],["發",""],["發",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["8","索"],["8","索"],["8","索"],["8","索"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["8","萬"],["8","萬"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":true,"parent":true,"han":1,"fu":50,"score":2400,"each":800,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["2","索"],["3","索"],["4","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","筒"],["6","筒"],["7","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["4","筒"],["4","筒"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":30,"score":2000,"each":null,"fromChild":500,"fromParent":1000,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["中",""],["中",""],["中",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["6","索"],["6","索"],["6","索"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["2","索"],["2","索"],["2","索"],["2","索"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["8","萬"],["8","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":50,"score":3200,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","索"],["3","索"],["4","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["5","萬"],["5","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":true,"han":1,"fu":40,"score":2000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","筒"],["3","筒"],["4","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","筒"],["6","筒"],["7","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["6","萬"],["6","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":30,"score":2000,"each":null,"fromChild":500,"fromParent":1000,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["8","萬"],["8","萬"],["8","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["北",""],["北",""],["北",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["9","萬"],["9","萬"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":false,"han":1,"fu":50,"score":1600,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["1","萬"],["2","萬"],["3","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["8","萬"],["8","萬"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":true,"han":2,"fu":30,"score":2900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","索"],["2","索"],["3","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["發",""],["發",""],["發",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["7","索"],["7","索"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":true,"han":3,"fu":40,"score":7800,"each":2600,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","萬"],["3","萬"],["4","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["8","萬"],["8","萬"],["8","萬"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"}],"jantou":{"tiles":[["5","萬"],["5","萬"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":false,"parent":false,"han":1,"fu":30,"score":1000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["南",""],["南",""],["南",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["南",""],["南",""],["南",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["6","索"],["6","索"],["6","索"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["中",""],["中",""],["中",""],["中",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["6","萬"],["6","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":true,"han":1,"fu":80,"score":3900,"each":1300,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["中",""],["中",""],["中",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["9","筒"],["9","筒"],["9","筒"],["9","筒"]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["1","筒"],["1","筒"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":60,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","筒"],["7","筒"],["8","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","筒"],["6","筒"],["6","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["5","萬"],["5","萬"],["5","萬"],["5","萬"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["白",""],["白",""]],"fu":2,"label":"役牌"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":true,"han":1,"fu":60,"score":2900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","萬"],["3","萬"],["4","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["西",""],["西",""],["西",""],["西",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["9","索"],["9","索"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":true,"han":3,"fu":40,"score":7700,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","萬"],["7","萬"],["7","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["9","萬"],["9","萬"],["9","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["5","索"],["5","索"],["5","索"],["5","索"]],"label":"明槓(中張)","naki":true,"fu":8,"type":"minkan"}],"jantou":{"tiles":[["3","萬"],["3","萬"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":true,"han":2,"fu":50,"score":4800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["9","筒"],["9","筒"],["9","筒"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["西",""],["西",""],["西",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["西",""],["西",""],["西",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["2","萬"],["2","萬"],["2","萬"],["2","萬"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["4","索"],["4","索"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":true,"parent":false,"han":1,"fu":70,"score":2400,"each":null,"fromChild":600,"fromParent":1200,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["西",""],["西",""],["西",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["北",""],["北",""],["北",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["東",""],["東",""],["東",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["北",""],["北",""],["北",""],["北",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["中",""],["中",""]],"fu":2,"label":"役牌"},"machi":"タンキ","machiFu":2,"tsumo":true,"parent":false,"han":1,"fu":90,"score":3100,"each":null,"fromChild":800,"fromParent":1500,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","索"],["7","索"],["7","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["7","筒"],["7","筒"],["7","筒"],["7","筒"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["白",""],["白",""]],"fu":2,"label":"役牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":true,"han":2,"fu":60,"score":5800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["9","索"],["9","索"],["9","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["9","索"],["9","索"],["9","索"],["9","索"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["1","萬"],["1","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":1,"fu":80,"score":2600,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["6","索"],["7","索"],["8","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["西",""],["西",""],["西",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["9","萬"],["9","萬"],["9","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["北",""],["北",""],["北",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["白",""],["白",""]],"fu":2,"label":"役牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":3,"fu":50,"score":6400,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","索"],["3","索"],["4","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["白",""],["白",""],["白",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["1","索"],["1","索"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":true,"han":3,"fu":40,"score":7700,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["6","萬"],["7","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["2","萬"],["3","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["南",""],["南",""],["南",""],["南",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["1","萬"],["1","萬"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":false,"parent":true,"han":2,"fu":40,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["9","索"],["9","索"],["9","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["7","索"],["7","索"],["7","索"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["北",""],["北",""],["北",""],["北",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["中",""],["中",""]],"fu":2,"label":"役牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":70,"score":4700,"each":null,"fromChild":1200,"fromParent":2300,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","索"],["2","索"],["3","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","索"],["1","索"],["1","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["東",""],["東",""]],"fu":0,"label":"オタ風"},"machi":"両面","machiFu":0,"tsumo":false,"parent":false,"han":2,"fu":40,"score":2600,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["9","索"],["9","索"],["9","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["9","索"],["9","索"],["9","索"]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["白",""],["白",""],["白",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["北",""],["北",""]],"fu":0,"label":"オタ風"},"machi":"カンチャン","machiFu":2,"tsumo":true,"parent":false,"han":3,"fu":50,"score":6400,"each":null,"fromChild":1600,"fromParent":3200,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","萬"],["7","萬"],["7","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["南",""],["南",""]],"fu":0,"label":"オタ風"},"machi":"両面","machiFu":0,"tsumo":false,"parent":true,"han":2,"fu":40,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["2","萬"],["3","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["1","索"],["1","索"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":30,"score":2000,"each":null,"fromChild":500,"fromParent":1000,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["2","索"],["3","索"],["4","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["發",""],["發",""],["發",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["中",""],["中",""],["中",""],["中",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["8","索"],["8","索"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":false,"parent":true,"han":2,"fu":50,"score":4800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["6","萬"],["7","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["白",""],["白",""]],"fu":2,"label":"役牌"},"machi":"両面","machiFu":0,"tsumo":true,"parent":false,"han":1,"fu":30,"score":1100,"each":null,"fromChild":300,"fromParent":500,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["2","萬"],["3","萬"],["4","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["6","萬"],["7","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","萬"],["2","萬"],["2","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["9","萬"],["9","萬"],["9","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["1","索"],["1","索"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":false,"han":1,"fu":50,"score":1600,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["8","筒"],["8","筒"],["8","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["7","萬"],["7","萬"],["7","萬"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["5","萬"],["5","萬"],["5","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["9","筒"],["9","筒"],["9","筒"],["9","筒"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["7","筒"],["7","筒"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":70,"score":4700,"each":null,"fromChild":1200,"fromParent":2300,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","筒"],["2","筒"],["2","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["1","索"],["1","索"],["1","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["3","萬"],["3","萬"],["3","萬"],["3","萬"]],"label":"明槓(中張)","naki":true,"fu":8,"type":"minkan"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":false,"han":1,"fu":50,"score":1600,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","索"],["2","索"],["2","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["1","筒"],["1","筒"],["1","筒"],["1","筒"]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["中",""],["中",""]],"fu":2,"label":"役牌"},"machi":"シャンポン","machiFu":0,"tsumo":true,"parent":false,"han":3,"fu":50,"score":6400,"each":null,"fromChild":1600,"fromParent":3200,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["北",""],["北",""],["北",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["1","筒"],["1","筒"],["1","筒"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["2","筒"],["2","筒"],["2","筒"],["2","筒"]],"label":"明槓(中張)","naki":true,"fu":8,"type":"minkan"}],"jantou":{"tiles":[["9","筒"],["9","筒"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":false,"parent":true,"han":2,"fu":50,"score":4800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","筒"],["3","筒"],["4","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["北",""],["北",""],["北",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["1","筒"],["1","筒"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":false,"han":1,"fu":40,"score":1300,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["白",""],["白",""],["白",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["3","筒"],["3","筒"],["3","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["8","索"],["8","索"],["8","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["發",""],["發",""],["發",""],["發",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["3","索"],["3","索"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":1,"fu":80,"score":2600,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["1","萬"],["2","萬"],["3","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","筒"],["4","筒"],["4","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["2","索"],["2","索"],["2","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["7","萬"],["7","萬"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":false,"parent":false,"han":3,"fu":40,"score":5200,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","筒"],["3","筒"],["4","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["發",""],["發",""],["發",""],["發",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["西",""],["西",""]],"fu":0,"label":"オタ風"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":true,"han":1,"fu":40,"score":2000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","筒"],["2","筒"],["2","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["2","索"],["2","索"],["2","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["6","筒"],["6","筒"],["6","筒"],["6","筒"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["5","索"],["5","索"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":false,"han":1,"fu":60,"score":2000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["6","筒"],["7","筒"],["8","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["白",""],["白",""],["白",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["4","索"],["4","索"],["4","索"],["4","索"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["南",""],["南",""]],"fu":0,"label":"オタ風"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":60,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["8","索"],["8","索"],["8","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["8","萬"],["8","萬"],["8","萬"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["白",""],["白",""],["白",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["9","萬"],["9","萬"],["9","萬"],["9","萬"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["1","筒"],["1","筒"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":70,"score":4500,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","筒"],["7","筒"],["8","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["西",""],["西",""],["西",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"}],"jantou":{"tiles":[["3","筒"],["3","筒"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":true,"han":3,"fu":40,"score":7700,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["9","筒"],["9","筒"],["9","筒"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["4","萬"],["4","萬"],["4","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["南",""],["南",""]],"fu":0,"label":"オタ風"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":false,"han":2,"fu":50,"score":3200,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","索"],["7","索"],["8","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["中",""],["中",""],["中",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["3","筒"],["3","筒"],["3","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"カンチャン","machiFu":2,"tsumo":true,"parent":false,"han":3,"fu":40,"score":5200,"each":null,"fromChild":1300,"fromParent":2600,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["2","索"],["3","索"],["4","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","筒"],["7","筒"],["8","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["1","萬"],["1","萬"],["1","萬"]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["5","萬"],["5","萬"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":true,"parent":true,"han":2,"fu":40,"score":3900,"each":1300,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["1","筒"],["1","筒"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["6","索"],["6","索"],["6","索"],["6","索"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["白",""],["白",""]],"fu":2,"label":"役牌"},"machi":"両面","machiFu":0,"tsumo":true,"parent":true,"han":2,"fu":60,"score":6000,"each":2000,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","筒"],["7","筒"],["8","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","索"],["7","索"],["8","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["7","萬"],["7","萬"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":30,"score":2000,"each":null,"fromChild":500,"fromParent":1000,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["1","索"],["1","索"],["1","索"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["9","萬"],["9","萬"],["9","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["5","萬"],["5","萬"],["5","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["南",""],["南",""],["南",""],["南",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["中",""],["中",""]],"fu":2,"label":"役牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":90,"score":5800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["1","索"],["2","索"],["3","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["4","萬"],["4","萬"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":40,"score":2600,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["2","筒"],["3","筒"],["4","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","索"],["3","索"],["4","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["7","萬"],["7","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":30,"score":2000,"each":null,"fromChild":500,"fromParent":1000,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["6","筒"],["7","筒"],["8","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","索"],["3","索"],["4","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","萬"],["4","萬"],["4","萬"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"}],"jantou":{"tiles":[["北",""],["北",""]],"fu":0,"label":"オタ風"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":false,"han":1,"fu":30,"score":1000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["發",""],["發",""],["發",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["西",""],["西",""],["西",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["南",""],["南",""],["南",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["東",""],["東",""],["東",""],["東",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["8","萬"],["8","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":false,"han":1,"fu":80,"score":2700,"each":null,"fromChild":700,"fromParent":1300,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["1","筒"],["1","筒"],["1","筒"],["1","筒"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["7","筒"],["7","筒"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":true,"han":2,"fu":80,"score":7700,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["2","萬"],["2","萬"],["2","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["中",""],["中",""],["中",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["9","萬"],["9","萬"],["9","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["9","索"],["9","索"],["9","索"],["9","索"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["東",""],["東",""]],"fu":0,"label":"オタ風"},"machi":"両面","machiFu":0,"tsumo":false,"parent":false,"han":1,"fu":90,"score":2900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","萬"],["6","萬"],["6","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["5","萬"],["5","萬"],["5","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["6","萬"],["6","萬"],["6","萬"],["6","萬"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["白",""],["白",""]],"fu":2,"label":"役牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":false,"han":1,"fu":60,"score":2000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["6","索"],["7","索"],["8","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","筒"],["6","筒"],["7","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["北",""],["北",""],["北",""],["北",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["1","索"],["1","索"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":true,"han":3,"fu":40,"score":7700,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["6","萬"],["7","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["9","萬"],["9","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":true,"han":1,"fu":30,"score":1500,"each":500,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["南",""],["南",""],["南",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["2","萬"],["2","萬"],["2","萬"],["2","萬"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":60,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["2","筒"],["3","筒"],["4","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["9","筒"],["9","筒"],["9","筒"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["東",""],["東",""],["東",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["白",""],["白",""],["白",""],["白",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["1","萬"],["1","萬"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":70,"score":4500,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","萬"],["4","萬"],["5","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["東",""],["東",""],["東",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["8","筒"],["8","筒"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":50,"score":3200,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["5","筒"],["6","筒"],["7","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["2","筒"],["2","筒"],["2","筒"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["9","筒"],["9","筒"],["9","筒"],["9","筒"]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["7","索"],["7","索"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":false,"parent":true,"han":2,"fu":60,"score":5800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["發",""],["發",""],["發",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["西",""],["西",""],["西",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["4","萬"],["4","萬"],["4","萬"],["4","萬"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["2","索"],["2","索"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":false,"han":2,"fu":70,"score":4500,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["6","筒"],["7","筒"],["8","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","筒"],["3","筒"],["4","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["1","萬"],["1","萬"],["1","萬"]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["1","筒"],["1","筒"]],"fu":0,"label":"数牌"},"machi":"カンチャン","machiFu":2,"tsumo":true,"parent":true,"han":3,"fu":40,"score":7800,"each":2600,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["2","萬"],["3","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","筒"],["6","筒"],["7","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","索"],["1","索"],["1","索"]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"}],"jantou":{"tiles":[["1","索"],["1","索"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":false,"parent":false,"han":3,"fu":30,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","萬"],["6","萬"],["6","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["東",""],["東",""],["東",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["8","筒"],["8","筒"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":true,"parent":false,"han":2,"fu":50,"score":3200,"each":null,"fromChild":800,"fromParent":1600,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["發",""],["發",""],["發",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["9","索"],["9","索"],["9","索"],["9","索"]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["9","萬"],["9","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":3,"fu":50,"score":6400,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["1","索"],["2","索"],["3","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["6","萬"],["7","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["6","索"],["7","索"],["8","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","萬"],["3","萬"],["4","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["3","索"],["3","索"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":false,"parent":false,"han":1,"fu":30,"score":1000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","萬"],["2","萬"],["3","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","筒"],["3","筒"],["3","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"両面","machiFu":0,"tsumo":true,"parent":false,"han":1,"fu":30,"score":1100,"each":null,"fromChild":300,"fromParent":500,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["6","筒"],["7","筒"],["8","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["發",""],["發",""],["發",""],["發",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["5","萬"],["5","萬"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":true,"han":1,"fu":40,"score":2000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["1","萬"],["2","萬"],["3","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["北",""],["北",""],["北",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"},{"tiles":[["5","萬"],["5","萬"],["5","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["6","筒"],["6","筒"],["6","筒"],["6","筒"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["2","筒"],["2","筒"]],"fu":0,"label":"数牌"},"machi":"両面","machiFu":0,"tsumo":false,"parent":true,"han":2,"fu":50,"score":4800,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["8","筒"],["9","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["6","萬"],["7","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["4","筒"],["4","筒"]],"fu":0,"label":"数牌"},"machi":"シャンポン","machiFu":0,"tsumo":true,"parent":true,"han":1,"fu":30,"score":1500,"each":500,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["7","萬"],["8","萬"],["9","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["8","索"],["8","索"],["8","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["5","萬"],["5","萬"],["5","萬"],["5","萬"]],"label":"暗槓(中張)","naki":false,"fu":16,"type":"ankan"}],"jantou":{"tiles":[["北",""],["北",""]],"fu":0,"label":"オタ風"},"machi":"タンキ","machiFu":2,"tsumo":false,"parent":false,"han":2,"fu":60,"score":3900,"each":null,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":30},{"mentsu":[{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","索"],["5","索"],["5","索"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["發",""],["發",""],["發",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"},{"tiles":[["東",""],["東",""],["東",""]],"label":"暗刻(么九)","naki":false,"fu":8,"type":"ankou"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"カンチャン","machiFu":2,"tsumo":true,"parent":true,"han":3,"fu":50,"score":9600,"each":3200,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","萬"],["3","萬"],["4","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","萬"],["5","萬"],["5","萬"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"}],"jantou":{"tiles":[["南",""],["南",""]],"fu":0,"label":"オタ風"},"machi":"タンキ","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":30,"score":2000,"each":null,"fromChild":500,"fromParent":1000,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["3","索"],["4","索"],["5","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","筒"],["5","筒"],["6","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","索"],["3","索"],["3","索"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["南",""],["南",""],["南",""],["南",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":true,"han":1,"fu":60,"score":3000,"each":1000,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["2","萬"],["3","萬"],["4","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","索"],["2","索"],["3","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"}],"jantou":{"tiles":[["9","索"],["9","索"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":30,"score":2000,"each":null,"fromChild":500,"fromParent":1000,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["6","萬"],["7","萬"],["8","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","萬"],["5","萬"],["6","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["西",""],["西",""],["西",""]],"label":"明刻(么九)","naki":true,"fu":4,"type":"minko"}],"jantou":{"tiles":[["北",""],["北",""]],"fu":0,"label":"オタ風"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":false,"han":1,"fu":30,"score":1000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20},{"mentsu":[{"tiles":[["6","筒"],["6","筒"],["6","筒"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["2","筒"],["2","筒"],["2","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["6","索"],["6","索"],["6","索"]],"label":"明刻(中張)","naki":true,"fu":2,"type":"minko"},{"tiles":[["中",""],["中",""],["中",""],["中",""]],"label":"暗槓(么九)","naki":false,"fu":32,"type":"ankan"}],"jantou":{"tiles":[["東",""],["東",""]],"fu":0,"label":"オタ風"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":false,"han":2,"fu":70,"score":4700,"each":null,"fromChild":1200,"fromParent":2300,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["3","筒"],["4","筒"],["5","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["2","索"],["3","索"],["4","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"},{"tiles":[["發",""],["發",""],["發",""],["發",""]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["3","索"],["3","索"]],"fu":0,"label":"数牌"},"machi":"タンキ","machiFu":2,"tsumo":true,"parent":false,"han":1,"fu":50,"score":1600,"each":null,"fromChild":400,"fromParent":800,"hasNaki":true,"baseFu":22},{"mentsu":[{"tiles":[["7","索"],["8","索"],["9","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["5","索"],["6","索"],["7","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["2","筒"],["3","筒"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"label":"暗刻(中張)","naki":false,"fu":4,"type":"ankou"}],"jantou":{"tiles":[["8","萬"],["8","萬"]],"fu":0,"label":"数牌"},"machi":"ペンチャン","machiFu":2,"tsumo":true,"parent":true,"han":2,"fu":30,"score":3000,"each":1000,"fromChild":null,"fromParent":null,"hasNaki":false,"baseFu":22},{"mentsu":[{"tiles":[["5","萬"],["6","萬"],["7","萬"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","索"],["2","索"],["3","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["4","索"],["5","索"],["6","索"]],"label":"順子","naki":false,"fu":0,"type":"shuntsu"},{"tiles":[["1","筒"],["1","筒"],["1","筒"],["1","筒"]],"label":"明槓(么九)","naki":true,"fu":16,"type":"minkan"}],"jantou":{"tiles":[["發",""],["發",""]],"fu":2,"label":"役牌"},"machi":"ペンチャン","machiFu":2,"tsumo":false,"parent":true,"han":1,"fu":40,"score":2000,"each":null,"fromChild":null,"fromParent":null,"hasNaki":true,"baseFu":20}];
+
+  const [spIdx, setSpIdx] = useState(0);
+  const [spPhase, setSpPhase] = useState("menu"); // menu, han, fu, score, result, summary
+  const [spAnsHan, setSpAnsHan] = useState(null);
+  const [spAnsFu, setSpAnsFu] = useState(null);
+  const [spAnsScore, setSpAnsScore] = useState(null);
+  const [spScore, setSpScore] = useState({ correct: 0, total: 0 });
+  const [spOrder, setSpOrder] = useState([]);
+  const [spCount, setSpCount] = useState(10);
+
+  const startScoreProblems = (n) => {
+    const order = SCORE_PROBLEMS.map((_, i) => i).sort(() => Math.random() - 0.5).slice(0, n);
+    setSpOrder(order); setSpIdx(0); setSpPhase("han");
+    setSpAnsHan(null); setSpAnsFu(null); setSpAnsScore(null);
+    setSpScore({ correct: 0, total: 0 }); setSpCount(n);
+  };
+
+  const spCurrent = () => SCORE_PROBLEMS[spOrder[spIdx]] || null;
+
+  // 点数の選択肢を生成（正解＋近い誤答）
+  const makeScoreChoices = (p) => {
+    const correct = p.score;
+    const cands = new Set([correct]);
+    const variants = [0.5, 0.75, 1.5, 2, 1.33, 0.66];
+    variants.forEach(v => {
+      const val = Math.ceil(correct * v / 100) * 100;
+      if (val > 0 && val !== correct) cands.add(val);
+    });
+    const arr = [...cands].filter(v => v !== correct);
+    const shuffled = arr.sort(() => Math.random() - 0.5).slice(0, 3);
+    return [correct, ...shuffled].sort(() => Math.random() - 0.5);
+  };
+
   const [dictCat, setDictCat] = useState("1翻");
   const [dictExpanded, setDictExpanded] = useState(null);
 
@@ -1250,6 +1287,266 @@ function MahjongScorer() {
   // ══════════════════════════════════
   // ── DICTIONARY VIEW ──
   // ══════════════════════════════════
+  // ══════════════════════════════════
+  // ── SCORE PROBLEMS VIEW ──
+  // ══════════════════════════════════
+  const renderScoreProblems = () => {
+    const p = spCurrent();
+
+    // メニュー
+    if (spPhase === "menu") {
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>🧮</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 6px" }}>点数計算 総合問題</h2>
+            <p style={{ fontSize: 13, color: t.dm }}>手牌を見て翻・符・点数を答えよう</p>
+          </div>
+          <div style={card}>
+            <div style={question}>問題数を選択</div>
+            {[5, 10, 20].map(n => (
+              <button key={n} style={{ ...actionBtn("p"), marginBottom: 10 }} onClick={() => startScoreProblems(n)}>
+                {n}問に挑戦
+              </button>
+            ))}
+            <div style={{ fontSize: 11, color: t.dm, textAlign: "center", margin: "10px 0" }}>
+              全{SCORE_PROBLEMS.length}問からランダム出題
+            </div>
+            <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+          </div>
+        </div>
+      );
+    }
+
+    // 結果サマリー
+    if (spPhase === "summary") {
+      const pct = spScore.total > 0 ? Math.round(spScore.correct / spScore.total * 100) : 0;
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>{pct >= 80 ? "🎉" : pct >= 50 ? "👍" : "📚"}</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800 }}>結果</h2>
+          </div>
+          <div style={{ ...card, textAlign: "center" }}>
+            <div style={{ fontSize: 40, fontWeight: 900, color: pct >= 80 ? t.gn : pct >= 50 ? t.gd : t.rd }}>{pct}%</div>
+            <div style={{ fontSize: 16, color: t.dm, marginTop: 4 }}>{spScore.correct} / {spScore.total} 正解</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 8 }}>翻・符・点数すべて正解で1問</div>
+          </div>
+          <button style={actionBtn("p")} onClick={() => startScoreProblems(spCount)}>もう一度</button>
+          <button style={actionBtn()} onClick={() => setSpPhase("menu")}>問題数を変える</button>
+          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+
+    if (!p) { setSpPhase("summary"); return null; }
+
+    const hanOK = spAnsHan === p.han;
+    const fuOK = spAnsFu === p.fu;
+    const scoreOK = spAnsScore === p.score;
+
+    // 手牌表示
+    const HandDisplay = () => (
+      <div style={{ background: t.sf, borderRadius: 12, padding: "14px 10px", marginBottom: 12 }}>
+        <div style={{ fontSize: 10, color: t.dm, marginBottom: 8, textAlign: "center" }}>アガリ形</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", alignItems: "flex-end" }}>
+          {p.mentsu.map((m, mi) => (
+            <div key={mi} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+              <div style={{ display: "flex", gap: 1.5 }}>
+                {m.tiles.map(([l, s], ti) => {
+                  const isAnkanHidden = m.type === "ankan" && (ti === 0 || ti === m.tiles.length - 1);
+                  const rotated = m.naki && ti === 0;
+                  return (
+                    <div key={ti} style={rotated ? { transform: "rotate(90deg)", margin: "0 2px" } : undefined}>
+                      <Tile label={isAnkanHidden ? "" : l} sub={isAnkanHidden ? "" : s} dim={isAnkanHidden} size={19} />
+                    </div>
+                  );
+                })}
+              </div>
+              {m.label !== "順子" && (
+                <span style={{ fontSize: 8, color: m.naki ? t.gd : t.dm }}>{m.label}</span>
+              )}
+            </div>
+          ))}
+          {/* 雀頭 */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+            <div style={{ display: "flex", gap: 1.5 }}>
+              {p.jantou.tiles.map(([l, s], ti) => <Tile key={ti} label={l} sub={s} size={19} />)}
+            </div>
+            <span style={{ fontSize: 8, color: p.jantou.fu > 0 ? t.gd : t.dm }}>雀頭({p.jantou.label})</span>
+          </div>
+        </div>
+      </div>
+    );
+
+    // 状況表示
+    const Situation = () => (
+      <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
+        <span style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: p.parent ? t.gdS : t.acS, color: p.parent ? t.gd : t.ac, border: `1px solid ${p.parent ? t.gd : t.ac}44` }}>
+          {p.parent ? "親" : "子"}
+        </span>
+        <span style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: p.tsumo ? t.gnS : t.rdS, color: p.tsumo ? t.gn : t.rd, border: `1px solid ${p.tsumo ? t.gn : t.rd}44` }}>
+          {p.tsumo ? "ツモ" : "ロン"}
+        </span>
+        <span style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: t.sf, color: t.tx, border: `1px solid ${t.bd}` }}>
+          {p.machi}待ち
+        </span>
+        <span style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: t.sf, color: p.hasNaki ? t.gd : t.ac, border: `1px solid ${t.bd}` }}>
+          {p.hasNaki ? "副露あり" : "門前"}
+        </span>
+      </div>
+    );
+
+    const progress = ((spIdx) / spOrder.length) * 100;
+
+    return (
+      <div style={body}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 12 }}>
+          <span style={{ color: t.dm }}>第{spIdx + 1}問 / {spOrder.length}</span>
+          <span style={{ color: t.gn, fontWeight: 700 }}>{spScore.correct}問正解</span>
+        </div>
+        <div style={{ height: 4, background: t.bd, borderRadius: 2, marginBottom: 14 }}>
+          <div style={{ height: 4, background: t.ac, borderRadius: 2, width: `${progress}%`, transition: "width 0.3s" }} />
+        </div>
+
+        <div style={card}>
+          <HandDisplay />
+          <Situation />
+
+          {/* STEP: 翻数 */}
+          {spPhase === "han" && (
+            <>
+              <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 12 }}>何翻ですか？</div>
+              <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 12 }}>※役の翻数は問いません。この問題の設定翻数を選んでください</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                {[1, 2, 3, 4].map(h => (
+                  <button key={h} style={numBtn(false)} onClick={() => { setSpAnsHan(h); setSpPhase("fu"); }}>{h}翻</button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* STEP: 符数 */}
+          {spPhase === "fu" && (
+            <>
+              <div style={{ textAlign: "center", marginBottom: 10 }}>
+                <span style={{ fontSize: 12, color: t.dm }}>翻数: </span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: hanOK ? t.gn : t.rd }}>{spAnsHan}翻</span>
+                {!hanOK && <span style={{ fontSize: 12, color: t.gn, marginLeft: 6 }}>(正解: {p.han}翻)</span>}
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 12 }}>何符ですか？</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                {[25, 30, 40, 50, 60, 70, 80, 90, 100, 110].map(f => (
+                  <button key={f} style={numBtn(false)} onClick={() => { setSpAnsFu(f); setSpPhase("score"); }}>{f}符</button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* STEP: 点数 */}
+          {spPhase === "score" && (
+            <>
+              <div style={{ textAlign: "center", marginBottom: 10, display: "flex", gap: 12, justifyContent: "center" }}>
+                <span style={{ fontSize: 13 }}>
+                  <span style={{ color: t.dm }}>翻 </span>
+                  <span style={{ fontWeight: 700, color: hanOK ? t.gn : t.rd }}>{spAnsHan}</span>
+                </span>
+                <span style={{ fontSize: 13 }}>
+                  <span style={{ color: t.dm }}>符 </span>
+                  <span style={{ fontWeight: 700, color: fuOK ? t.gn : t.rd }}>{spAnsFu}</span>
+                </span>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 6 }}>
+                {p.parent ? "親" : "子"}の{p.tsumo ? "ツモ" : "ロン"}、何点？
+              </div>
+              <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 12 }}>
+                {p.tsumo ? "合計点で答えてください" : "放銃者から受け取る点数"}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {makeScoreChoices(p).map((v, vi) => (
+                  <button key={vi} style={{ ...numBtn(false), fontSize: 15 }} onClick={() => {
+                    setSpAnsScore(v);
+                    const allOK = hanOK && fuOK && v === p.score;
+                    setSpScore(s => ({ correct: s.correct + (allOK ? 1 : 0), total: s.total + 1 }));
+                    setSpPhase("result");
+                  }}>{v.toLocaleString()}</button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* STEP: 結果 */}
+          {spPhase === "result" && (
+            <>
+              <div style={{
+                textAlign: "center", padding: 14, borderRadius: 12, marginBottom: 12,
+                background: (hanOK && fuOK && scoreOK) ? t.gnS : t.rdS,
+                border: `2px solid ${(hanOK && fuOK && scoreOK) ? t.gn : t.rd}`,
+              }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: (hanOK && fuOK && scoreOK) ? t.gn : t.rd }}>
+                  {(hanOK && fuOK && scoreOK) ? "⭕ 全問正解！" : "❌ 惜しい"}
+                </div>
+              </div>
+
+              {/* 答え合わせ */}
+              <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                {[
+                  { label: "翻数", mine: `${spAnsHan}翻`, ans: `${p.han}翻`, ok: hanOK },
+                  { label: "符数", mine: `${spAnsFu}符`, ans: `${p.fu}符`, ok: fuOK },
+                  { label: "点数", mine: spAnsScore?.toLocaleString(), ans: p.score.toLocaleString(), ok: scoreOK },
+                ].map((r, ri) => (
+                  <div key={ri} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: ri < 2 ? `1px solid ${t.bd}33` : "none" }}>
+                    <span style={{ fontSize: 12, color: t.dm }}>{r.label}</span>
+                    <span style={{ fontSize: 13 }}>
+                      <span style={{ color: r.ok ? t.gn : t.rd, fontWeight: 700 }}>{r.ok ? "✓" : "✗"} {r.mine}</span>
+                      {!r.ok && <span style={{ color: t.gn, marginLeft: 8, fontWeight: 700 }}>→ {r.ans}</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* 符の内訳解説 */}
+              <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: t.dm, marginBottom: 8 }}>符の内訳</div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}>
+                  <span style={{ color: t.tx }}>副底</span><span style={{ color: t.tx }}>20符</span>
+                </div>
+                {p.tsumo && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}><span style={{ color: t.gn }}>ツモ符</span><span style={{ color: t.gn }}>+2符</span></div>}
+                {!p.tsumo && !p.hasNaki && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}><span style={{ color: t.ac }}>門前加符</span><span style={{ color: t.ac }}>+10符</span></div>}
+                {p.mentsu.filter(m => m.fu > 0).map((m, mi) => (
+                  <div key={mi} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}>
+                    <span style={{ color: t.tx, paddingLeft: 6 }}>{m.label}</span><span style={{ color: t.tx }}>+{m.fu}符</span>
+                  </div>
+                ))}
+                {p.machiFu > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}><span style={{ color: t.tx }}>待ち（{p.machi}）</span><span style={{ color: t.tx }}>+{p.machiFu}符</span></div>}
+                {p.jantou.fu > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}><span style={{ color: t.tx }}>雀頭（{p.jantou.label}）</span><span style={{ color: t.tx }}>+{p.jantou.fu}符</span></div>}
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "6px 0 0", marginTop: 4, borderTop: `1px solid ${t.bd}`, color: t.gd, fontWeight: 700 }}>
+                  <span>合計（切上）</span><span>{p.fu}符</span>
+                </div>
+              </div>
+
+              {/* 点数の詳細 */}
+              <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12, textAlign: "center" }}>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 4 }}>{p.han}翻{p.fu}符 / {p.parent ? "親" : "子"} / {p.tsumo ? "ツモ" : "ロン"}</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: t.ac }}>{p.score.toLocaleString()}点</div>
+                {p.tsumo && (
+                  <div style={{ fontSize: 12, color: t.dm, marginTop: 4 }}>
+                    {p.parent ? `${p.each.toLocaleString()}点オール` : `子${p.fromChild.toLocaleString()} / 親${p.fromParent.toLocaleString()}`}
+                  </div>
+                )}
+              </div>
+
+              <button style={actionBtn("p")} onClick={() => {
+                if (spIdx + 1 >= spOrder.length) setSpPhase("summary");
+                else { setSpIdx(spIdx + 1); setSpAnsHan(null); setSpAnsFu(null); setSpAnsScore(null); setSpPhase("han"); }
+              }}>{spIdx + 1 >= spOrder.length ? "結果を見る" : "次の問題"}</button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderDict = () => (
     <div style={body}>
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>役一覧</div>
@@ -1293,311 +1590,6 @@ function MahjongScorer() {
   // ══════════════════════════════════
   // ══════════════════════════════════
   // ── SCORE QUIZ (総合問題) ──
-  // ══════════════════════════════════
-  const [sqOrder, setSqOrder] = useState([]);
-  const [sqIdx, setSqIdx] = useState(0);
-  const [sqPhase, setSqPhase] = useState("menu"); // menu, quiz, result
-  const [sqAnswer, setSqAnswer] = useState({ han: null, fu: null, oya: null, score: null });
-  const [sqStep, setSqStep] = useState(0); // 0:han 1:fu 2:oya 3:score 4:result
-  const [sqScore, setSqScore] = useState({ correct: 0, total: 0 });
-  const [sqCount, setSqCount] = useState(10);
-
-  const startScoreQuiz = (n) => {
-    const order = SCORE_PROBLEMS.map((_, i) => i).sort(() => Math.random() - 0.5).slice(0, n);
-    setSqOrder(order); setSqIdx(0); setSqPhase("quiz"); setSqStep(0);
-    setSqAnswer({ han: null, fu: null, oya: null, score: null });
-    setSqScore({ correct: 0, total: 0 }); setSqCount(n);
-  };
-
-  const sqCurrent = () => SCORE_PROBLEMS[sqOrder[sqIdx]];
-
-  // 選択肢生成（正解＋ダミー）
-  const makeChoices = (correct, pool) => {
-    const set = new Set([correct]);
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    for (const v of shuffled) { if (set.size >= 4) break; set.add(v); }
-    return [...set].sort((a, b) => {
-      const na = typeof a === "string" ? parseInt(a.replace(/[^0-9]/g, "")) : a;
-      const nb = typeof b === "string" ? parseInt(b.replace(/[^0-9]/g, "")) : b;
-      return na - nb;
-    });
-  };
-
-  const renderScoreQuiz = () => {
-    if (sqPhase === "menu") {
-      return (
-        <div style={body}>
-          <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🧮</div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>点数計算 総合問題</h2>
-            <p style={{ fontSize: 13, color: t.dm }}>アガリ形から翻・符・点数を導く</p>
-          </div>
-          <div style={card}>
-            <div style={{ fontSize: 12, color: t.dm, lineHeight: 1.7, marginBottom: 14 }}>
-              全100問。アガリ牌のイラストと状況から、<br />
-              ① 何翻？ ② 何符？ ③ 親か子か ④ 何点？<br />
-              を順番に答えます。
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>出題数を選択</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              {[5, 10, 20].map(n => (
-                <button key={n} style={{ flex: 1, padding: "14px 4px", borderRadius: 10, border: `2px solid ${t.ac}`, background: t.acS, color: t.ac, fontSize: 15, fontWeight: 800, cursor: "pointer" }}
-                  onClick={() => startScoreQuiz(n)}>{n}問</button>
-              ))}
-            </div>
-            <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
-          </div>
-        </div>
-      );
-    }
-
-    if (sqPhase === "result") {
-      const pct = sqScore.total > 0 ? Math.round(sqScore.correct / sqScore.total * 100) : 0;
-      return (
-        <div style={body}>
-          <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>{pct >= 80 ? "🎉" : pct >= 50 ? "👍" : "📚"}</div>
-            <h2 style={{ fontSize: 18, fontWeight: 800 }}>総合問題 結果</h2>
-          </div>
-          <div style={{ ...card, textAlign: "center" }}>
-            <div style={{ fontSize: 40, fontWeight: 900, color: pct >= 80 ? t.gn : pct >= 50 ? t.gd : t.rd }}>{pct}%</div>
-            <div style={{ fontSize: 16, color: t.dm, marginTop: 4 }}>{sqScore.correct} / {sqScore.total} 問正解</div>
-            <div style={{ fontSize: 11, color: t.dm, marginTop: 8 }}>※4項目すべて正解で1問正解</div>
-          </div>
-          <button style={actionBtn("p")} onClick={() => startScoreQuiz(sqCount)}>もう一度</button>
-          <button style={actionBtn()} onClick={() => setSqPhase("menu")}>出題数を変える</button>
-          <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
-        </div>
-      );
-    }
-
-    // quiz phase
-    const p = sqCurrent();
-    if (!p) { setSqPhase("result"); return null; }
-
-    const total = sqOrder.length;
-    const correctHan = p.h;
-    const correctFu = p.f;
-    const correctOya = p.oya === 1 ? "親" : "子";
-    const correctScore = p.ans;
-
-    const hanChoices = makeChoices(correctHan, [1,2,3,4,5]);
-    const fuChoices = makeChoices(correctFu, [20,25,30,40,50,60,70,80]);
-    const scorePool = [];
-    [1,2,3,4].forEach(hh => [20,25,30,40,50,60].forEach(ff => {
-      const r = calcScore(ff, hh, p.oya === 1, p.tsu === 1);
-      const s = p.tsu === 1 ? (p.oya === 1 ? `${r.each}オール` : `${r.fromChild}/${r.fromParent}`) : `${r.total}`;
-      if (s !== correctScore) scorePool.push(s);
-    }));
-    const scoreChoices = makeChoices(correctScore, [...new Set(scorePool)]);
-
-    const allAnswered = sqStep >= 4;
-    const isCorrect = allAnswered &&
-      sqAnswer.han === correctHan && sqAnswer.fu === correctFu &&
-      sqAnswer.oya === correctOya && sqAnswer.score === correctScore;
-
-    const stepDef = [
-      { key: "han", label: "何翻？", choices: hanChoices.map(c => ({ v: c, disp: `${c}翻` })), correct: correctHan },
-      { key: "fu", label: "何符？", choices: fuChoices.map(c => ({ v: c, disp: `${c}符` })), correct: correctFu },
-      { key: "oya", label: "親？子？", choices: [{ v: "親", disp: "親" }, { v: "子", disp: "子" }], correct: correctOya },
-      { key: "score", label: "何点？", choices: scoreChoices.map(c => ({ v: c, disp: c })), correct: correctScore },
-    ];
-
-    return (
-      <div style={body}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <span style={{ fontSize: 13, color: t.dm }}>{sqIdx + 1} / {total}</span>
-          <span style={{ fontSize: 13, color: t.gn, fontWeight: 700 }}>{sqScore.correct}問正解</span>
-        </div>
-        <div style={{ height: 4, background: t.bd, borderRadius: 2, marginBottom: 14 }}>
-          <div style={{ height: 4, background: t.ac, borderRadius: 2, width: `${(sqIdx / total) * 100}%`, transition: "width 0.3s" }} />
-        </div>
-
-        {/* アガリ形の表示 */}
-        <div style={{ ...card, padding: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: t.dm, marginBottom: 10, textAlign: "center" }}>アガリ形</div>
-
-          {/* 面子 */}
-          {p.ti.mentsu.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              {p.ti.mentsu.map((mt, mi) => (
-                <div key={mi} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, justifyContent: "center" }}>
-                  <div style={{ display: "flex", gap: 2, alignItems: "flex-end" }}>
-                    {mt.tiles.map(([l, s], ti2) => {
-                      const isDim = mt.ankan && (ti2 === 0 || ti2 === mt.tiles.length - 1);
-                      const rotated = mt.naki && ti2 === 0;
-                      return (
-                        <div key={ti2} style={rotated ? { transform: "rotate(90deg)", margin: "0 3px" } : undefined}>
-                          <Tile label={isDim ? "" : l} sub={isDim ? "" : s} dim={isDim} size={22} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <span style={{ fontSize: 10, color: t.dm }}>{mt.naki ? "鳴き" : "門前"}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 雀頭 */}
-          {p.ti.jantou && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 10, color: t.dm }}>雀頭</span>
-              <div style={{ display: "flex", gap: 2 }}>
-                {p.ti.jantou.map(([l, s], i) => <Tile key={i} label={l} sub={s} size={22} />)}
-              </div>
-            </div>
-          )}
-
-          {/* 待ち */}
-          {p.ti.machi && (
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 10, borderTop: `1px solid ${t.bd}33` }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <span style={{ fontSize: 9, color: t.dm, marginBottom: 4 }}>待ち</span>
-                <div style={{ display: "flex", gap: 2 }}>
-                  {p.ti.machi.hand.map(([l, s], i) => <Tile key={i} label={l} sub={s} size={22} />)}
-                </div>
-              </div>
-              <div style={{ width: 1, height: 33, background: t.bd, margin: "14px 12px 0" }} />
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <span style={{ fontSize: 9, color: t.gn, marginBottom: 4 }}>アガリ牌</span>
-                <div style={{ display: "flex", gap: 3 }}>
-                  {p.ti.machi.wait.map(([l, s], i) => (
-                    <div key={i} style={{ border: `2px solid ${t.gn}`, borderRadius: 5, padding: 1 }}>
-                      <Tile label={l} sub={s} size={22} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 特殊形の表示 */}
-          {(p.pf === 1 || p.ct === 1) && (
-            <div style={{ textAlign: "center", padding: "10px 0", background: t.gnS, borderRadius: 8, marginTop: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: t.gn }}>
-                {p.pf === 1 ? "平和（ピンフ）形" : "七対子（チートイツ）形"}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* 状況 */}
-        <div style={{ ...card, padding: 12 }}>
-          <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
-            <span style={{ padding: "5px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, background: p.tsu === 1 ? t.gnS : t.rdS, color: p.tsu === 1 ? t.gn : t.rd, border: `1px solid ${p.tsu === 1 ? t.gn : t.rd}44` }}>
-              {p.tsu === 1 ? "ツモ" : "ロン"}
-            </span>
-            <span style={{ padding: "5px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, background: p.oya === 1 ? t.gdS : t.acS, color: p.oya === 1 ? t.gd : t.ac, border: `1px solid ${p.oya === 1 ? t.gd : t.ac}44` }}>
-              {p.oya === 1 ? "親" : "子"}
-            </span>
-            {p.ml.some(m => m.startsWith("min")) && (
-              <span style={{ padding: "5px 14px", borderRadius: 8, fontSize: 13, background: t.sf, color: t.dm, border: `1px solid ${t.bd}` }}>鳴きあり</span>
-            )}
-          </div>
-        </div>
-
-        {/* 回答ステップ */}
-        {!allAnswered ? (
-          <div style={card}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 5, marginBottom: 12 }}>
-              {[0,1,2,3].map(i => (
-                <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: i === sqStep ? t.ac : i < sqStep ? t.ac + "66" : t.bd }} />
-              ))}
-            </div>
-            <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center", marginBottom: 16 }}>
-              {stepDef[sqStep].label}
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: sqStep === 3 ? "1fr" : "repeat(2,1fr)", gap: 8 }}>
-              {stepDef[sqStep].choices.map((c, i) => (
-                <button key={i} style={{
-                  padding: "16px 8px", borderRadius: 12, cursor: "pointer",
-                  border: `2px solid ${t.bd}`, background: "transparent", color: t.tx,
-                  fontSize: 16, fontWeight: 700,
-                }} onClick={() => {
-                  const key = stepDef[sqStep].key;
-                  const next = { ...sqAnswer, [key]: c.v };
-                  setSqAnswer(next);
-                  if (sqStep < 3) setSqStep(sqStep + 1);
-                  else {
-                    // 全問回答完了 → 判定
-                    const ok = next.han === correctHan && next.fu === correctFu && next.oya === correctOya && next.score === correctScore;
-                    setSqScore(s => ({ correct: s.correct + (ok ? 1 : 0), total: s.total + 1 }));
-                    setSqStep(4);
-                  }
-                }}>{c.disp}</button>
-              ))}
-            </div>
-            {sqStep > 0 && (
-              <button style={{ ...backBtn, marginTop: 12 }} onClick={() => setSqStep(sqStep - 1)}>← 前の設問</button>
-            )}
-          </div>
-        ) : (
-          <div>
-            <div style={{
-              textAlign: "center", padding: 16, borderRadius: 12, marginBottom: 12,
-              background: isCorrect ? t.gnS : t.rdS, border: `2px solid ${isCorrect ? t.gn : t.rd}`,
-            }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: isCorrect ? t.gn : t.rd }}>
-                {isCorrect ? "⭕ 全問正解！" : "❌ 不正解"}
-              </div>
-            </div>
-
-            {/* 答え合わせ */}
-            <div style={{ ...card, padding: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 10 }}>答え合わせ</div>
-              {[
-                { label: "翻数", mine: sqAnswer.han !== null ? `${sqAnswer.han}翻` : "—", ans: `${correctHan}翻`, ok: sqAnswer.han === correctHan },
-                { label: "符数", mine: sqAnswer.fu !== null ? `${sqAnswer.fu}符` : "—", ans: `${correctFu}符`, ok: sqAnswer.fu === correctFu },
-                { label: "親/子", mine: sqAnswer.oya || "—", ans: correctOya, ok: sqAnswer.oya === correctOya },
-                { label: "点数", mine: sqAnswer.score || "—", ans: correctScore, ok: sqAnswer.score === correctScore },
-              ].map((r, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${t.bd}22`, fontSize: 13 }}>
-                  <span style={{ color: t.dm, width: 50 }}>{r.label}</span>
-                  <span style={{ color: r.ok ? t.gn : t.rd, fontWeight: 700 }}>
-                    {r.ok ? "✓" : "✕"} {r.mine}
-                  </span>
-                  {!r.ok && <span style={{ color: t.gd, fontWeight: 700 }}>正: {r.ans}</span>}
-                </div>
-              ))}
-            </div>
-
-            {/* 符の内訳 */}
-            <div style={{ ...card, padding: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>符の内訳</div>
-              <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.9 }}>
-                {p.ct === 1 ? (
-                  <div>七対子 → 25符固定</div>
-                ) : p.pf === 1 ? (
-                  <div>平和 {p.tsu === 1 ? "ツモ → 20符固定" : "ロン → 30符固定"}</div>
-                ) : (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>副底</span><span>20符</span></div>
-                    {p.tsu === 1 && <div style={{ display: "flex", justifyContent: "space-between", color: t.gn }}><span>ツモ符</span><span>+2符</span></div>}
-                    {p.tsu === 0 && !p.ml.some(m => m.startsWith("min")) && <div style={{ display: "flex", justifyContent: "space-between", color: t.ac }}><span>門前加符</span><span>+10符</span></div>}
-                    {p.ml.map((m, i) => {
-                      const opt = MENTSU_OPTIONS.find(o => o.id === m);
-                      return opt ? <div key={i} style={{ display: "flex", justifyContent: "space-between" }}><span style={{ paddingLeft: 8 }}>{opt.label}</span><span>+{opt.fu}符</span></div> : null;
-                    })}
-                    {MACHI_OPTIONS.find(o => o.id === p.mc)?.fu > 0 && <div style={{ display: "flex", justifyContent: "space-between" }}><span>待ち（{MACHI_OPTIONS.find(o => o.id === p.mc)?.label}）</span><span>+{MACHI_OPTIONS.find(o => o.id === p.mc)?.fu}符</span></div>}
-                    {p.jt === "yakuhai" && <div style={{ display: "flex", justifyContent: "space-between" }}><span>雀頭（役牌）</span><span>+2符</span></div>}
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, paddingTop: 6, borderTop: `1px solid ${t.bd}`, color: t.gd, fontWeight: 700 }}>
-                      <span>合計（10符切上）</span><span>{correctFu}符</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <button style={actionBtn("p")} onClick={() => {
-              if (sqIdx + 1 >= total) setSqPhase("result");
-              else { setSqIdx(sqIdx + 1); setSqStep(0); setSqAnswer({ han: null, fu: null, oya: null, score: null }); }
-            }}>{sqIdx + 1 >= total ? "結果を見る" : "次の問題"}</button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const [tableParent, setTableParent] = useState(false);
   const [tableTsumo, setTableTsumo] = useState(false);
@@ -1731,109 +1723,6 @@ function MahjongScorer() {
   };
   // ══════════════════════════════════
   // ── SCORE CALCULATION PROBLEMS (100) ──
-  // ══════════════════════════════════
-  const SCORE_PROBLEMS = [
-    {"f":25,"h":2,"oya":1,"tsu":0,"pf":0,"ct":1,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":null},"ans":"2400","tot":2400},
-    {"f":50,"h":1,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c","minko_y"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"],["5","筒"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["1","筒"],["1","筒"],["1","筒"]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["1","萬"],["2","萬"]],"wait":[["3","萬"]]},"jantou":[["6","萬"],["6","萬"]]},"ans":"1600","tot":1600},
-    {"f":30,"h":3,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["minko_y"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["北",""],["北",""],["北",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["8","萬"],["9","萬"]],"wait":[["7","萬"]]},"jantou":[["東",""],["東",""]]},"ans":"5800","tot":5800},
-    {"f":30,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["minko_c"],"mc":"tanki","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["6","索"],["6","索"],["6","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["9","索"]],"wait":[["9","索"]]},"jantou":[["白",""],["白",""]]},"ans":"1000オール","tot":3000},
-    {"f":20,"h":2,"oya":1,"tsu":1,"pf":1,"ct":0,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":[["8","索"],["8","索"]]},"ans":"700オール","tot":2100},
-    {"f":40,"h":3,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_c"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["3","萬"],["4","萬"]],"wait":[["2","萬"],["5","萬"]]},"jantou":[["4","筒"],["4","筒"]]},"ans":"7700","tot":7700},
-    {"f":20,"h":2,"oya":0,"tsu":1,"pf":1,"ct":0,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":[["8","萬"],["8","萬"]]},"ans":"400/700","tot":1500},
-    {"f":50,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_y","minkan_c","minkan_c"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["3","萬"],["3","萬"],["3","萬"],["3","萬"]],"naki":true,"ankan":false,"id":"minkan_c"},{"tiles":[["5","索"],["5","索"],["5","索"],["5","索"]],"naki":true,"ankan":false,"id":"minkan_c"}],"machi":{"hand":[["6","索"],["6","索"],["7","萬"],["7","萬"]],"wait":[["6","索"],["7","萬"]]},"jantou":[["中",""],["中",""]]},"ans":"3200","tot":3200},
-    {"f":50,"h":1,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_y","anko_y"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["中",""],["中",""],["中",""]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["8","筒"],["9","筒"]],"wait":[["7","筒"]]},"jantou":[["8","索"],["8","索"]]},"ans":"1600","tot":1600},
-    {"f":30,"h":3,"oya":0,"tsu":0,"pf":1,"ct":0,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":[["5","索"],["5","索"]]},"ans":"3900","tot":3900},
-    {"f":40,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["minkan_c"],"mc":"tanki","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["4","萬"],["4","萬"],["4","萬"],["4","萬"]],"naki":true,"ankan":false,"id":"minkan_c"}],"machi":{"hand":[["7","筒"]],"wait":[["7","筒"]]},"jantou":[["南",""],["南",""]]},"ans":"2600","tot":2600},
-    {"f":50,"h":1,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_y","minkan_y"],"mc":"kanchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["1","索"],["1","索"],["1","索"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["南",""],["南",""],["南",""],["南",""]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["7","索"],["9","索"]],"wait":[["8","索"]]},"jantou":[["白",""],["白",""]]},"ans":"400/800","tot":1600},
-    {"f":50,"h":3,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["ankan_c","anko_c","minko_y"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["6","萬"],["6","萬"],["6","萬"],["6","萬"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["2","索"],["2","索"],["2","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["8","萬"],["8","萬"],["6","萬"],["6","萬"]],"wait":[["8","萬"],["6","萬"]]},"jantou":[["中",""],["中",""]]},"ans":"1600/3200","tot":6400},
-    {"f":70,"h":2,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["ankan_y","minko_y"],"mc":"kanchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["9","索"],["9","索"],["9","索"],["9","索"]],"naki":false,"ankan":true,"id":"ankan_y"},{"tiles":[["西",""],["西",""],["西",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["1","萬"],["3","萬"]],"wait":[["2","萬"]]},"jantou":[["發",""],["發",""]]},"ans":"1200/2300","tot":4700},
-    {"f":25,"h":2,"oya":0,"tsu":0,"pf":0,"ct":1,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":null},"ans":"1600","tot":1600},
-    {"f":40,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_y","minko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["西",""],["西",""],["西",""]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["7","索"],["7","索"],["7","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["2","筒"]],"wait":[["2","筒"]]},"jantou":[["5","索"],["5","索"]]},"ans":"2600","tot":2600},
-    {"f":40,"h":3,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["minkan_c","minko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["3","筒"],["3","筒"],["3","筒"],["3","筒"]],"naki":true,"ankan":false,"id":"minkan_c"},{"tiles":[["8","萬"],["8","萬"],["8","萬"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["5","筒"]],"wait":[["5","筒"]]},"jantou":[["8","索"],["8","索"]]},"ans":"1300/2600","tot":5200},
-    {"f":60,"h":2,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_c","anko_y","minkan_y"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["9","筒"],["9","筒"],["9","筒"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["1","索"],["1","索"],["1","索"],["1","索"]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["8","索"],["9","索"]],"wait":[["7","索"]]},"jantou":[["白",""],["白",""]]},"ans":"1000/2000","tot":4000},
-    {"f":20,"h":3,"oya":0,"tsu":1,"pf":1,"ct":0,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":[["4","索"],["4","索"]]},"ans":"700/1300","tot":2700},
-    {"f":60,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_y","minko_c"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["發",""],["發",""],["發",""],["發",""]],"naki":false,"ankan":true,"id":"ankan_y"},{"tiles":[["6","萬"],["6","萬"],["6","萬"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["1","萬"],["2","萬"]],"wait":[["3","萬"]]},"jantou":[["5","索"],["5","索"]]},"ans":"3900","tot":3900},
-    {"f":50,"h":3,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["minkan_y","minko_c"],"mc":"ryanmen","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["西",""],["西",""],["西",""],["西",""]],"naki":true,"ankan":false,"id":"minkan_y"},{"tiles":[["4","索"],["4","索"],["4","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["5","筒"],["6","筒"]],"wait":[["4","筒"],["7","筒"]]},"jantou":[["白",""],["白",""]]},"ans":"1600/3200","tot":6400},
-    {"f":40,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minkan_c","minko_c"],"mc":"shanpon","jt":"suuhai","ti":{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["7","萬"],["7","萬"],["7","萬"],["7","萬"]],"naki":true,"ankan":false,"id":"minkan_c"},{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["1","萬"],["1","萬"],["9","萬"],["9","萬"]],"wait":[["1","萬"],["9","萬"]]},"jantou":[["2","萬"],["2","萬"]]},"ans":"5200","tot":5200},
-    {"f":50,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","anko_y"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["6","萬"],["6","萬"],["6","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["9","筒"],["9","筒"],["9","筒"]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["1","萬"]],"wait":[["1","萬"]]},"jantou":[["6","筒"],["6","筒"]]},"ans":"3200","tot":3200},
-    {"f":40,"h":2,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_y","minko_y"],"mc":"tanki","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["中",""],["中",""],["中",""]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["北",""],["北",""],["北",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["7","萬"]],"wait":[["7","萬"]]},"jantou":[["發",""],["發",""]]},"ans":"3900","tot":3900},
-    {"f":50,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["minkan_y","minko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["1","索"],["1","索"],["1","索"],["1","索"]],"naki":true,"ankan":false,"id":"minkan_y"},{"tiles":[["3","索"],["3","索"],["3","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["東",""]],"wait":[["東",""]]},"jantou":[["3","筒"],["3","筒"]]},"ans":"1600オール","tot":4800},
-    {"f":30,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["minko_c"],"mc":"kanchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["3","筒"],["3","筒"],["3","筒"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["4","筒"],["6","筒"]],"wait":[["5","筒"]]},"jantou":[["1","索"],["1","索"]]},"ans":"1000オール","tot":3000},
-    {"f":60,"h":2,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_c","anko_y","minkan_y"],"mc":"kanchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["9","索"],["9","索"],["9","索"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["1","筒"],["1","筒"],["1","筒"],["1","筒"]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["3","萬"],["5","萬"]],"wait":[["4","萬"]]},"jantou":[["1","索"],["1","索"]]},"ans":"1000/2000","tot":4000},
-    {"f":50,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c","anko_c","minkan_c"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["6","筒"],["6","筒"],["6","筒"],["6","筒"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["5","索"],["5","索"],["5","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["4","萬"],["4","萬"],["4","萬"],["4","萬"]],"naki":true,"ankan":false,"id":"minkan_c"}],"machi":{"hand":[["5","萬"],["6","萬"]],"wait":[["4","萬"],["7","萬"]]},"jantou":[["8","筒"],["8","筒"]]},"ans":"3200","tot":3200},
-    {"f":50,"h":1,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c","anko_c","minko_c"],"mc":"shanpon","jt":"suuhai","ti":{"mentsu":[{"tiles":[["5","索"],["5","索"],["5","索"],["5","索"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["8","筒"],["8","筒"],["8","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["2","索"],["2","索"],["2","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["2","萬"],["2","萬"],["7","索"],["7","索"]],"wait":[["2","萬"],["7","索"]]},"jantou":[["8","索"],["8","索"]]},"ans":"1600","tot":1600},
-    {"f":40,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_y","anko_y","minko_c"],"mc":"kanchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["1","索"],["1","索"],["1","索"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["9","索"],["9","索"],["9","索"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["8","索"],["8","索"],["8","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["6","筒"],["8","筒"]],"wait":[["7","筒"]]},"jantou":[["3","萬"],["3","萬"]]},"ans":"5200","tot":5200},
-    {"f":50,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_y"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["中",""],["中",""],["中",""]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["8","筒"],["9","筒"]],"wait":[["7","筒"]]},"jantou":[["南",""],["南",""]]},"ans":"6400","tot":6400},
-    {"f":50,"h":1,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minkan_y"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["7","索"],["7","索"],["7","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["北",""],["北",""],["北",""],["北",""]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["白",""]],"wait":[["白",""]]},"jantou":[["7","索"],["7","索"]]},"ans":"2400","tot":2400},
-    {"f":40,"h":2,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_c"],"mc":"tanki","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["4","索"],["4","索"],["4","索"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["9","索"]],"wait":[["9","索"]]},"jantou":[["南",""],["南",""]]},"ans":"3900","tot":3900},
-    {"f":20,"h":4,"oya":1,"tsu":1,"pf":1,"ct":0,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":[["1","萬"],["1","萬"]]},"ans":"2600オール","tot":7800},
-    {"f":40,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["minkan_c"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["3","索"],["3","索"],["3","索"],["3","索"]],"naki":true,"ankan":false,"id":"minkan_c"}],"machi":{"hand":[["6","索"],["6","索"],["3","索"],["3","索"]],"wait":[["6","索"],["3","索"]]},"jantou":[["東",""],["東",""]]},"ans":"1300オール","tot":3900},
-    {"f":30,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minko_y"],"mc":"kanchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["西",""],["西",""],["西",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["7","萬"],["9","萬"]],"wait":[["8","萬"]]},"jantou":[["2","筒"],["2","筒"]]},"ans":"2000","tot":2000},
-    {"f":40,"h":2,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_c","minko_c","minko_c"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["8","筒"],["8","筒"],["8","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["7","索"],["7","索"],["7","索"]],"naki":true,"ankan":false,"id":"minko_c"},{"tiles":[["4","萬"],["4","萬"],["4","萬"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["1","筒"],["2","筒"]],"wait":[["3","筒"]]},"jantou":[["2","萬"],["2","萬"]]},"ans":"700/1300","tot":2700},
-    {"f":50,"h":2,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_y","minkan_y"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["9","筒"],["9","筒"],["9","筒"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["東",""],["東",""],["東",""],["東",""]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["9","萬"]],"wait":[["9","萬"]]},"jantou":[["4","索"],["4","索"]]},"ans":"800/1600","tot":3200},
-    {"f":40,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_y","minko_c"],"mc":"ryanmen","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["6","索"],["7","索"]],"wait":[["5","索"],["8","索"]]},"jantou":[["白",""],["白",""]]},"ans":"2600","tot":2600},
-    {"f":40,"h":1,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["minkan_y"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["1","索"],["1","索"],["1","索"],["1","索"]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["1","索"],["2","索"]],"wait":[["3","索"]]},"jantou":[["8","萬"],["8","萬"]]},"ans":"700オール","tot":2100},
-    {"f":50,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["ankan_c","anko_c","anko_c"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["8","筒"],["8","筒"],["8","筒"],["8","筒"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["8","索"],["8","索"],["8","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["8","筒"],["9","筒"]],"wait":[["7","筒"]]},"jantou":[["4","萬"],["4","萬"]]},"ans":"1600オール","tot":4800},
-    {"f":30,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minko_c"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["2","萬"],["2","萬"],["2","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["2","索"],["2","索"],["2","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["7","萬"],["8","萬"]],"wait":[["6","萬"],["9","萬"]]},"jantou":[["1","筒"],["1","筒"]]},"ans":"2000","tot":2000},
-    {"f":50,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c","anko_c","minko_y"],"mc":"kanchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["6","索"],["6","索"],["6","索"],["6","索"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["東",""],["東",""],["東",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["2","索"],["4","索"]],"wait":[["3","索"]]},"jantou":[["5","萬"],["5","萬"]]},"ans":"6400","tot":6400},
-    {"f":25,"h":4,"oya":0,"tsu":0,"pf":0,"ct":1,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":null},"ans":"6400","tot":6400},
-    {"f":30,"h":1,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_c","minko_c","minko_c"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["6","筒"],["6","筒"],["6","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["3","索"],["3","索"],["3","索"]],"naki":true,"ankan":false,"id":"minko_c"},{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["2","萬"],["3","萬"]],"wait":[["1","萬"],["4","萬"]]},"jantou":[["8","索"],["8","索"]]},"ans":"300/500","tot":1100},
-    {"f":20,"h":4,"oya":0,"tsu":1,"pf":1,"ct":0,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":[["9","索"],["9","索"]]},"ans":"1300/2600","tot":5200},
-    {"f":40,"h":3,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["ankan_c"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["6","索"],["6","索"],["6","索"],["6","索"]],"naki":false,"ankan":true,"id":"ankan_c"}],"machi":{"hand":[["2","萬"],["3","萬"]],"wait":[["1","萬"],["4","萬"]]},"jantou":[["8","筒"],["8","筒"]]},"ans":"2600オール","tot":7800},
-    {"f":50,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_y","minkan_y","minko_c"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["9","筒"],["9","筒"],["9","筒"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["發",""],["發",""],["發",""],["發",""]],"naki":true,"ankan":false,"id":"minkan_y"},{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["8","索"],["9","索"]],"wait":[["7","索"]]},"jantou":[["南",""],["南",""]]},"ans":"3200","tot":3200},
-    {"f":70,"h":1,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["ankan_y"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["北",""],["北",""],["北",""],["北",""]],"naki":false,"ankan":true,"id":"ankan_y"}],"machi":{"hand":[["1","筒"],["2","筒"]],"wait":[["3","筒"]]},"jantou":[["南",""],["南",""]]},"ans":"3400","tot":3400},
-    {"f":40,"h":1,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_y","minko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["9","索"],["9","索"],["9","索"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["6","索"],["6","索"],["6","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["東",""]],"wait":[["東",""]]},"jantou":[["1","萬"],["1","萬"]]},"ans":"400/700","tot":1500},
-    {"f":40,"h":3,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_y","anko_y"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["南",""],["南",""],["南",""]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["1","筒"],["1","筒"],["1","筒"]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["5","萬"],["5","萬"],["2","筒"],["2","筒"]],"wait":[["5","萬"],["2","筒"]]},"jantou":[["發",""],["發",""]]},"ans":"1300/2600","tot":5200},
-    {"f":60,"h":1,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c","anko_c"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["6","萬"],["6","萬"],["6","萬"],["6","萬"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["8","筒"],["8","筒"],["8","筒"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["1","索"],["2","索"]],"wait":[["3","索"]]},"jantou":[["5","筒"],["5","筒"]]},"ans":"2000","tot":2000},
-    {"f":40,"h":1,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["minkan_y","minko_c"],"mc":"shanpon","jt":"suuhai","ti":{"mentsu":[{"tiles":[["西",""],["西",""],["西",""],["西",""]],"naki":true,"ankan":false,"id":"minkan_y"},{"tiles":[["2","索"],["2","索"],["2","索"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["9","索"],["9","索"],["7","萬"],["7","萬"]],"wait":[["9","索"],["7","萬"]]},"jantou":[["8","萬"],["8","萬"]]},"ans":"1300","tot":1300},
-    {"f":20,"h":1,"oya":0,"tsu":1,"pf":1,"ct":0,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":[["5","索"],["5","索"]]},"ans":"200/400","tot":800},
-    {"f":50,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","anko_y"],"mc":"kanchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["8","索"],["8","索"],["8","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["9","萬"],["9","萬"],["9","萬"]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["4","筒"],["6","筒"]],"wait":[["5","筒"]]},"jantou":[["發",""],["發",""]]},"ans":"3200","tot":3200},
-    {"f":40,"h":1,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["anko_c","anko_c","minko_y"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["6","索"],["6","索"],["6","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["8","萬"],["8","萬"],["8","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["發",""],["發",""],["發",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["1","索"],["2","索"]],"wait":[["3","索"]]},"jantou":[["白",""],["白",""]]},"ans":"700オール","tot":2100},
-    {"f":50,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["ankan_c","anko_y"],"mc":"ryanmen","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["7","筒"],["7","筒"],["7","筒"],["7","筒"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["北",""],["北",""],["北",""]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["4","索"],["5","索"]],"wait":[["3","索"],["6","索"]]},"jantou":[["白",""],["白",""]]},"ans":"1600オール","tot":4800},
-    {"f":40,"h":1,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minko_y","minko_y"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["3","筒"],["3","筒"],["3","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["9","筒"],["9","筒"],["9","筒"]],"naki":true,"ankan":false,"id":"minko_y"},{"tiles":[["發",""],["發",""],["發",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["1","索"],["2","索"]],"wait":[["3","索"]]},"jantou":[["4","筒"],["4","筒"]]},"ans":"2000","tot":2000},
-    {"f":40,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c"],"mc":"shanpon","jt":"suuhai","ti":{"mentsu":[{"tiles":[["6","筒"],["6","筒"],["6","筒"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["4","萬"],["4","萬"],["6","筒"],["6","筒"]],"wait":[["4","萬"],["6","筒"]]},"jantou":[["8","索"],["8","索"]]},"ans":"2600","tot":2600},
-    {"f":50,"h":1,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c"],"mc":"kanchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["7","筒"],["7","筒"],["7","筒"],["7","筒"]],"naki":false,"ankan":true,"id":"ankan_c"}],"machi":{"hand":[["3","索"],["5","索"]],"wait":[["4","索"]]},"jantou":[["南",""],["南",""]]},"ans":"2400","tot":2400},
-    {"f":50,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","anko_y"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["2","萬"],["2","萬"],["2","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["1","筒"],["1","筒"],["1","筒"]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["3","筒"],["4","筒"]],"wait":[["2","筒"],["5","筒"]]},"jantou":[["4","萬"],["4","萬"]]},"ans":"6400","tot":6400},
-    {"f":25,"h":4,"oya":0,"tsu":1,"pf":0,"ct":1,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":null},"ans":"1600/3200","tot":6400},
-    {"f":30,"h":2,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["minko_c"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["3","萬"],["4","萬"]],"wait":[["2","萬"],["5","萬"]]},"jantou":[["8","索"],["8","索"]]},"ans":"2900","tot":2900},
-    {"f":40,"h":1,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["minkan_c","minko_c"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["2","筒"],["2","筒"],["2","筒"],["2","筒"]],"naki":true,"ankan":false,"id":"minkan_c"},{"tiles":[["3","筒"],["3","筒"],["3","筒"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["3","筒"],["3","筒"],["3","筒"],["3","筒"]],"wait":[["3","筒"],["3","筒"]]},"jantou":[["白",""],["白",""]]},"ans":"2000","tot":2000},
-    {"f":30,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["minko_y"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["發",""],["發",""],["發",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["8","索"],["8","索"],["1","萬"],["1","萬"]],"wait":[["8","索"],["1","萬"]]},"jantou":[["中",""],["中",""]]},"ans":"1000オール","tot":3000},
-    {"f":50,"h":3,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c","minkan_c"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["5","索"],["5","索"],["5","索"],["5","索"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["4","筒"],["4","筒"],["4","筒"],["4","筒"]],"naki":true,"ankan":false,"id":"minkan_c"}],"machi":{"hand":[["8","索"],["8","索"],["6","索"],["6","索"]],"wait":[["8","索"],["6","索"]]},"jantou":[["南",""],["南",""]]},"ans":"9600","tot":9600},
-    {"f":30,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["anko_c"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["4","索"],["4","索"],["4","索"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["8","萬"],["9","萬"]],"wait":[["7","萬"]]},"jantou":[["中",""],["中",""]]},"ans":"1000オール","tot":3000},
-    {"f":30,"h":2,"oya":1,"tsu":0,"pf":1,"ct":0,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":[["8","筒"],["8","筒"]]},"ans":"2900","tot":2900},
-    {"f":60,"h":1,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["ankan_y"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["南",""],["南",""],["南",""],["南",""]],"naki":false,"ankan":true,"id":"ankan_y"}],"machi":{"hand":[["5","索"],["5","索"],["5","索"],["5","索"]],"wait":[["5","索"],["5","索"]]},"jantou":[["白",""],["白",""]]},"ans":"1000オール","tot":3000},
-    {"f":30,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["anko_c"],"mc":"ryanmen","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["2","筒"],["2","筒"],["2","筒"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["3","索"],["4","索"]],"wait":[["2","索"],["5","索"]]},"jantou":[["東",""],["東",""]]},"ans":"1000オール","tot":3000},
-    {"f":50,"h":3,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["ankan_c","anko_c","minkan_c"],"mc":"shanpon","jt":"suuhai","ti":{"mentsu":[{"tiles":[["2","萬"],["2","萬"],["2","萬"],["2","萬"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["4","筒"],["4","筒"],["4","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["6","筒"],["6","筒"],["6","筒"],["6","筒"]],"naki":true,"ankan":false,"id":"minkan_c"}],"machi":{"hand":[["8","索"],["8","索"],["3","萬"],["3","萬"]],"wait":[["8","索"],["3","萬"]]},"jantou":[["2","筒"],["2","筒"]]},"ans":"1600/3200","tot":6400},
-    {"f":40,"h":3,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","anko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["5","索"],["5","索"],["5","索"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["2","萬"]],"wait":[["2","萬"]]},"jantou":[["3","筒"],["3","筒"]]},"ans":"7700","tot":7700},
-    {"f":30,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minko_y"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["5","索"],["5","索"],["5","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["發",""],["發",""],["發",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["8","筒"],["9","筒"]],"wait":[["7","筒"]]},"jantou":[["2","萬"],["2","萬"]]},"ans":"2000","tot":2000},
-    {"f":50,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c"],"mc":"tanki","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"],["5","筒"]],"naki":false,"ankan":true,"id":"ankan_c"}],"machi":{"hand":[["北",""]],"wait":[["北",""]]},"jantou":[["東",""],["東",""]]},"ans":"6400","tot":6400},
-    {"f":40,"h":3,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_y"],"mc":"shanpon","jt":"suuhai","ti":{"mentsu":[{"tiles":[["西",""],["西",""],["西",""]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["1","索"],["1","索"],["4","筒"],["4","筒"]],"wait":[["1","索"],["4","筒"]]},"jantou":[["7","筒"],["7","筒"]]},"ans":"7700","tot":7700},
-    {"f":40,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["minkan_c","minko_c"],"mc":"shanpon","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["6","萬"],["6","萬"],["6","萬"],["6","萬"]],"naki":true,"ankan":false,"id":"minkan_c"},{"tiles":[["7","筒"],["7","筒"],["7","筒"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["1","索"],["1","索"],["8","萬"],["8","萬"]],"wait":[["1","索"],["8","萬"]]},"jantou":[["南",""],["南",""]]},"ans":"1300オール","tot":3900},
-    {"f":100,"h":1,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_y","ankan_y"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["1","萬"],["1","萬"],["1","萬"],["1","萬"]],"naki":false,"ankan":true,"id":"ankan_y"},{"tiles":[["西",""],["西",""],["西",""],["西",""]],"naki":false,"ankan":true,"id":"ankan_y"}],"machi":{"hand":[["4","萬"],["5","萬"]],"wait":[["3","萬"],["6","萬"]]},"jantou":[["3","筒"],["3","筒"]]},"ans":"3200","tot":3200},
-    {"f":40,"h":1,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["minko_c","minko_y"],"mc":"tanki","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"]],"naki":true,"ankan":false,"id":"minko_c"},{"tiles":[["西",""],["西",""],["西",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["中",""]],"wait":[["中",""]]},"jantou":[["發",""],["發",""]]},"ans":"400/700","tot":1500},
-    {"f":30,"h":1,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["anko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["1","筒"]],"wait":[["1","筒"]]},"jantou":[["1","萬"],["1","萬"]]},"ans":"500オール","tot":1500},
-    {"f":40,"h":1,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_c","minko_y"],"mc":"kanchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["5","索"],["5","索"],["5","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["1","萬"],["1","萬"],["1","萬"]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["5","索"],["7","索"]],"wait":[["6","索"]]},"jantou":[["3","萬"],["3","萬"]]},"ans":"400/700","tot":1500},
-    {"f":30,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["minkan_c"],"mc":"shanpon","jt":"suuhai","ti":{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"],["5","筒"]],"naki":true,"ankan":false,"id":"minkan_c"}],"machi":{"hand":[["5","筒"],["5","筒"],["8","筒"],["8","筒"]],"wait":[["5","筒"],["8","筒"]]},"jantou":[["5","萬"],["5","萬"]]},"ans":"3900","tot":3900},
-    {"f":60,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_c","anko_c"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["5","筒"],["5","筒"],["5","筒"],["5","筒"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["2","萬"],["2","萬"],["2","萬"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["1","索"],["2","索"]],"wait":[["3","索"]]},"jantou":[["中",""],["中",""]]},"ans":"3900","tot":3900},
-    {"f":80,"h":1,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_y","anko_c","minkan_y"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["西",""],["西",""],["西",""],["西",""]],"naki":false,"ankan":true,"id":"ankan_y"},{"tiles":[["8","筒"],["8","筒"],["8","筒"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["1","筒"],["1","筒"],["1","筒"],["1","筒"]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["8","筒"],["9","筒"]],"wait":[["7","筒"]]},"jantou":[["3","索"],["3","索"]]},"ans":"2600","tot":2600},
-    {"f":25,"h":3,"oya":0,"tsu":1,"pf":0,"ct":1,"ml":[],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[],"machi":null,"jantou":null},"ans":"800/1600","tot":3200},
-    {"f":40,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minkan_c","minko_y"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["3","索"],["3","索"],["3","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["4","萬"],["4","萬"],["4","萬"],["4","萬"]],"naki":true,"ankan":false,"id":"minkan_c"},{"tiles":[["西",""],["西",""],["西",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["9","萬"]],"wait":[["9","萬"]]},"jantou":[["3","索"],["3","索"]]},"ans":"5200","tot":5200},
-    {"f":30,"h":1,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["minko_c"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["6","萬"],["6","萬"],["6","萬"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["4","筒"],["5","筒"]],"wait":[["3","筒"],["6","筒"]]},"jantou":[["1","萬"],["1","萬"]]},"ans":"1000","tot":1000},
-    {"f":30,"h":3,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["minko_y"],"mc":"penchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["東",""],["東",""],["東",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["8","索"],["9","索"]],"wait":[["7","索"]]},"jantou":[["5","萬"],["5","萬"]]},"ans":"1000/2000","tot":4000},
-    {"f":50,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["minkan_c","minkan_y"],"mc":"kanchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["2","索"],["2","索"],["2","索"],["2","索"]],"naki":true,"ankan":false,"id":"minkan_c"},{"tiles":[["1","索"],["1","索"],["1","索"],["1","索"]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["2","筒"],["4","筒"]],"wait":[["3","筒"]]},"jantou":[["南",""],["南",""]]},"ans":"6400","tot":6400},
-    {"f":30,"h":3,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["minko_y"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["東",""],["東",""],["東",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["7","索"],["8","索"]],"wait":[["6","索"],["9","索"]]},"jantou":[["2","萬"],["2","萬"]]},"ans":"1000/2000","tot":4000},
-    {"f":70,"h":1,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["ankan_c","anko_y","minkan_y"],"mc":"ryanmen","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["5","索"],["5","索"],["5","索"],["5","索"]],"naki":false,"ankan":true,"id":"ankan_c"},{"tiles":[["1","筒"],["1","筒"],["1","筒"]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["發",""],["發",""],["發",""],["發",""]],"naki":true,"ankan":false,"id":"minkan_y"}],"machi":{"hand":[["2","萬"],["3","萬"]],"wait":[["1","萬"],["4","萬"]]},"jantou":[["東",""],["東",""]]},"ans":"600/1200","tot":2400},
-    {"f":40,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_y"],"mc":"ryanmen","jt":"suuhai","ti":{"mentsu":[{"tiles":[["東",""],["東",""],["東",""]],"naki":false,"ankan":false,"id":"anko_y"}],"machi":{"hand":[["5","萬"],["6","萬"]],"wait":[["4","萬"],["7","萬"]]},"jantou":[["4","萬"],["4","萬"]]},"ans":"2600","tot":2600},
-    {"f":30,"h":3,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minko_c"],"mc":"kanchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["3","萬"],["3","萬"],["3","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["5","萬"],["5","萬"],["5","萬"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["5","筒"],["7","筒"]],"wait":[["6","筒"]]},"jantou":[["7","索"],["7","索"]]},"ans":"3900","tot":3900},
-    {"f":40,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","anko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["2","索"],["2","索"],["2","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["8","萬"],["8","萬"],["8","萬"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["3","筒"]],"wait":[["3","筒"]]},"jantou":[["4","萬"],["4","萬"]]},"ans":"2600","tot":2600},
-    {"f":80,"h":2,"oya":0,"tsu":0,"pf":0,"ct":0,"ml":["ankan_y","anko_c","anko_c"],"mc":"tanki","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["中",""],["中",""],["中",""],["中",""]],"naki":false,"ankan":true,"id":"ankan_y"},{"tiles":[["8","索"],["8","索"],["8","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["6","索"],["6","索"],["6","索"]],"naki":false,"ankan":false,"id":"anko_c"}],"machi":{"hand":[["白",""]],"wait":[["白",""]]},"jantou":[["中",""],["中",""]]},"ans":"5200","tot":5200},
-    {"f":50,"h":2,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","anko_y","minkan_c"],"mc":"kanchan","jt":"suuhai","ti":{"mentsu":[{"tiles":[["8","索"],["8","索"],["8","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["東",""],["東",""],["東",""]],"naki":false,"ankan":false,"id":"anko_y"},{"tiles":[["4","萬"],["4","萬"],["4","萬"],["4","萬"]],"naki":true,"ankan":false,"id":"minkan_c"}],"machi":{"hand":[["3","萬"],["5","萬"]],"wait":[["4","萬"]]},"jantou":[["8","萬"],["8","萬"]]},"ans":"4800","tot":4800},
-    {"f":30,"h":2,"oya":1,"tsu":1,"pf":0,"ct":0,"ml":["minko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["8","萬"],["8","萬"],["8","萬"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["8","索"]],"wait":[["8","索"]]},"jantou":[["8","索"],["8","索"]]},"ans":"1000オール","tot":3000},
-    {"f":30,"h":2,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["minko_c"],"mc":"tanki","jt":"suuhai","ti":{"mentsu":[{"tiles":[["4","萬"],["4","萬"],["4","萬"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["北",""]],"wait":[["北",""]]},"jantou":[["9","筒"],["9","筒"]]},"ans":"500/1000","tot":2000},
-    {"f":40,"h":1,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_c","minkan_c","minko_c"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["2","萬"],["2","萬"],["2","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["5","萬"],["5","萬"],["5","萬"],["5","萬"]],"naki":true,"ankan":false,"id":"minkan_c"},{"tiles":[["4","筒"],["4","筒"],["4","筒"]],"naki":true,"ankan":false,"id":"minko_c"}],"machi":{"hand":[["8","筒"],["9","筒"]],"wait":[["7","筒"]]},"jantou":[["白",""],["白",""]]},"ans":"400/700","tot":1500},
-    {"f":40,"h":2,"oya":0,"tsu":1,"pf":0,"ct":0,"ml":["anko_c","minko_c","minko_y"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["7","索"],["7","索"],["7","索"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["4","索"],["4","索"],["4","索"]],"naki":true,"ankan":false,"id":"minko_c"},{"tiles":[["1","筒"],["1","筒"],["1","筒"]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["8","索"],["9","索"]],"wait":[["7","索"]]},"jantou":[["南",""],["南",""]]},"ans":"700/1300","tot":2700},
-    {"f":40,"h":3,"oya":1,"tsu":0,"pf":0,"ct":0,"ml":["anko_c","minko_y"],"mc":"penchan","jt":"yakuhai","ti":{"mentsu":[{"tiles":[["7","萬"],["7","萬"],["7","萬"]],"naki":false,"ankan":false,"id":"anko_c"},{"tiles":[["南",""],["南",""],["南",""]],"naki":true,"ankan":false,"id":"minko_y"}],"machi":{"hand":[["1","筒"],["2","筒"]],"wait":[["3","筒"]]},"jantou":[["東",""],["東",""]]},"ans":"7700","tot":7700},
-  ];
 
   const FU_LESSONS = [
     {
@@ -2302,13 +2191,13 @@ function MahjongScorer() {
           setFuLessonPhase("menu");
         })}
 
-        {menuItem("🧮", "点数計算 総合問題", "100問でトレーニング", () => {
-          setView("scorequiz");
-          setSqPhase("menu");
-        })}
-
         {menuItem("📊", "点数早見表", "符×翻のマトリックス表", () => {
           setView("table");
+        })}
+
+        {menuItem("🧮", "点数計算 総合問題", "手牌から翻・符・点数を答える", () => {
+          setView("scoreprob");
+          setSpPhase("menu");
         })}
       </div>
     );
@@ -3392,8 +3281,8 @@ function MahjongScorer() {
         {view === "quiz" && renderQuiz()}
         {view === "dict" && renderDict()}
         {view === "fucourse" && renderFuCourse()}
-        {view === "scorequiz" && renderScoreQuiz()}
         {view === "table" && renderTable()}
+        {view === "scoreprob" && renderScoreProblems()}
         {showFuHelp && <FuHelpModal />}
       </div>
     </>
