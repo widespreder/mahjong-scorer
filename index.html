@@ -567,7 +567,8 @@ function MahjongScorer() {
       hand: [["1","萬"],["2","萬"]],
       ghostR: ["3","萬"],
       wait: [["3","萬"]],
-      desc: "端なので3のみ",
+      alt: { hand: [["8","筒"],["9","筒"]], ghostL: ["7","筒"], wait: [["7","筒"]] },
+      desc: "12→3待ち / 89→7待ち",
     },
     tanki: {
       hand: [["西",""]],
@@ -594,40 +595,47 @@ function MahjongScorer() {
   const MachiIllust = ({ machiId, size = 22 }) => {
     const m = MACHI_TILES[machiId];
     if (!m) return null;
-    return (
-      <div style={{ marginTop: 10, display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
-        {/* 手牌グループ */}
+
+    const renderRow = (hand, ghostL, ghostM, ghostR, wait, isKanchan) => (
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: 9, color: t.dm, letterSpacing: "0.05em", marginBottom: 4 }}>手牌</span>
           <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
-            {m.ghostL && <GhostTile label={m.ghostL[0]} sub={m.ghostL[1]} size={size} />}
-            {machiId === "kanchan" ? (
+            {ghostL && <GhostTile label={ghostL[0]} sub={ghostL[1]} size={size} />}
+            {isKanchan ? (
               <>
-                <Tile label={m.hand[0][0]} sub={m.hand[0][1]} size={size} />
-                <GhostTile label={m.ghostM[0]} sub={m.ghostM[1]} size={size} />
-                <Tile label={m.hand[1][0]} sub={m.hand[1][1]} size={size} />
+                <Tile label={hand[0][0]} sub={hand[0][1]} size={size} />
+                <GhostTile label={ghostM[0]} sub={ghostM[1]} size={size} />
+                <Tile label={hand[1][0]} sub={hand[1][1]} size={size} />
               </>
             ) : (
-              m.hand.map(([l, s], i) => <Tile key={i} label={l} sub={s} size={size} />)
+              hand.map(([l, s], i) => <Tile key={i} label={l} sub={s} size={size} />)
             )}
-            {m.ghostR && <GhostTile label={m.ghostR[0]} sub={m.ghostR[1]} size={size} />}
+            {ghostR && <GhostTile label={ghostR[0]} sub={ghostR[1]} size={size} />}
           </div>
         </div>
-
-        {/* 区切り線 */}
-        <div style={{ width: 1, height: size * 1.5, background: t.bd, margin: `${14}px 12px 0` }} />
-
-        {/* 待ち牌グループ */}
+        <div style={{ width: 1, height: size * 1.5, background: t.bd, margin: `14px 12px 0` }} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: 9, color: t.gn, letterSpacing: "0.05em", marginBottom: 4 }}>待ち牌</span>
           <div style={{ display: "flex", gap: 3 }}>
-            {m.wait.map(([l, s], i) => (
+            {wait.map(([l, s], i) => (
               <div key={i} style={{ border: `2px solid ${t.gn}`, borderRadius: 5, padding: 1 }}>
                 <Tile label={l} sub={s} size={size} />
               </div>
             ))}
           </div>
         </div>
+      </div>
+    );
+
+    return (
+      <div style={{ marginTop: 10 }}>
+        {renderRow(m.hand, m.ghostL, m.ghostM, m.ghostR, m.wait, machiId === "kanchan")}
+        {m.alt && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${t.bd}66` }}>
+            {renderRow(m.alt.hand, m.alt.ghostL, m.alt.ghostM, m.alt.ghostR, m.alt.wait, false)}
+          </div>
+        )}
       </div>
     );
   };
