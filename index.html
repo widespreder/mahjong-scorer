@@ -595,16 +595,10 @@ function MahjongScorer() {
     const m = MACHI_TILES[machiId];
     if (!m) return null;
     return (
-      <div style={{ marginTop: 10 }}>
-        {/* ラベル行 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
-          <span style={{ fontSize: 9, color: t.dm, letterSpacing: "0.05em" }}>手牌</span>
-          <span style={{ width: 1 }} />
-          <span style={{ fontSize: 9, color: t.gn, letterSpacing: "0.05em" }}>待ち牌</span>
-        </div>
-        {/* 牌行 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0 }}>
-          {/* 手牌（待ち位置をゴーストで示す） */}
+      <div style={{ marginTop: 10, display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
+        {/* 手牌グループ */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <span style={{ fontSize: 9, color: t.dm, letterSpacing: "0.05em", marginBottom: 4 }}>手牌</span>
           <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
             {m.ghostL && <GhostTile label={m.ghostL[0]} sub={m.ghostL[1]} size={size} />}
             {machiId === "kanchan" ? (
@@ -618,11 +612,14 @@ function MahjongScorer() {
             )}
             {m.ghostR && <GhostTile label={m.ghostR[0]} sub={m.ghostR[1]} size={size} />}
           </div>
+        </div>
 
-          {/* 区切り線 */}
-          <div style={{ width: 1, height: size * 1.5, background: t.bd, margin: "0 12px" }} />
+        {/* 区切り線 */}
+        <div style={{ width: 1, height: size * 1.5, background: t.bd, margin: `${14}px 12px 0` }} />
 
-          {/* 待ち牌 */}
+        {/* 待ち牌グループ */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <span style={{ fontSize: 9, color: t.gn, letterSpacing: "0.05em", marginBottom: 4 }}>待ち牌</span>
           <div style={{ display: "flex", gap: 3 }}>
             {m.wait.map(([l, s], i) => (
               <div key={i} style={{ border: `2px solid ${t.gn}`, borderRadius: 5, padding: 1 }}>
