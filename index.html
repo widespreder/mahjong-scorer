@@ -492,6 +492,87 @@ function MahjongScorer() {
   // ══════════════════════════════════
   // ── FU GUIDE WIZARD (step by step) ──
   // ══════════════════════════════════
+  // ══════════════════════════════════
+  // ── MAHJONG TILE ILLUSTRATION ──
+  // ══════════════════════════════════
+  const Tile = ({ label, sub, dim, size = 30 }) => (
+    <div style={{
+      width: size, height: size * 1.35, borderRadius: 4,
+      background: dim ? "#2a3444" : "linear-gradient(160deg, #f5f2e8, #e0dbc8)",
+      border: `1px solid ${dim ? "#3a4454" : "#c8c2ae"}`,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      boxShadow: dim ? "none" : "0 1px 2px rgba(0,0,0,0.4)",
+      flexShrink: 0,
+    }}>
+      <span style={{
+        fontSize: size * 0.5, fontWeight: 800, lineHeight: 1,
+        color: dim ? "#4a5464" : (label === "中" || label === "1" || label === "9" ? "#c0392b" : "#1a1a1a"),
+      }}>{label}</span>
+      {sub && <span style={{ fontSize: size * 0.28, color: dim ? "#4a5464" : "#5a5a5a", lineHeight: 1.2 }}>{sub}</span>}
+    </div>
+  );
+
+  // 面子IDごとの牌イラスト定義
+  const TILE_EXAMPLES = {
+    minko_c:  { tiles: [["5","萬"],["5","萬"],["5","萬"]], note: "ポン（横向き）", naki: true },
+    minko_y:  { tiles: [["9","筒"],["9","筒"],["9","筒"]], note: "ポン（横向き）", naki: true },
+    anko_c:   { tiles: [["3","索"],["3","索"],["3","索"]], note: "自分で揃える", naki: false },
+    anko_y:   { tiles: [["中",""],["中",""],["中",""]], note: "自分で揃える", naki: false },
+    minkan_c: { tiles: [["4","萬"],["4","萬"],["4","萬"],["4","萬"]], note: "明カン", naki: true },
+    minkan_y: { tiles: [["1","筒"],["1","筒"],["1","筒"],["1","筒"]], note: "明カン", naki: true },
+    ankan_c:  { tiles: [["6","索"],["6","索"],["6","索"],["6","索"]], note: "暗カン（両端裏向き）", naki: false, ankan: true },
+    ankan_y:  { tiles: [["東",""],["東",""],["東",""],["東",""]], note: "暗カン（両端裏向き）", naki: false, ankan: true },
+  };
+
+  const TileSet = ({ mentsuId, size = 26 }) => {
+    const ex = TILE_EXAMPLES[mentsuId];
+    if (!ex) return null;
+    return (
+      <div style={{ display: "flex", gap: 2, alignItems: "flex-end" }}>
+        {ex.tiles.map(([lab, sub], i) => {
+          // 暗槓は両端が裏向き
+          const isDim = ex.ankan && (i === 0 || i === ex.tiles.length - 1);
+          // 鳴きは1枚目を横向き表現
+          const rotated = ex.naki && i === 0;
+          return (
+            <div key={i} style={rotated ? { transform: "rotate(90deg)", margin: "0 3px" } : undefined}>
+              <Tile label={isDim ? "" : lab} sub={isDim ? "" : sub} dim={isDim} size={size} />
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 待ちのイラスト
+  const MACHI_TILES = {
+    ryanmen:  { hand: [["4","萬"],["5","萬"]], wait: [["3","萬"],["6","萬"]], desc: "両側どちらでもOK" },
+    shanpon:  { hand: [["2","筒"],["2","筒"],["7","索"],["7","索"]], wait: [["2","筒"],["7","索"]], desc: "どちらかが3枚目に" },
+    kanchan:  { hand: [["4","索"],["6","索"]], wait: [["5","索"]], desc: "間の1枚だけ" },
+    penchan:  { hand: [["1","萬"],["2","萬"]], wait: [["3","萬"]], desc: "端なので3のみ" },
+    tanki:    { hand: [["西",""]], wait: [["西",""]], desc: "雀頭の相方待ち" },
+  };
+
+  const MachiIllust = ({ machiId, size = 24 }) => {
+    const m = MACHI_TILES[machiId];
+    if (!m) return null;
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 6 }}>
+        <div style={{ display: "flex", gap: 2 }}>
+          {m.hand.map(([l, s], i) => <Tile key={i} label={l} sub={s} size={size} />)}
+        </div>
+        <span style={{ fontSize: 14, color: t.dm }}>+</span>
+        <div style={{ display: "flex", gap: 2 }}>
+          {m.wait.map(([l, s], i) => (
+            <div key={i} style={{ border: `2px solid ${t.gn}`, borderRadius: 5, padding: 1 }}>
+              <Tile label={l} sub={s} size={size} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const FuGuideWizard = ({ onComplete, onBack }) => {
     if (!fuGuide) return null;
     const g = fuGuide;
@@ -526,20 +607,26 @@ function MahjongScorer() {
       const totalMentsu = g.mentsu.length;
       return (
         <div key={opt.id} style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 12px", marginBottom: 6, borderRadius: 10,
+          padding: "10px 12px", marginBottom: 8, borderRadius: 10,
           border: `1px solid ${count > 0 ? t.ac : t.bd}`, background: count > 0 ? t.acS : "transparent",
         }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: count > 0 ? t.ac : t.tx }}>{opt.label}</div>
-            <div style={{ fontSize: 10, color: t.dm }}>{opt.desc} / {opt.fu}符</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: count > 0 ? t.ac : t.tx }}>{opt.label}</div>
+              <div style={{ fontSize: 10, color: t.dm }}>{opt.fu}符</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 18, cursor: "pointer" }}
+                onClick={() => { if (count > 0) setFuGuide(gg => ({ ...gg, mentsu: gg.mentsu.filter((x, i) => !(x === opt.id && i === gg.mentsu.indexOf(opt.id))) })); }}>−</button>
+              <span style={{ fontSize: 18, fontWeight: 800, width: 20, textAlign: "center", color: count > 0 ? t.ac : t.dm }}>{count}</span>
+              <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: totalMentsu >= 4 ? t.bd : t.tx, fontSize: 18, cursor: "pointer" }}
+                onClick={() => { setFuGuide(gg => gg.mentsu.length >= 4 ? gg : ({ ...gg, mentsu: [...gg.mentsu, opt.id] })); }}>+</button>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 16, cursor: "pointer" }}
-              onClick={() => { if (count > 0) setFuGuide(gg => ({ ...gg, mentsu: gg.mentsu.filter((x, i) => !(x === opt.id && i === gg.mentsu.indexOf(opt.id))) })); }}>−</button>
-            <span style={{ fontSize: 16, fontWeight: 800, width: 18, textAlign: "center", color: count > 0 ? t.ac : t.dm }}>{count}</span>
-            <button style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: totalMentsu >= 4 ? t.bd : t.tx, fontSize: 16, cursor: "pointer" }}
-              onClick={() => { setFuGuide(gg => gg.mentsu.length >= 4 ? gg : ({ ...gg, mentsu: [...gg.mentsu, opt.id] })); }}>+</button>
+          {/* 牌イラスト */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 6, borderTop: `1px solid ${t.bd}33` }}>
+            <TileSet mentsuId={opt.id} size={24} />
+            <span style={{ fontSize: 10, color: t.dm, lineHeight: 1.4 }}>{TILE_EXAMPLES[opt.id]?.note}</span>
           </div>
         </div>
       );
@@ -552,8 +639,32 @@ function MahjongScorer() {
           <button style={backBtn} onClick={onBack}>← 戻る</button>
           <StepLabel n={1} total={6} label="STEP 1 / 特殊な形" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>平和や七対子ですか？</div>
-          {bigChoice("平和（ピンフ）", "全て順子・雀頭が役牌以外・両面待ち", g.pinfu, () => { setFuGuide(gg => ({ ...gg, pinfu: true, chiitoi: false })); setFuGuideStep(6); }, t.gn, t.gnS)}
-          {bigChoice("七対子（チートイツ）", "対子が7組（25符固定）", g.chiitoi, () => { setFuGuide(gg => ({ ...gg, chiitoi: true, pinfu: false })); setFuGuideStep(6); }, t.gn, t.gnS)}
+          <button onClick={() => { setFuGuide(gg => ({ ...gg, pinfu: true, chiitoi: false })); setFuGuideStep(6); }}
+            style={{ width: "100%", padding: "14px 12px", marginBottom: 8, borderRadius: 12, cursor: "pointer", border: `2px solid ${g.pinfu ? t.gn : t.bd}`, background: g.pinfu ? t.gnS : "transparent", color: g.pinfu ? t.gn : t.tx, textAlign: "center" }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>平和（ピンフ）</div>
+            <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 8, flexWrap: "wrap" }}>
+              <Tile label="2" sub="萬" size={20} /><Tile label="3" sub="萬" size={20} /><Tile label="4" sub="萬" size={20} />
+              <span style={{ width: 4 }} />
+              <Tile label="5" sub="筒" size={20} /><Tile label="6" sub="筒" size={20} /><Tile label="7" sub="筒" size={20} />
+              <span style={{ width: 4 }} />
+              <Tile label="3" sub="索" size={20} /><Tile label="3" sub="索" size={20} />
+            </div>
+            <div style={{ fontSize: 10, color: t.dm, marginTop: 6 }}>全て順子・雀頭が役牌以外・両面待ち</div>
+          </button>
+          <button onClick={() => { setFuGuide(gg => ({ ...gg, chiitoi: true, pinfu: false })); setFuGuideStep(6); }}
+            style={{ width: "100%", padding: "14px 12px", marginBottom: 8, borderRadius: 12, cursor: "pointer", border: `2px solid ${g.chiitoi ? t.gn : t.bd}`, background: g.chiitoi ? t.gnS : "transparent", color: g.chiitoi ? t.gn : t.tx, textAlign: "center" }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>七対子（チートイツ）</div>
+            <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 8, flexWrap: "wrap" }}>
+              <Tile label="1" sub="萬" size={18} /><Tile label="1" sub="萬" size={18} />
+              <span style={{ width: 3 }} />
+              <Tile label="4" sub="筒" size={18} /><Tile label="4" sub="筒" size={18} />
+              <span style={{ width: 3 }} />
+              <Tile label="7" sub="索" size={18} /><Tile label="7" sub="索" size={18} />
+              <span style={{ width: 3 }} />
+              <Tile label="東" sub="" size={18} /><Tile label="東" sub="" size={18} />
+            </div>
+            <div style={{ fontSize: 10, color: t.dm, marginTop: 6 }}>対子が7組（25符固定）</div>
+          </button>
           {bigChoice("どちらでもない", "通常の符計算に進む", !g.pinfu && !g.chiitoi, () => { setFuGuide(gg => ({ ...gg, pinfu: false, chiitoi: false })); setFuGuideStep(2); })}
         </div>
       );
@@ -596,11 +707,17 @@ function MahjongScorer() {
           <button style={backBtn} onClick={() => setFuGuideStep(3)}>← 戻る</button>
           <StepLabel n={4} total={6} label="STEP 4 / 待ち" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>どんな待ちでしたか？</div>
-          {MACHI_OPTIONS.map(m => bigChoice(
-            `${m.label}${m.fu > 0 ? ` +${m.fu}符` : " 0符"}`,
-            m.desc,
-            g.machi === m.id,
-            () => { setFuGuide(gg => ({ ...gg, machi: m.id })); setFuGuideStep(5); }
+          {MACHI_OPTIONS.map(m => (
+            <button key={m.id} onClick={() => { setFuGuide(gg => ({ ...gg, machi: m.id })); setFuGuideStep(5); }}
+              style={{
+                width: "100%", padding: "14px 12px", marginBottom: 8, borderRadius: 12, cursor: "pointer",
+                border: `2px solid ${g.machi === m.id ? t.ac : t.bd}`, background: g.machi === m.id ? t.acS : "transparent",
+                color: g.machi === m.id ? t.ac : t.tx, textAlign: "center",
+              }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{m.label}{m.fu > 0 ? ` +${m.fu}符` : " 0符"}</div>
+              <MachiIllust machiId={m.id} size={22} />
+              <div style={{ fontSize: 10, color: t.dm, marginTop: 5 }}>{MACHI_TILES[m.id]?.desc}</div>
+            </button>
           ))}
         </div>
       );
@@ -613,11 +730,23 @@ function MahjongScorer() {
           <button style={backBtn} onClick={() => setFuGuideStep(4)}>← 戻る</button>
           <StepLabel n={5} total={6} label="STEP 5 / 雀頭（アタマ）" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>雀頭は何の牌ですか？</div>
-          {JANTOU_OPTIONS.map(j => bigChoice(
-            `${j.label}${j.fu > 0 ? ` +${j.fu}符` : " 0符"}`,
-            j.desc,
-            g.jantou === j.id,
-            () => { setFuGuide(gg => ({ ...gg, jantou: j.id })); setFuGuideStep(6); }
+          {JANTOU_OPTIONS.map(j => (
+            <button key={j.id} onClick={() => { setFuGuide(gg => ({ ...gg, jantou: j.id })); setFuGuideStep(6); }}
+              style={{
+                width: "100%", padding: "14px 12px", marginBottom: 8, borderRadius: 12, cursor: "pointer",
+                border: `2px solid ${g.jantou === j.id ? t.ac : t.bd}`, background: g.jantou === j.id ? t.acS : "transparent",
+                color: g.jantou === j.id ? t.ac : t.tx, textAlign: "center",
+              }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{j.label}{j.fu > 0 ? ` +${j.fu}符` : " 0符"}</div>
+              <div style={{ display: "flex", gap: 3, justifyContent: "center", marginTop: 8 }}>
+                {j.id === "suuhai" ? (
+                  <><Tile label="5" sub="筒" size={24} /><Tile label="5" sub="筒" size={24} /></>
+                ) : (
+                  <><Tile label="中" sub="" size={24} /><Tile label="中" sub="" size={24} /></>
+                )}
+              </div>
+              <div style={{ fontSize: 10, color: t.dm, marginTop: 6 }}>{j.desc}</div>
+            </button>
           ))}
         </div>
       );
