@@ -2,13 +2,25 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="麻雀スコアラー">
+<meta name="theme-color" content="#0c1117">
+<meta name="description" content="麻雀の点数計算と対局スコア管理アプリ">
 <title>🀄 麻雀スコアラー</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<style>html,body{margin:0;padding:0;background:#0c1117}*,*::before,*::after{box-sizing:border-box}</style>
+<style>
+html,body{margin:0;padding:0;background:#0c1117;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:contain}
+*,*::before,*::after{box-sizing:border-box}
+button{font-family:inherit;-webkit-tap-highlight-color:transparent}
+input,select{font-family:inherit}
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -2616,24 +2628,52 @@ function MahjongScorer() {
   // ── Backup / Restore ──
   const [restoreMsg, setRestoreMsg] = useState(null);
 
-  const exportBackup = () => {
+  const exportBackup = async () => {
     const data = { version: 1, exportedAt: new Date().toISOString(), history: gameHistory };
     const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
     const now = new Date();
     const fname = `mahjong-backup-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}.json`;
+
+    // 1) Android Chrome: File System Access API（保存先を選べる）
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fname,
+          types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+        });
+        const w = await handle.createWritable();
+        await w.write(json);
+        await w.close();
+        setRestoreMsg({ ok: true, text: "保存しました" });
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") return; // ユーザーがキャンセル
+      }
+    }
+
+    const blob = new Blob([json], { type: "application/json" });
     const file = new File([blob], fname, { type: "application/json" });
 
-    // iOS共有シート優先
+    // 2) iOS Safari / Android: 共有シート
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: "麻雀対局履歴のバックアップ" }).catch(() => {});
-    } else {
-      // フォールバック: ダウンロード
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = fname; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      try {
+        await navigator.share({ files: [file], title: "麻雀対局履歴のバックアップ" });
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") return;
+      }
     }
+
+    // 3) フォールバック: 通常ダウンロード（PC / 古いブラウザ）
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setRestoreMsg({ ok: true, text: "ダウンロードしました" });
   };
 
   const importBackup = (e) => {
@@ -2678,7 +2718,7 @@ function MahjongScorer() {
               </button>
               <label style={{ flex: 1, padding: "12px 8px", borderRadius: 10, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center", display: "block" }}>
                 📂 読み込む
-                <input type="file" accept="application/json,.json" onChange={importBackup} style={{ display: "none" }} />
+                <input type="file" accept=".json,application/json,text/plain,*/*" onChange={importBackup} style={{ display: "none" }} />
               </label>
             </div>
             {restoreMsg && (
