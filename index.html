@@ -677,11 +677,11 @@ function MahjongScorer() {
               <div style={{ fontSize: 13, fontWeight: 700, color: count > 0 ? t.ac : t.tx }}>{opt.label}</div>
               <div style={{ fontSize: 10, color: t.dm }}>{opt.fu}符</div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 18, cursor: "pointer" }}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button style={{ width: 46, height: 46, borderRadius: 12, border: `1.5px solid ${count > 0 ? t.ac : t.bd}`, background: t.sf, color: count > 0 ? t.ac : t.tx, fontSize: 26, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
                 onClick={() => { if (count > 0) setFuGuide(gg => ({ ...gg, mentsu: gg.mentsu.filter((x, i) => !(x === opt.id && i === gg.mentsu.indexOf(opt.id))) })); }}>−</button>
-              <span style={{ fontSize: 18, fontWeight: 800, width: 20, textAlign: "center", color: count > 0 ? t.ac : t.dm }}>{count}</span>
-              <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: totalMentsu >= 4 ? t.bd : t.tx, fontSize: 18, cursor: "pointer" }}
+              <span style={{ fontSize: 26, fontWeight: 900, width: 34, textAlign: "center", color: count > 0 ? t.ac : t.dm }}>{count}</span>
+              <button style={{ width: 46, height: 46, borderRadius: 12, border: `1.5px solid ${totalMentsu >= 4 ? t.bd : t.ac}`, background: totalMentsu >= 4 ? t.sf : t.acS, color: totalMentsu >= 4 ? t.bd : t.ac, fontSize: 26, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
                 onClick={() => { setFuGuide(gg => gg.mentsu.length >= 4 ? gg : ({ ...gg, mentsu: [...gg.mentsu, opt.id] })); }}>+</button>
             </div>
           </div>
