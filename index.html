@@ -991,15 +991,39 @@ function MahjongScorer() {
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
 
+  // ── 学習状況（localStorage永続化） ──
+  const [masteredYaku, setMasteredYaku] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("mj_mastered") || "[]"); } catch { return []; }
+  });
+  const [wrongYaku, setWrongYaku] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("mj_wrong") || "{}"); } catch { return {}; }
+  });
+  const saveMastered = (arr) => { setMasteredYaku(arr); try { localStorage.setItem("mj_mastered", JSON.stringify(arr)); } catch {} };
+  const saveWrong = (obj) => { setWrongYaku(obj); try { localStorage.setItem("mj_wrong", JSON.stringify(obj)); } catch {} };
+
+  const getQuizPool = () => {
+    const base = quizMode === "naki" ? YAKU_DATA.filter(y => y.naki !== null) : YAKU_DATA;
+    return base.filter(y => !masteredYaku.includes(y.name));
+  };
+
   const startQuiz = (mode) => {
-    const pool = mode === "naki" ? YAKU_DATA.filter(y => y.naki !== null) : YAKU_DATA;
-    const order = pool.map((_, i) => i).sort(() => Math.random() - 0.5);
-    setQuizMode(mode); setQuizOrder(order); setQuizIdx(0);
+    const base = mode === "naki" ? YAKU_DATA.filter(y => y.naki !== null) : YAKU_DATA;
+    const pool = base.filter(y => !masteredYaku.includes(y.name));
+    // 間違えた回数が多い順に前半へ、それ以外はランダム
+    const indices = pool.map((_, i) => i);
+    const scored = indices.map(i => ({
+      i,
+      wrong: wrongYaku[pool[i].name] || 0,
+      rand: Math.random(),
+    }));
+    scored.sort((a, b) => (b.wrong - a.wrong) || (a.rand - b.rand));
+    setQuizMode(mode);
+    setQuizOrder(scored.map(s => s.i));
+    setQuizIdx(0);
     setQuizAnswer(null); setQuizRevealed(false);
     setQuizScore({ correct: 0, total: 0 }); setQuizFinished(false);
   };
 
-  const getQuizPool = () => quizMode === "naki" ? YAKU_DATA.filter(y => y.naki !== null) : YAKU_DATA;
   const getQuizYaku = () => { const pool = getQuizPool(); return pool[quizOrder[quizIdx]] || null; };
   const getCorrectAnswer = (yaku, askNaki) => {
     if (!yaku) return "0";
@@ -1019,20 +1043,77 @@ function MahjongScorer() {
     const total = quizOrder.length;
 
     if (!quizMode) {
+      const remainMenzen = YAKU_DATA.filter(y => !masteredYaku.includes(y.name)).length;
+      const remainNaki = YAKU_DATA.filter(y => y.naki !== null && !masteredYaku.includes(y.name)).length;
+      const wrongCount = Object.keys(wrongYaku).filter(n => !masteredYaku.includes(n)).length;
       return (
         <div style={body}>
           <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>🎯</div>
             <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>役の翻数テスト</h2>
-            <p style={{ fontSize: 13, color: t.dm }}>役の翻数を当てよう！</p>
+            <p style={{ fontSize: 13, color: t.dm }}>間違えた役から優先的に出題されます</p>
           </div>
+
+          {/* 学習状況 */}
+          <div style={{ ...card, padding: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 10 }}>学習状況</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <div style={{ flex: 1, textAlign: "center", padding: "10px 4px", borderRadius: 8, background: t.gnS, border: `1px solid ${t.gn}33` }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: t.gn }}>{masteredYaku.length}</div>
+                <div style={{ fontSize: 10, color: t.dm }}>覚えた</div>
+              </div>
+              <div style={{ flex: 1, textAlign: "center", padding: "10px 4px", borderRadius: 8, background: t.rdS, border: `1px solid ${t.rd}33` }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: t.rd }}>{wrongCount}</div>
+                <div style={{ fontSize: 10, color: t.dm }}>間違えた</div>
+              </div>
+              <div style={{ flex: 1, textAlign: "center", padding: "10px 4px", borderRadius: 8, background: t.sf, border: `1px solid ${t.bd}` }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: t.tx }}>{remainMenzen}</div>
+                <div style={{ fontSize: 10, color: t.dm }}>残り</div>
+              </div>
+            </div>
+            {/* 進捗バー */}
+            <div style={{ height: 6, background: t.bd, borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ height: 6, background: t.gn, width: `${(masteredYaku.length / YAKU_DATA.length) * 100}%`, transition: "width 0.3s" }} />
+            </div>
+            <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 6 }}>
+              {masteredYaku.length} / {YAKU_DATA.length} 役をマスター
+            </div>
+          </div>
+
           <div style={card}>
             <div style={question}>出題モードを選択</div>
-            <button style={{ ...actionBtn("p"), marginBottom: 10 }} onClick={() => startQuiz("menzen")}>門前（メンゼン）の翻数</button>
-            <button style={{ ...actionBtn("p"), marginBottom: 10, background: t.gn }} onClick={() => startQuiz("naki")}>鳴いた時の翻数</button>
-            <button style={{ ...actionBtn(), marginBottom: 10 }} onClick={() => startQuiz("both")}>ランダム（門前 or 鳴き）</button>
+            {remainMenzen === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: t.gn }}>全ての役をマスターしました！</div>
+                <div style={{ fontSize: 12, color: t.dm, marginTop: 4 }}>リセットするともう一度挑戦できます</div>
+              </div>
+            ) : (
+              <>
+                <button style={{ ...actionBtn("p"), marginBottom: 10 }} onClick={() => startQuiz("menzen")}>
+                  門前（メンゼン）の翻数 <span style={{ fontSize: 11, opacity: 0.8 }}>（{remainMenzen}問）</span>
+                </button>
+                <button style={{ ...actionBtn("p"), marginBottom: 10, background: t.gn }} onClick={() => startQuiz("naki")}>
+                  鳴いた時の翻数 <span style={{ fontSize: 11, opacity: 0.8 }}>（{remainNaki}問）</span>
+                </button>
+                <button style={{ ...actionBtn(), marginBottom: 10 }} onClick={() => startQuiz("both")}>ランダム（門前 or 鳴き）</button>
+              </>
+            )}
             <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
           </div>
+
+          {/* リセット */}
+          {(masteredYaku.length > 0 || Object.keys(wrongYaku).length > 0) && (
+            <div style={{ ...card, padding: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>学習データのリセット</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={{ flex: 1, padding: "10px 6px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 11, cursor: "pointer" }}
+                  onClick={() => saveWrong({})}>間違い記録のみ</button>
+                <button style={{ flex: 1, padding: "10px 6px", borderRadius: 8, border: `1px solid ${t.rd}55`, background: t.rdS, color: t.rd, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                  onClick={() => { saveMastered([]); saveWrong({}); }}>すべてリセット</button>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -1048,6 +1129,9 @@ function MahjongScorer() {
           <div style={{ ...card, textAlign: "center" }}>
             <div style={{ fontSize: 40, fontWeight: 900, color: pct >= 80 ? t.gn : pct >= 50 ? t.gd : t.rd }}>{pct}%</div>
             <div style={{ fontSize: 16, color: t.dm, marginTop: 4 }}>{quizScore.correct} / {quizScore.total} 正解</div>
+            <div style={{ fontSize: 12, color: t.gn, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bd}` }}>
+              マスター済み: {masteredYaku.length} / {YAKU_DATA.length} 役
+            </div>
           </div>
           <button style={actionBtn("p")} onClick={() => startQuiz(quizMode)}>もう一度</button>
           <button style={actionBtn()} onClick={() => setQuizMode(null)}>モード選択に戻る</button>
@@ -1084,7 +1168,12 @@ function MahjongScorer() {
               {(askNaki && yaku.naki === null ? ["なし"] : HAN_CHOICES).map(ch => (
                 <button key={ch} style={numBtn(false)} onClick={() => {
                   setQuizAnswer(ch); setQuizRevealed(true);
-                  setQuizScore(s => ({ correct: s.correct + (ch === correctAns ? 1 : 0), total: s.total + 1 }));
+                  const isCorrect = ch === correctAns;
+                  setQuizScore(s => ({ correct: s.correct + (isCorrect ? 1 : 0), total: s.total + 1 }));
+                  // 間違えたら記録（次回優先出題）
+                  if (!isCorrect) {
+                    saveWrong({ ...wrongYaku, [yaku.name]: (wrongYaku[yaku.name] || 0) + 1 });
+                  }
                 }}>{ch === "0" ? "なし" : ch === "役満" ? "役満" : ch === "なし" ? "鳴けない" : `${ch}翻`}</button>
               ))}
             </div>
@@ -1103,6 +1192,11 @@ function MahjongScorer() {
                     正解: {correctAns === "なし" ? "鳴けない役" : correctAns === "役満" ? "役満" : `${correctAns}翻`}
                   </div>
                 )}
+                {wrongYaku[yaku.name] > 0 && (
+                  <div style={{ fontSize: 11, color: t.dm, marginTop: 6 }}>
+                    この役を間違えた回数: {wrongYaku[yaku.name]}回
+                  </div>
+                )}
               </div>
               <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12 }}>
                 <div style={{ fontSize: 13, color: t.tx, lineHeight: 1.7 }}>{yaku.desc}</div>
@@ -1112,10 +1206,40 @@ function MahjongScorer() {
                     : <span style={{ color: t.rd }}>鳴き: ✕</span>}
                 </div>
               </div>
-              <button style={actionBtn("p")} onClick={() => {
+
+              {/* 覚えた / 覚えていない */}
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 8 }}>この役は覚えましたか？</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <button style={{
+                  flex: 1, padding: "12px 8px", borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${t.gn}`, background: t.gnS, color: t.gn, fontSize: 13, fontWeight: 700,
+                }} onClick={() => {
+                  // 覚えた → マスター登録して次へ
+                  if (!masteredYaku.includes(yaku.name)) saveMastered([...masteredYaku, yaku.name]);
+                  const nw = { ...wrongYaku }; delete nw[yaku.name]; saveWrong(nw);
+                  if (quizIdx + 1 >= total) setQuizFinished(true);
+                  else { setQuizIdx(quizIdx + 1); setQuizAnswer(null); setQuizRevealed(false); }
+                }}>
+                  ✓ 覚えた
+                  <div style={{ fontSize: 9, opacity: 0.8, fontWeight: 400 }}>今後出題しない</div>
+                </button>
+                <button style={{
+                  flex: 1, padding: "12px 8px", borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 13, fontWeight: 700,
+                }} onClick={() => {
+                  // 覚えていない → 間違い記録に加算して次へ
+                  saveWrong({ ...wrongYaku, [yaku.name]: (wrongYaku[yaku.name] || 0) + 1 });
+                  if (quizIdx + 1 >= total) setQuizFinished(true);
+                  else { setQuizIdx(quizIdx + 1); setQuizAnswer(null); setQuizRevealed(false); }
+                }}>
+                  △ まだ覚えてない
+                  <div style={{ fontSize: 9, opacity: 0.7, fontWeight: 400 }}>次回優先で出題</div>
+                </button>
+              </div>
+              <button style={actionBtn()} onClick={() => {
                 if (quizIdx + 1 >= total) setQuizFinished(true);
                 else { setQuizIdx(quizIdx + 1); setQuizAnswer(null); setQuizRevealed(false); }
-              }}>{quizIdx + 1 >= total ? "結果を見る" : "次の問題"}</button>
+              }}>{quizIdx + 1 >= total ? "結果を見る" : "スキップして次へ"}</button>
             </div>
           )}
         </div>
