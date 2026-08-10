@@ -544,30 +544,92 @@ function MahjongScorer() {
     );
   };
 
-  // 待ちのイラスト
+  // 待ちのイラスト（手牌と待ち牌を明確に分離、待ち位置をゴースト表示）
   const MACHI_TILES = {
-    ryanmen:  { hand: [["4","萬"],["5","萬"]], wait: [["3","萬"],["6","萬"]], desc: "両側どちらでもOK" },
-    shanpon:  { hand: [["2","筒"],["2","筒"],["7","索"],["7","索"]], wait: [["2","筒"],["7","索"]], desc: "どちらかが3枚目に" },
-    kanchan:  { hand: [["4","索"],["6","索"]], wait: [["5","索"]], desc: "間の1枚だけ" },
-    penchan:  { hand: [["1","萬"],["2","萬"]], wait: [["3","萬"]], desc: "端なので3のみ" },
-    tanki:    { hand: [["西",""]], wait: [["西",""]], desc: "雀頭の相方待ち" },
+    ryanmen: {
+      hand: [["4","萬"],["5","萬"]],
+      ghostL: ["3","萬"], ghostR: ["6","萬"],
+      wait: [["3","萬"],["6","萬"]],
+      desc: "両側どちらでもOK",
+    },
+    shanpon: {
+      hand: [["2","筒"],["2","筒"],["7","索"],["7","索"]],
+      wait: [["2","筒"],["7","索"]],
+      desc: "どちらかが3枚目に",
+    },
+    kanchan: {
+      hand: [["4","索"],["6","索"]],
+      ghostM: ["5","索"],
+      wait: [["5","索"]],
+      desc: "間の1枚だけ",
+    },
+    penchan: {
+      hand: [["1","萬"],["2","萬"]],
+      ghostR: ["3","萬"],
+      wait: [["3","萬"]],
+      desc: "端なので3のみ",
+    },
+    tanki: {
+      hand: [["西",""]],
+      ghostR: ["西",""],
+      wait: [["西",""]],
+      desc: "雀頭の相方待ち",
+    },
   };
 
-  const MachiIllust = ({ machiId, size = 24 }) => {
+  // ゴースト（透明な待ち牌）
+  const GhostTile = ({ label, sub, size = 22 }) => (
+    <div style={{
+      width: size, height: size * 1.35, borderRadius: 4,
+      background: "rgba(34,197,94,0.12)",
+      border: `1.5px dashed ${t.gn}`,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      flexShrink: 0, opacity: 0.85,
+    }}>
+      <span style={{ fontSize: size * 0.5, fontWeight: 800, lineHeight: 1, color: t.gn }}>{label}</span>
+      {sub && <span style={{ fontSize: size * 0.28, color: t.gn, lineHeight: 1.2 }}>{sub}</span>}
+    </div>
+  );
+
+  const MachiIllust = ({ machiId, size = 22 }) => {
     const m = MACHI_TILES[machiId];
     if (!m) return null;
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 6 }}>
-        <div style={{ display: "flex", gap: 2 }}>
-          {m.hand.map(([l, s], i) => <Tile key={i} label={l} sub={s} size={size} />)}
+      <div style={{ marginTop: 10 }}>
+        {/* ラベル行 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
+          <span style={{ fontSize: 9, color: t.dm, letterSpacing: "0.05em" }}>手牌</span>
+          <span style={{ width: 1 }} />
+          <span style={{ fontSize: 9, color: t.gn, letterSpacing: "0.05em" }}>待ち牌</span>
         </div>
-        <span style={{ fontSize: 14, color: t.dm }}>+</span>
-        <div style={{ display: "flex", gap: 2 }}>
-          {m.wait.map(([l, s], i) => (
-            <div key={i} style={{ border: `2px solid ${t.gn}`, borderRadius: 5, padding: 1 }}>
-              <Tile label={l} sub={s} size={size} />
-            </div>
-          ))}
+        {/* 牌行 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0 }}>
+          {/* 手牌（待ち位置をゴーストで示す） */}
+          <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+            {m.ghostL && <GhostTile label={m.ghostL[0]} sub={m.ghostL[1]} size={size} />}
+            {machiId === "kanchan" ? (
+              <>
+                <Tile label={m.hand[0][0]} sub={m.hand[0][1]} size={size} />
+                <GhostTile label={m.ghostM[0]} sub={m.ghostM[1]} size={size} />
+                <Tile label={m.hand[1][0]} sub={m.hand[1][1]} size={size} />
+              </>
+            ) : (
+              m.hand.map(([l, s], i) => <Tile key={i} label={l} sub={s} size={size} />)
+            )}
+            {m.ghostR && <GhostTile label={m.ghostR[0]} sub={m.ghostR[1]} size={size} />}
+          </div>
+
+          {/* 区切り線 */}
+          <div style={{ width: 1, height: size * 1.5, background: t.bd, margin: "0 12px" }} />
+
+          {/* 待ち牌 */}
+          <div style={{ display: "flex", gap: 3 }}>
+            {m.wait.map(([l, s], i) => (
+              <div key={i} style={{ border: `2px solid ${t.gn}`, borderRadius: 5, padding: 1 }}>
+                <Tile label={l} sub={s} size={size} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -738,12 +800,15 @@ function MahjongScorer() {
                 color: g.jantou === j.id ? t.ac : t.tx, textAlign: "center",
               }}>
               <div style={{ fontSize: 15, fontWeight: 700 }}>{j.label}{j.fu > 0 ? ` +${j.fu}符` : " 0符"}</div>
-              <div style={{ display: "flex", gap: 3, justifyContent: "center", marginTop: 8 }}>
-                {j.id === "suuhai" ? (
-                  <><Tile label="5" sub="筒" size={24} /><Tile label="5" sub="筒" size={24} /></>
-                ) : (
-                  <><Tile label="中" sub="" size={24} /><Tile label="中" sub="" size={24} /></>
-                )}
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 9, color: t.dm, marginBottom: 4 }}>雀頭（アタマ）</div>
+                <div style={{ display: "flex", gap: 3, justifyContent: "center" }}>
+                  {j.id === "suuhai" ? (
+                    <><Tile label="5" sub="筒" size={24} /><Tile label="5" sub="筒" size={24} /></>
+                  ) : (
+                    <><Tile label="中" sub="" size={24} /><Tile label="中" sub="" size={24} /></>
+                  )}
+                </div>
               </div>
               <div style={{ fontSize: 10, color: t.dm, marginTop: 6 }}>{j.desc}</div>
             </button>
