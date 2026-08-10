@@ -1345,39 +1345,65 @@ function MahjongScorer() {
     const fuOK = spAnsFu === p.fu;
     const scoreOK = spAnsScore === p.score;
 
-    // 手牌表示
-    const HandDisplay = () => (
-      <div style={{ background: t.sf, borderRadius: 12, padding: "14px 10px", marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: t.dm, marginBottom: 8, textAlign: "center" }}>アガリ形</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", alignItems: "flex-end" }}>
-          {p.mentsu.map((m, mi) => (
-            <div key={mi} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-              <div style={{ display: "flex", gap: 1.5 }}>
-                {m.tiles.map(([l, s], ti) => {
-                  const isAnkanHidden = m.type === "ankan" && (ti === 0 || ti === m.tiles.length - 1);
-                  const rotated = m.naki && ti === 0;
-                  return (
-                    <div key={ti} style={rotated ? { transform: "rotate(90deg)", margin: "0 2px" } : undefined}>
-                      <Tile label={isAnkanHidden ? "" : l} sub={isAnkanHidden ? "" : s} dim={isAnkanHidden} size={19} />
-                    </div>
-                  );
-                })}
+    // 手牌表示（門前・鳴きを行で分ける）
+    const HandDisplay = () => {
+      const concealed = p.mentsu.filter(m => !m.naki);
+      const melded = p.mentsu.filter(m => m.naki);
+
+      const MentsuGroup = ({ m, mi }) => (
+        <div key={mi} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+          <div style={{ display: "flex", gap: 1.5 }}>
+            {m.tiles.map(([l, s], ti) => {
+              const isAnkanHidden = m.type === "ankan" && (ti === 0 || ti === m.tiles.length - 1);
+              const rotated = m.naki && ti === 0;
+              return (
+                <div key={ti} style={rotated ? { transform: "rotate(90deg)", margin: "0 2px" } : undefined}>
+                  <Tile label={isAnkanHidden ? "" : l} sub={isAnkanHidden ? "" : s} dim={isAnkanHidden} size={19} />
+                </div>
+              );
+            })}
+          </div>
+          {m.label !== "順子" && <span style={{ fontSize: 8, color: m.naki ? t.gd : t.dm }}>{m.label}</span>}
+        </div>
+      );
+
+      return (
+        <div style={{ background: t.sf, borderRadius: 12, padding: "14px 10px", marginBottom: 12 }}>
+          <div style={{ fontSize: 10, color: t.dm, marginBottom: 10, textAlign: "center" }}>アガリ形</div>
+
+          {/* 門前の面子 */}
+          {concealed.length > 0 && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 9, color: t.ac, width: 30, flexShrink: 0, paddingTop: 8, textAlign: "right" }}>門前</span>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1, alignItems: "flex-start" }}>
+                {concealed.map((m, mi) => <MentsuGroup key={mi} m={m} mi={mi} />)}
               </div>
-              {m.label !== "順子" && (
-                <span style={{ fontSize: 8, color: m.naki ? t.gd : t.dm }}>{m.label}</span>
-              )}
             </div>
-          ))}
+          )}
+
+          {/* 鳴いた面子 */}
+          {melded.length > 0 && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 9, color: t.gd, width: 30, flexShrink: 0, paddingTop: 8, textAlign: "right" }}>鳴き</span>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1, alignItems: "flex-start" }}>
+                {melded.map((m, mi) => <MentsuGroup key={mi} m={m} mi={mi} />)}
+              </div>
+            </div>
+          )}
+
           {/* 雀頭 */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-            <div style={{ display: "flex", gap: 1.5 }}>
-              {p.jantou.tiles.map(([l, s], ti) => <Tile key={ti} label={l} sub={s} size={19} />)}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, paddingTop: 8, borderTop: `1px solid ${t.bd}33` }}>
+            <span style={{ fontSize: 9, color: t.dm, width: 30, flexShrink: 0, paddingTop: 6, textAlign: "right" }}>雀頭</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+              <div style={{ display: "flex", gap: 1.5 }}>
+                {p.jantou.tiles.map(([l, s], ti) => <Tile key={ti} label={l} sub={s} size={19} />)}
+              </div>
+              <span style={{ fontSize: 8, color: p.jantou.fu > 0 ? t.gd : t.dm }}>{p.jantou.label}</span>
             </div>
-            <span style={{ fontSize: 8, color: p.jantou.fu > 0 ? t.gd : t.dm }}>雀頭({p.jantou.label})</span>
           </div>
         </div>
-      </div>
-    );
+      );
+    };
 
     // 状況表示
     const Situation = () => (
