@@ -702,30 +702,42 @@ function MahjongScorer() {
           <StepLabel n={1} total={6} label="STEP 1 / 特殊な形" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>平和や七対子ですか？</div>
           <button onClick={() => { setFuGuide(gg => ({ ...gg, pinfu: true, chiitoi: false })); setFuGuideStep(6); }}
-            style={{ width: "100%", padding: "14px 12px", marginBottom: 8, borderRadius: 12, cursor: "pointer", border: `2px solid ${g.pinfu ? t.gn : t.bd}`, background: g.pinfu ? t.gnS : "transparent", color: g.pinfu ? t.gn : t.tx, textAlign: "center" }}>
+            style={{ width: "100%", padding: "14px 10px", marginBottom: 8, borderRadius: 12, cursor: "pointer", border: `2px solid ${g.pinfu ? t.gn : t.bd}`, background: g.pinfu ? t.gnS : "transparent", color: g.pinfu ? t.gn : t.tx, textAlign: "center" }}>
             <div style={{ fontSize: 15, fontWeight: 700 }}>平和（ピンフ）</div>
-            <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 8, flexWrap: "wrap" }}>
-              <Tile label="2" sub="萬" size={20} /><Tile label="3" sub="萬" size={20} /><Tile label="4" sub="萬" size={20} />
-              <span style={{ width: 4 }} />
-              <Tile label="5" sub="筒" size={20} /><Tile label="6" sub="筒" size={20} /><Tile label="7" sub="筒" size={20} />
-              <span style={{ width: 4 }} />
-              <Tile label="3" sub="索" size={20} /><Tile label="3" sub="索" size={20} />
+            <div style={{ display: "flex", gap: 1.5, justifyContent: "center", marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <Tile label="2" sub="萬" size={17} /><Tile label="3" sub="萬" size={17} /><Tile label="4" sub="萬" size={17} />
+              <span style={{ width: 5 }} />
+              <Tile label="5" sub="筒" size={17} /><Tile label="6" sub="筒" size={17} /><Tile label="7" sub="筒" size={17} />
+              <span style={{ width: 5 }} />
+              <Tile label="3" sub="索" size={17} /><Tile label="4" sub="索" size={17} /><Tile label="5" sub="索" size={17} />
+              <span style={{ width: 5 }} />
+              <Tile label="6" sub="索" size={17} /><Tile label="7" sub="索" size={17} /><Tile label="8" sub="索" size={17} />
+              <span style={{ width: 5 }} />
+              <Tile label="9" sub="萬" size={17} /><Tile label="9" sub="萬" size={17} />
             </div>
-            <div style={{ fontSize: 10, color: t.dm, marginTop: 6 }}>全て順子・雀頭が役牌以外・両面待ち</div>
+            <div style={{ fontSize: 9, color: t.dm, marginTop: 5 }}>順子4組＋雀頭 = 14枚</div>
+            <div style={{ fontSize: 10, color: t.dm, marginTop: 3 }}>全て順子・雀頭が役牌以外・両面待ち</div>
           </button>
           <button onClick={() => { setFuGuide(gg => ({ ...gg, chiitoi: true, pinfu: false })); setFuGuideStep(6); }}
-            style={{ width: "100%", padding: "14px 12px", marginBottom: 8, borderRadius: 12, cursor: "pointer", border: `2px solid ${g.chiitoi ? t.gn : t.bd}`, background: g.chiitoi ? t.gnS : "transparent", color: g.chiitoi ? t.gn : t.tx, textAlign: "center" }}>
+            style={{ width: "100%", padding: "14px 10px", marginBottom: 8, borderRadius: 12, cursor: "pointer", border: `2px solid ${g.chiitoi ? t.gn : t.bd}`, background: g.chiitoi ? t.gnS : "transparent", color: g.chiitoi ? t.gn : t.tx, textAlign: "center" }}>
             <div style={{ fontSize: 15, fontWeight: 700 }}>七対子（チートイツ）</div>
-            <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 8, flexWrap: "wrap" }}>
-              <Tile label="1" sub="萬" size={18} /><Tile label="1" sub="萬" size={18} />
-              <span style={{ width: 3 }} />
-              <Tile label="4" sub="筒" size={18} /><Tile label="4" sub="筒" size={18} />
-              <span style={{ width: 3 }} />
-              <Tile label="7" sub="索" size={18} /><Tile label="7" sub="索" size={18} />
-              <span style={{ width: 3 }} />
-              <Tile label="東" sub="" size={18} /><Tile label="東" sub="" size={18} />
+            <div style={{ display: "flex", gap: 1.5, justifyContent: "center", marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <Tile label="1" sub="萬" size={17} /><Tile label="1" sub="萬" size={17} />
+              <span style={{ width: 4 }} />
+              <Tile label="4" sub="筒" size={17} /><Tile label="4" sub="筒" size={17} />
+              <span style={{ width: 4 }} />
+              <Tile label="7" sub="索" size={17} /><Tile label="7" sub="索" size={17} />
+              <span style={{ width: 4 }} />
+              <Tile label="東" sub="" size={17} /><Tile label="東" sub="" size={17} />
+              <span style={{ width: 4 }} />
+              <Tile label="白" sub="" size={17} /><Tile label="白" sub="" size={17} />
+              <span style={{ width: 4 }} />
+              <Tile label="3" sub="萬" size={17} /><Tile label="3" sub="萬" size={17} />
+              <span style={{ width: 4 }} />
+              <Tile label="9" sub="筒" size={17} /><Tile label="9" sub="筒" size={17} />
             </div>
-            <div style={{ fontSize: 10, color: t.dm, marginTop: 6 }}>対子が7組（25符固定）</div>
+            <div style={{ fontSize: 9, color: t.dm, marginTop: 5 }}>対子7組 = 14枚</div>
+            <div style={{ fontSize: 10, color: t.dm, marginTop: 3 }}>25符固定</div>
           </button>
           {bigChoice("どちらでもない", "通常の符計算に進む", !g.pinfu && !g.chiitoi, () => { setFuGuide(gg => ({ ...gg, pinfu: false, chiitoi: false })); setFuGuideStep(2); })}
         </div>
