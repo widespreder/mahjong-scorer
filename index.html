@@ -2613,11 +2613,81 @@ function MahjongScorer() {
   // ══════════════════════════════════
   const [historyDetail, setHistoryDetail] = useState(null);
 
+  // ── Backup / Restore ──
+  const [restoreMsg, setRestoreMsg] = useState(null);
+
+  const exportBackup = () => {
+    const data = { version: 1, exportedAt: new Date().toISOString(), history: gameHistory };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const now = new Date();
+    const fname = `mahjong-backup-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}.json`;
+    const file = new File([blob], fname, { type: "application/json" });
+
+    // iOS共有シート優先
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: "麻雀対局履歴のバックアップ" }).catch(() => {});
+    } else {
+      // フォールバック: ダウンロード
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = fname; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  };
+
+  const importBackup = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const incoming = data.history || (Array.isArray(data) ? data : null);
+        if (!incoming) { setRestoreMsg({ ok: false, text: "ファイル形式が正しくありません" }); return; }
+        // 既存とマージ（id重複は除外）
+        const existingIds = new Set(gameHistory.map(g => g.id));
+        const merged = [...gameHistory, ...incoming.filter(g => !existingIds.has(g.id))];
+        merged.sort((a, b) => (a.id || 0) - (b.id || 0));
+        saveHistory(merged);
+        setRestoreMsg({ ok: true, text: `${incoming.filter(g => !existingIds.has(g.id)).length}件を追加しました（合計${merged.length}件）` });
+      } catch {
+        setRestoreMsg({ ok: false, text: "読み込みに失敗しました" });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   const renderHistory = () => (
     <div style={body}>
       {historyDetail === null ? (
         <>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>対局履歴</div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>対局履歴</div>
+
+          {/* バックアップ操作 */}
+          <div style={{ ...card, padding: 14, marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 4 }}>データのバックアップ</div>
+            <div style={{ fontSize: 11, color: t.dm, marginBottom: 10, lineHeight: 1.6 }}>
+              履歴はこの端末に保存されています。ファイルに書き出せば、機種変更やデータ削除に備えられます。
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ flex: 1, padding: "12px 8px", borderRadius: 10, border: `1px solid ${t.ac}`, background: t.acS, color: t.ac, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                onClick={exportBackup} disabled={gameHistory.length === 0}>
+                💾 書き出す
+              </button>
+              <label style={{ flex: 1, padding: "12px 8px", borderRadius: 10, border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center", display: "block" }}>
+                📂 読み込む
+                <input type="file" accept="application/json,.json" onChange={importBackup} style={{ display: "none" }} />
+              </label>
+            </div>
+            {restoreMsg && (
+              <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 8, fontSize: 12, background: restoreMsg.ok ? t.gnS : t.rdS, color: restoreMsg.ok ? t.gn : t.rd, textAlign: "center" }}>
+                {restoreMsg.ok ? "✓ " : "✕ "}{restoreMsg.text}
+              </div>
+            )}
+          </div>
+
           {gameHistory.length === 0 ? (
             <div style={{ ...card, textAlign: "center", padding: 32 }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
