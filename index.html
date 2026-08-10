@@ -862,9 +862,31 @@ function MahjongScorer() {
                 </div>
                 {gTsumo && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.gn }}><span>ツモ符</span><span>+2符</span></div>}
                 {!gTsumo && !hasNaki && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.ac }}><span>門前加符</span><span>+10符</span></div>}
-                {mentsuFu > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.tx }}><span>面子（{g.mentsu.length}組）</span><span>+{mentsuFu}符</span></div>}
-                {machiFu > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.tx }}><span>待ち</span><span>+{machiFu}符</span></div>}
-                {jantouFu > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.tx }}><span>雀頭</span><span>+{jantouFu}符</span></div>}
+                {mentsuFu > 0 && (() => {
+                  // 面子を種類ごとに集計
+                  const counts = {};
+                  g.mentsu.forEach(m => { counts[m] = (counts[m] || 0) + 1; });
+                  return Object.entries(counts).map(([id, cnt]) => {
+                    const opt = MENTSU_OPTIONS.find(o => o.id === id);
+                    if (!opt) return null;
+                    return (
+                      <div key={id} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.tx }}>
+                        <span style={{ paddingLeft: 8 }}>
+                          {opt.label} <span style={{ color: t.dm }}>×{cnt}</span>
+                          <span style={{ color: t.dm, fontSize: 10, marginLeft: 4 }}>({opt.fu}符)</span>
+                        </span>
+                        <span>+{opt.fu * cnt}符</span>
+                      </div>
+                    );
+                  });
+                })()}
+                {mentsuFu > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: t.dm, borderBottom: `1px solid ${t.bd}33`, paddingBottom: 5, marginBottom: 3 }}>
+                    <span style={{ paddingLeft: 8 }}>面子 小計</span><span>+{mentsuFu}符</span>
+                  </div>
+                )}
+                {machiFu > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.tx }}><span>待ち（{MACHI_OPTIONS.find(o => o.id === g.machi)?.label}）</span><span>+{machiFu}符</span></div>}
+                {jantouFu > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.tx }}><span>雀頭（{JANTOU_OPTIONS.find(o => o.id === g.jantou)?.label}）</span><span>+{jantouFu}符</span></div>}
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "6px 0 0", marginTop: 4, borderTop: `1px solid ${t.bd}`, color: t.gd, fontWeight: 700 }}>
                   <span>合計（10符単位に切上）</span><span>{fu}符</span>
                 </div>
