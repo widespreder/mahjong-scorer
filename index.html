@@ -31,19 +31,22 @@ input,select{font-family:inherit}
 const { useState, useCallback, useMemo } = React;
 
 // ── Score Engine ──
-function calcBasePoints(fu, han) {
+function calcBasePoints(fu, han, kiriage) {
   if (han >= 13) return 8000;
   if (han >= 11) return 6000;
   if (han >= 8) return 4000;
   if (han >= 6) return 3000;
   if (han >= 5) return 2000;
-  if (han === 4 && fu >= 30) return 2000;
-  if (han === 3 && fu >= 60) return 2000;
+  // 切り上げ満貫（オプション）: 4翻30符・3翻60符を満貫扱い
+  if (kiriage) {
+    if (han === 4 && fu >= 30) return 2000;
+    if (han === 3 && fu >= 60) return 2000;
+  }
   return Math.min(fu * Math.pow(2, 2 + han), 2000);
 }
 function roundUp100(n) { return Math.ceil(n / 100) * 100; }
-function calcScore(fu, han, isParent, isTsumo) {
-  const base = calcBasePoints(fu, han);
+function calcScore(fu, han, isParent, isTsumo, kiriage) {
+  const base = calcBasePoints(fu, han, kiriage);
   if (isParent) {
     if (isTsumo) { const e = roundUp100(base * 2); return { total: e * 3, each: e }; }
     else { return { total: roundUp100(base * 6) }; }
@@ -116,6 +119,7 @@ function MahjongScorer() {
     agariRenchan: true,     // あがり連荘のみ
     kuitan: true,           // 食いタン
     atozuke: true,          // 後付け
+    kiriage: false,         // 切り上げ満貫（4翻30符・3翻60符を満貫扱い）
     startPoints: 30000,     // 持ち点
     returnPoints: 30000,    // 返し点
   });
@@ -141,7 +145,7 @@ function MahjongScorer() {
   const resetCalc = useCallback(() => { setCalcStep(0); setCTsumo(null); setCParent(null); setCHan(null); setCFu(null); }, []);
   const calcResult = useMemo(() => {
     if (cHan === null || cFu === null || cParent === null || cTsumo === null) return null;
-    return calcScore(cFu, cHan, cParent, cTsumo);
+    return calcScore(cFu, cHan, cParent, cTsumo, rules.kiriage);
   }, [cHan, cFu, cParent, cTsumo]);
   const calcLimit = useMemo(() => cHan !== null ? getLimitName(cHan) : null, [cHan]);
 
@@ -233,7 +237,7 @@ function MahjongScorer() {
   const gLimit = gHan !== null ? getLimitName(gHan) : null;
   const gResult = useMemo(() => {
     if (gHan === null || gTsumo === null) return null;
-    return calcScore(gHan >= 5 ? 30 : (gFu || 30), gHan, gParent, gTsumo);
+    return calcScore(gHan >= 5 ? 30 : (gFu || 30), gHan, gParent, gTsumo, gameConfig?.rules?.kiriage);
   }, [gHan, gFu, gParent, gTsumo]);
 
   const applyRound = useCallback(() => {
@@ -258,7 +262,7 @@ function MahjongScorer() {
             for (let i = 0; i < 4; i++) { if (r.tenpai[i]) newScores[i] += tGet; else newScores[i] -= nPay; }
           }
         } else {
-          const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo);
+          const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
           const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
           if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
           const hb2 = r.honba * 300;
@@ -1618,6 +1622,7 @@ function MahjongScorer() {
   // ── SCORE QUIZ (総合問題) ──
 
   const [tableParent, setTableParent] = useState(false);
+  const [tableKiriage, setTableKiriage] = useState(false);
   const [tableTsumo, setTableTsumo] = useState(false);
 
   const renderTable = () => {
@@ -1636,7 +1641,7 @@ function MahjongScorer() {
       if (fu === 20 && !tableTsumo) return "—";      // 20符ロンは存在しない(平和ツモのみ)
       if (fu === 20 && han >= 3) return "—";          // 平和ツモは2翻まで(リーチ等除く)
       if (fu === 25 && han === 1) return "—";         // 七対子は2翻から
-      const r = calcScore(fu, han, tableParent, tableTsumo);
+      const r = calcScore(fu, han, tableParent, tableTsumo, tableKiriage);
       if (tableTsumo) {
         if (tableParent) return `${r.each.toLocaleString()}∀`;
         return `${r.fromChild.toLocaleString()}/${r.fromParent.toLocaleString()}`;
@@ -1645,7 +1650,7 @@ function MahjongScorer() {
     };
 
     const limitValue = (han) => {
-      const r = calcScore(30, han, tableParent, tableTsumo);
+      const r = calcScore(30, han, tableParent, tableTsumo, tableKiriage);
       if (tableTsumo) {
         if (tableParent) return `${r.each.toLocaleString()}∀`;
         return `${r.fromChild.toLocaleString()}/${r.fromParent.toLocaleString()}`;
@@ -1654,6 +1659,7 @@ function MahjongScorer() {
     };
 
     const isMangan = (fu, han) => {
+      if (!tableKiriage) return false;
       if (han === 4 && fu >= 30) return true;
       if (han === 3 && fu >= 60) return true;
       return false;
@@ -1676,6 +1682,15 @@ function MahjongScorer() {
           <button style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${tableTsumo ? t.gn : t.bd}`, background: tableTsumo ? t.gnS : "transparent", color: tableTsumo ? t.gn : t.dm }}
             onClick={() => setTableTsumo(true)}>ツモ</button>
         </div>
+
+        <button style={{
+          width: "100%", padding: "8px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", marginBottom: 10,
+          border: `1px solid ${tableKiriage ? t.gd : t.bd}`,
+          background: tableKiriage ? t.gdS : "transparent",
+          color: tableKiriage ? t.gd : t.dm,
+        }} onClick={() => setTableKiriage(!tableKiriage)}>
+          切り上げ満貫: {tableKiriage ? "ON" : "OFF"}
+        </button>
 
         <div style={{ fontSize: 11, color: t.dm, marginBottom: 8, textAlign: "center" }}>
           {tableTsumo ? (tableParent ? "∀ = 全員から（オール）" : "子から / 親から") : "放銃者から受け取る点数"}
@@ -2027,7 +2042,7 @@ function MahjongScorer() {
           for (let i = 0; i < 4; i++) { if (r.tenpai[i]) newScores[i] += tg; else newScores[i] -= np; }
         }
       } else {
-        const result = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo);
+        const result = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, gameConfig?.rules?.kiriage);
         const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
         if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
         const hb = r.honba * 300;
@@ -2435,6 +2450,10 @@ function MahjongScorer() {
             <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>その他</div>
             {toggleRow("食いタンあり", rules.kuitan, () => setRules(r => ({ ...r, kuitan: !r.kuitan })))}
             {toggleRow("後付けあり", rules.atozuke, () => setRules(r => ({ ...r, atozuke: !r.atozuke })))}
+            {toggleRow("切り上げ満貫", rules.kiriage, () => setRules(r => ({ ...r, kiriage: !r.kiriage })))}
+            <div style={{ fontSize: 10, color: t.dm, paddingLeft: 2, marginTop: -4, marginBottom: 6 }}>
+              ONにすると4翻30符・3翻60符を満貫扱い
+            </div>
           </div>
 
           <div style={{ marginTop: 16, marginBottom: 8 }}>
