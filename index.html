@@ -1904,102 +1904,102 @@ function MahjongScorer() {
     {
       title: "④ 山を割る（開門）",
       body: [
-        "サイコロの目の数だけ、その人の山を右から数えて、そこで割ります。",
+        "サイコロ合計が 5 か 9 なら自分の山です。自分から見て右端から、目の数だけ数えて割ります。",
       ],
       box: [
-        "例: 合計7 → 対面の山を選択",
-        "山の持ち主から見て右端から7つ目で割る",
-        "数えた7つ分（右側）が王牌になる",
-        "割れ目の反対側から配牌を始める",
+        "例: 合計5 → 自分の山を選択",
+        "自分の山の右端から 1,2,3,4,5 と数える",
+        "5つ目の右側で山を割る（開門）",
+        "数えた側（右側）が王牌のもとになる",
+        "割れ目の左側から配牌を始める",
       ],
-      note: "割れ目より右側が「王牌（ワンパイ）」になります。",
+      note: "他の人の山の場合も同じで、その人から見た右端から数えます。",
       diagram: () => {
-        // 卓全体図：対面の山を右から7つ目で割る
-        const wall = (side, active) => {
-          // 対面の山: 対面から見た「右端」は画面では「左端」（鏡像）
-          const tiles = [...Array(17)].map((_, i) => {
-            const fromLeft = i + 1;
-            const isBreak = active && fromLeft === 7;
-            const isWanpai = active && fromLeft < 7;
-            return (
-              <div key={i} style={{
-                width: 6, height: 9, borderRadius: 1,
-                background: isBreak ? t.rd : isWanpai ? "#8a8578" : (active ? "#e8e4d4" : "#b8b3a0"),
-                border: `1px solid ${isBreak ? t.rd : "#9a9484"}`,
-              }} />
-            );
-          });
-          return tiles;
-        };
-        const seatBox = (label, sub, on) => (
+        // 自分視点: 自分の山を右から5つ目で割る
+        const seatBox = (label, on) => (
           <div style={{
             padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700,
             border: `1.5px solid ${on ? t.rd : t.bd}`,
             background: on ? t.rdS : t.sf,
             color: on ? t.rd : t.dm, whiteSpace: "nowrap",
-          }}>
-            {label}{sub && <span style={{ fontSize: 9, opacity: 0.8 }}> {sub}</span>}
-          </div>
+          }}>{label}</div>
         );
         return (
           <div style={{ background: t.sf, borderRadius: 12, padding: 14, marginBottom: 12 }}>
             <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 12 }}>
-              卓を上から見た図（サイコロ合計7 → 対面の山）
+              卓を上から見た図（サイコロ合計5 → 自分の山）
             </div>
-            {/* 対面（北側） */}
+            {/* 対面 */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 6 }}>
-              {seatBox("対面", "", true)}
-              <div style={{ display: "flex", gap: 1, marginTop: 4 }}>{wall("N", true)}</div>
-              <div style={{ display: "flex", gap: 1, fontSize: 7, color: t.dm, marginTop: 2 }}>
-                {[...Array(17)].map((_, i) => {
-                  const fl = i + 1;
-                  return <span key={i} style={{ width: 7, textAlign: "center", color: fl <= 7 ? t.rd : "transparent" }}>{fl <= 7 ? fl : ""}</span>;
-                })}
+              {seatBox("対面", false)}
+              <div style={{ display: "flex", gap: 1, marginTop: 4 }}>
+                {[...Array(17)].map((_, i) => (
+                  <div key={i} style={{ width: 6, height: 9, borderRadius: 1, background: "#b8b3a0", border: "1px solid #9a9484" }} />
+                ))}
               </div>
             </div>
-
-            {/* 左右の山 */}
+            {/* 左右 */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "8px 0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                {seatBox("上家", "", false)}
+                {seatBox("上家", false)}
                 <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
                   {[...Array(9)].map((_, i) => (
                     <div key={i} style={{ width: 9, height: 6, borderRadius: 1, background: "#b8b3a0", border: "1px solid #9a9484" }} />
                   ))}
                 </div>
               </div>
-              <div style={{ fontSize: 22 }}>🎲🎲</div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 22 }}>🎲🎲</div>
+                <div style={{ fontSize: 10, color: t.gd, fontWeight: 700 }}>2 + 3 = 5</div>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
                   {[...Array(9)].map((_, i) => (
                     <div key={i} style={{ width: 9, height: 6, borderRadius: 1, background: "#b8b3a0", border: "1px solid #9a9484" }} />
                   ))}
                 </div>
-                {seatBox("下家", "", false)}
+                {seatBox("下家", false)}
               </div>
             </div>
-
-            {/* 自分（親・南側） */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 6 }}>
-              <div style={{ display: "flex", gap: 1 }}>{wall("S", false)}</div>
-              <div style={{ marginTop: 4 }}>{seatBox("自分（親）", "", false)}</div>
+            {/* 自分の山（大きく表示・右から数える） */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 10 }}>
+              <div style={{ display: "flex", gap: 2, alignItems: "flex-end" }}>
+                {[...Array(17)].map((_, i) => {
+                  const fromRight = 17 - i;
+                  const isBreak = fromRight === 5;
+                  const isWanpai = fromRight < 5;
+                  return (
+                    <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      {isBreak && <div style={{ fontSize: 12, color: t.rd, lineHeight: 1 }}>▼</div>}
+                      <div style={{
+                        width: 12, height: 17, borderRadius: 2,
+                        background: isBreak ? t.rd : isWanpai ? "#8a8578" : "#e8e4d4",
+                        border: `1px solid ${isBreak ? t.rd : "#9a9484"}`,
+                      }} />
+                      <div style={{ fontSize: 7, color: fromRight <= 5 ? t.rd : "transparent", marginTop: 1 }}>
+                        {fromRight <= 5 ? fromRight : "・"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", width: "100%", maxWidth: 240, fontSize: 9, color: t.dm, marginTop: 2 }}>
+                <span style={{ color: t.gn }}>← 配牌はこちらから</span>
+                <span>王牌のもと →</span>
+              </div>
+              <div style={{ marginTop: 6 }}>{seatBox("自分（親）", true)}</div>
             </div>
-
             {/* 凡例 */}
             <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${t.bd}33`, flexWrap: "wrap" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: t.dm }}>
-                <span style={{ width: 8, height: 10, background: t.rd, borderRadius: 1, display: "inline-block" }} />割れ目
+                <span style={{ width: 8, height: 10, background: t.rd, borderRadius: 1, display: "inline-block" }} />割れ目（右から5つ目）
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: t.dm }}>
-                <span style={{ width: 8, height: 10, background: "#8a8578", borderRadius: 1, display: "inline-block" }} />王牌
+                <span style={{ width: 8, height: 10, background: "#8a8578", borderRadius: 1, display: "inline-block" }} />王牌側
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: t.dm }}>
                 <span style={{ width: 8, height: 10, background: "#e8e4d4", borderRadius: 1, display: "inline-block" }} />配牌に使う
               </span>
-            </div>
-            <div style={{ fontSize: 10, color: t.gd, textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
-              対面から見て右端から7つ数える<br />
-              ※対面はこちら向きに座っているので、画面では左から数える
             </div>
           </div>
         );
