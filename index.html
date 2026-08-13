@@ -1335,8 +1335,19 @@ function MahjongScorer() {
             </>
           ) : (
             <>
-          <div style={{ fontSize: 12, color: askNaki ? t.gn : t.ac, fontWeight: 700, textAlign: "center", marginBottom: 6 }}>
-            {askNaki ? "🔔 鳴いた時" : "🚫 門前（メンゼン）"}
+          <div style={{ textAlign: "center", marginBottom: 14 }}>
+            <div style={{
+              display: "inline-block", padding: "10px 24px", borderRadius: 24,
+              background: askNaki ? t.gnS : t.acS,
+              border: `2px solid ${askNaki ? t.gn : t.ac}`,
+            }}>
+              <div style={{ fontSize: 20, fontWeight: 900, color: askNaki ? t.gn : t.ac, lineHeight: 1.2 }}>
+                {askNaki ? "🔔 鳴いた時" : "🚫 門前"}
+              </div>
+              <div style={{ fontSize: 11, color: t.dm, marginTop: 3 }}>
+                {askNaki ? "ポン・チーをした場合" : "鳴いていない場合"}
+              </div>
+            </div>
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>{yaku.name}</div>
           <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 16 }}>は何翻？</div>
