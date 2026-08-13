@@ -1775,6 +1775,314 @@ function MahjongScorer() {
   const [tableKiriage, setTableKiriage] = useState(false);
   const [tableTsumo, setTableTsumo] = useState(false);
 
+  // ══════════════════════════════════
+  // ── START GUIDE (図解) ──
+  // ══════════════════════════════════
+  const [guideStep, setGuideStep] = useState(0);
+
+  // 卓の図（4席 + 山）
+  const TableDiagram = ({ highlight, dice1, dice2, breakPos, labels }) => {
+    const seatStyle = (pos, on) => {
+      const base = {
+        position: "absolute", width: 54, height: 30, borderRadius: 8,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 13, fontWeight: 800,
+        border: `2px solid ${on ? t.gd : t.bd}`,
+        background: on ? t.gdS : t.sf,
+        color: on ? t.gd : t.dm,
+      };
+      if (pos === "S") return { ...base, bottom: 6, left: "50%", transform: "translateX(-50%)" };
+      if (pos === "E") return { ...base, right: 6, top: "50%", transform: "translateY(-50%)" };
+      if (pos === "N") return { ...base, top: 6, left: "50%", transform: "translateX(-50%)" };
+      return { ...base, left: 6, top: "50%", transform: "translateY(-50%)" };
+    };
+    // 山（各辺に小さな牌の列）
+    const wallStyle = (pos) => {
+      const base = { position: "absolute", display: "flex", gap: 1 };
+      if (pos === "S") return { ...base, bottom: 42, left: "50%", transform: "translateX(-50%)" };
+      if (pos === "E") return { ...base, right: 42, top: "50%", transform: "translateY(-50%) rotate(90deg)" };
+      if (pos === "N") return { ...base, top: 42, left: "50%", transform: "translateX(-50%)" };
+      return { ...base, left: 42, top: "50%", transform: "translateY(-50%) rotate(90deg)" };
+    };
+    const wallTile = (i, pos) => {
+      const isBreak = breakPos && breakPos.side === pos && breakPos.idx === i;
+      return (
+        <div key={i} style={{
+          width: 7, height: 11, borderRadius: 1,
+          background: isBreak ? t.rd : "#d8d3c0",
+          border: `1px solid ${isBreak ? t.rd : "#b0aa96"}`,
+        }} />
+      );
+    };
+    return (
+      <div style={{ position: "relative", width: "100%", maxWidth: 280, height: 240, margin: "0 auto 12px",
+        background: "#1a4d3a", borderRadius: 14, border: `3px solid #2a5d4a` }}>
+        {["S","E","N","W"].map(pos => (
+          <div key={"w"+pos} style={wallStyle(pos)}>
+            {[...Array(11)].map((_, i) => wallTile(i, pos))}
+          </div>
+        ))}
+        {["S","E","N","W"].map(pos => (
+          <div key={pos} style={seatStyle(pos, highlight === pos)}>
+            {labels?.[pos] || { S:"自分", E:"下家", N:"対面", W:"上家" }[pos]}
+          </div>
+        ))}
+        {/* サイコロ */}
+        {(dice1 || dice2) && (
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", display: "flex", gap: 6 }}>
+            {[dice1, dice2].filter(Boolean).map((d, i) => (
+              <div key={i} style={{
+                width: 30, height: 30, borderRadius: 6, background: "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 18, fontWeight: 900, color: "#c0392b",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.4)",
+              }}>{d}</div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const GUIDE_STEPS = [
+    {
+      title: "① 席を決める",
+      body: [
+        "まず座る位置を決めます。一般的な方法は「掴み取り」です。",
+      ],
+      box: [
+        "東・南・西・北の風牌を1枚ずつ裏返して混ぜる",
+        "各自が1枚ずつ取る",
+        "東を引いた人が起家（チーチャ＝最初の親）",
+        "東の右隣に南、その右に西、さらに右に北が座る",
+      ],
+      note: "席順は反時計回りに東→南→西→北です。",
+      diagram: () => <TableDiagram labels={{S:"東",E:"南",N:"西",W:"北"}} highlight="S" />,
+    },
+    {
+      title: "② 洗牌して山を積む",
+      body: [
+        "牌を裏返してよく混ぜ（洗牌／シーパイ）、各自が自分の前に山を作ります。",
+      ],
+      box: [
+        "1人あたり 17幢（トン）× 2段 = 34枚",
+        "4人合計で 136枚（全部の牌）",
+        "山は自分の前に横一列に並べる",
+      ],
+      note: "上段と下段の2段重ねにするのがポイントです。",
+      diagram: () => (
+        <div style={{ background: t.sf, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 10 }}>山の断面（2段重ね）</div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 2, marginBottom: 3 }}>
+            {[...Array(9)].map((_, i) => (
+              <div key={i} style={{ width: 16, height: 12, borderRadius: 2, background: "#d8d3c0", border: "1px solid #b0aa96" }} />
+            ))}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 2 }}>
+            {[...Array(9)].map((_, i) => (
+              <div key={i} style={{ width: 16, height: 12, borderRadius: 2, background: "#c8c3b0", border: "1px solid #a09a86" }} />
+            ))}
+          </div>
+          <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>← 17幢（各自） →</div>
+        </div>
+      ),
+    },
+    {
+      title: "③ 親がサイコロを振る",
+      body: [
+        "親（東家）がサイコロ2個を振ります。出た目の合計で、どの人の山から取り始めるかが決まります。",
+      ],
+      box: [
+        "合計 5・9 → 親（自分）の山",
+        "合計 2・6・10 → 右隣（下家）の山",
+        "合計 3・7・11 → 対面の山",
+        "合計 4・8・12 → 左隣（上家）の山",
+      ],
+      note: "親から反時計回りに1・2・3・4…と数えます。",
+      diagram: () => <TableDiagram dice1={4} dice2={3} highlight="N" labels={{S:"親",E:"下家",N:"対面",W:"上家"}} />,
+    },
+    {
+      title: "④ 山を割る（開門）",
+      body: [
+        "サイコロの目の数だけ、その人の山を右から数えて、そこで割ります。",
+      ],
+      box: [
+        "例: 合計7 → 対面の山を選択",
+        "対面の山の右端から7つ目で割る",
+        "割った場所の左側から配牌を始める",
+      ],
+      note: "割れ目より右側が「王牌（ワンパイ）」になります。",
+      diagram: () => (
+        <div style={{ background: t.sf, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 10 }}>対面の山を右から7つ目で割る</div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 2, alignItems: "flex-end" }}>
+            {[...Array(12)].map((_, i) => {
+              const fromRight = 12 - i;
+              const isBreak = fromRight === 7;
+              return (
+                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  {isBreak && <div style={{ fontSize: 14, color: t.rd, marginBottom: 2 }}>▼</div>}
+                  <div style={{ width: 14, height: 20, borderRadius: 2,
+                    background: isBreak ? t.rd : "#d8d3c0",
+                    border: `1px solid ${isBreak ? t.rd : "#b0aa96"}` }} />
+                  {fromRight <= 7 && <div style={{ fontSize: 7, color: t.dm, marginTop: 2 }}>{fromRight}</div>}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 9, color: t.dm }}>
+            <span>← 配牌はこちらから</span><span>王牌 →</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "⑤ 配牌する",
+      body: [
+        "割れ目の左から、親→南→西→北の順に牌を取っていきます。",
+      ],
+      box: [
+        "1巡目: 各自が上下2段まとめて4枚（2幢）を取る",
+        "2巡目: 同じく4枚",
+        "3巡目: 同じく4枚 → ここまで各自12枚",
+        "最後: 親は2枚（チョンチョン）、子は1枚ずつ",
+      ],
+      note: "結果として親14枚、子13枚になります。",
+      diagram: () => (
+        <div style={{ background: t.sf, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          {[
+            { label: "1巡目", n: 4, color: t.ac },
+            { label: "2巡目", n: 4, color: t.ac },
+            { label: "3巡目", n: 4, color: t.ac },
+            { label: "最後", n: 1, color: t.gd, extra: "親は2枚" },
+          ].map((r, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: t.dm, width: 40 }}>{r.label}</span>
+              <div style={{ display: "flex", gap: 2 }}>
+                {[...Array(r.n)].map((_, j) => (
+                  <div key={j} style={{ width: 13, height: 18, borderRadius: 2, background: "#e8e4d4", border: `1px solid ${r.color}` }} />
+                ))}
+              </div>
+              <span style={{ fontSize: 10, color: r.color }}>{r.n}枚{r.extra ? `（${r.extra}）` : ""}</span>
+            </div>
+          ))}
+          <div style={{ borderTop: `1px solid ${t.bd}`, marginTop: 10, paddingTop: 10, display: "flex", justifyContent: "space-around", fontSize: 12 }}>
+            <span style={{ color: t.gd, fontWeight: 700 }}>親 14枚</span>
+            <span style={{ color: t.ac, fontWeight: 700 }}>子 13枚</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "⑥ ドラ表示牌をめくる",
+      body: [
+        "王牌の左から3つ目の上段の牌をめくります。これが「ドラ表示牌」です。",
+      ],
+      box: [
+        "表示牌の次の牌がドラになる",
+        "例: 表示牌が 3萬 → ドラは 4萬",
+        "9の次は1に戻る（9萬→1萬）",
+        "字牌は 東→南→西→北→東、白→發→中→白",
+      ],
+      note: "ドラは1枚につき1翻加算されますが、ドラだけではアガれません。",
+      diagram: () => (
+        <div style={{ background: t.sf, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 10 }}>王牌（14枚）とドラ表示牌</div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 2, marginBottom: 4 }}>
+            {[...Array(7)].map((_, i) => (
+              <div key={i} style={{ position: "relative" }}>
+                {i === 2 ? (
+                  <div style={{ width: 18, height: 24, borderRadius: 2, background: "#f5f2e8", border: `2px solid ${t.gd}`,
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#1a1a1a" }}>3</div>
+                ) : (
+                  <div style={{ width: 18, height: 24, borderRadius: 2, background: "#3a4454", border: "1px solid #4a5464" }} />
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 2 }}>
+            {[...Array(7)].map((_, i) => (
+              <div key={i} style={{ width: 18, height: 24, borderRadius: 2, background: "#3a4454", border: "1px solid #4a5464" }} />
+            ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: 10, fontSize: 12 }}>
+            <span style={{ color: t.gd }}>表示牌 3萬</span>
+            <span style={{ color: t.dm, margin: "0 8px" }}>→</span>
+            <span style={{ color: t.gn, fontWeight: 700 }}>ドラは 4萬</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "⑦ 対局開始",
+      body: [
+        "親から順に、ツモ（山から1枚取る）→打牌（1枚捨てる）を繰り返します。",
+      ],
+      box: [
+        "順番は反時計回り（親→南→西→北→親…）",
+        "手牌は常に13枚（ツモった瞬間だけ14枚）",
+        "誰かがアガるか、山が尽きて流局するまで続く",
+        "山が尽きる = 王牌14枚を残した時点",
+      ],
+      note: "アガリには「役」が最低1つ必要です。役一覧で確認しましょう。",
+      diagram: () => <TableDiagram highlight="S" labels={{S:"親スタート",E:"②",N:"③",W:"④"}} />,
+    },
+  ];
+
+  const renderStartGuide = () => {
+    const s = GUIDE_STEPS[guideStep];
+    return (
+      <div style={body}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <span style={{ fontSize: 12, color: t.dm }}>{guideStep + 1} / {GUIDE_STEPS.length}</span>
+          <button style={{ background: "none", border: "none", color: t.dm, fontSize: 12, cursor: "pointer" }}
+            onClick={() => setView("home")}>✕ 閉じる</button>
+        </div>
+        <div style={{ height: 4, background: t.bd, borderRadius: 2, marginBottom: 16 }}>
+          <div style={{ height: 4, background: t.ac, borderRadius: 2, width: `${((guideStep + 1) / GUIDE_STEPS.length) * 100}%`, transition: "width 0.3s" }} />
+        </div>
+
+        <div style={card}>
+          <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14, textAlign: "center" }}>{s.title}</div>
+
+          {s.diagram && s.diagram()}
+
+          {s.body.map((b, i) => (
+            <div key={i} style={{ fontSize: 14, lineHeight: 1.8, color: t.tx, marginBottom: 12 }}>{b}</div>
+          ))}
+
+          {s.box && (
+            <div style={{ background: t.sf, borderRadius: 10, padding: 14, marginBottom: 12 }}>
+              {s.box.map((item, i) => (
+                <div key={i} style={{ fontSize: 13, lineHeight: 1.9, color: t.tx, display: "flex", gap: 8 }}>
+                  <span style={{ color: t.ac, flexShrink: 0 }}>•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {s.note && (
+            <div style={{ background: t.gdS, borderRadius: 10, padding: 12, border: `1px solid ${t.gd}33`, marginBottom: 4 }}>
+              <div style={{ fontSize: 12, color: t.gd, lineHeight: 1.7 }}>💡 {s.note}</div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button style={{ ...actionBtn(), flex: 1, opacity: guideStep === 0 ? 0.4 : 1 }}
+            disabled={guideStep === 0}
+            onClick={() => setGuideStep(guideStep - 1)}>← 前へ</button>
+          {guideStep < GUIDE_STEPS.length - 1 ? (
+            <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => setGuideStep(guideStep + 1)}>次へ →</button>
+          ) : (
+            <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => setView("home")}>完了</button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderTable = () => {
     const fuList = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
     const hanList = [1, 2, 3, 4];
@@ -2357,6 +2665,11 @@ function MahjongScorer() {
           setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
           setPlayerMode([false, false, false, false]);
           setGameStarted(false);
+        })}
+
+        {menuItem("🎴", "麻雀の始め方", "席決め・配牌を図解で解説", () => {
+          setView("startguide");
+          setGuideStep(0);
         })}
 
         {menuItem("📋", "対局履歴", `${gameHistory.length}件の記録`, () => {
@@ -3479,6 +3792,7 @@ function MahjongScorer() {
         {view === "dict" && renderDict()}
         {view === "fucourse" && renderFuCourse()}
         {view === "table" && renderTable()}
+        {view === "startguide" && renderStartGuide()}
         {view === "scoreprob" && renderScoreProblems()}
         {showFuHelp && <FuHelpModal />}
       </div>
