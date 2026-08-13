@@ -1908,17 +1908,19 @@ function MahjongScorer() {
       ],
       box: [
         "例: 合計7 → 対面の山を選択",
-        "対面の山の右端から7つ目で割る",
-        "割った場所の左側から配牌を始める",
+        "山の持ち主から見て右端から7つ目で割る",
+        "数えた7つ分（右側）が王牌になる",
+        "割れ目の反対側から配牌を始める",
       ],
       note: "割れ目より右側が「王牌（ワンパイ）」になります。",
       diagram: () => {
         // 卓全体図：対面の山を右から7つ目で割る
         const wall = (side, active) => {
+          // 対面の山: 対面から見た「右端」は画面では「左端」（鏡像）
           const tiles = [...Array(17)].map((_, i) => {
-            const fromRight = 17 - i;
-            const isBreak = active && fromRight === 7;
-            const isWanpai = active && fromRight < 7;
+            const fromLeft = i + 1;
+            const isBreak = active && fromLeft === 7;
+            const isWanpai = active && fromLeft < 7;
             return (
               <div key={i} style={{
                 width: 6, height: 9, borderRadius: 1,
@@ -1950,8 +1952,8 @@ function MahjongScorer() {
               <div style={{ display: "flex", gap: 1, marginTop: 4 }}>{wall("N", true)}</div>
               <div style={{ display: "flex", gap: 1, fontSize: 7, color: t.dm, marginTop: 2 }}>
                 {[...Array(17)].map((_, i) => {
-                  const fr = 17 - i;
-                  return <span key={i} style={{ width: 7, textAlign: "center", color: fr <= 7 ? t.rd : "transparent" }}>{fr <= 7 ? fr : ""}</span>;
+                  const fl = i + 1;
+                  return <span key={i} style={{ width: 7, textAlign: "center", color: fl <= 7 ? t.rd : "transparent" }}>{fl <= 7 ? fl : ""}</span>;
                 })}
               </div>
             </div>
@@ -1995,8 +1997,9 @@ function MahjongScorer() {
                 <span style={{ width: 8, height: 10, background: "#e8e4d4", borderRadius: 1, display: "inline-block" }} />配牌に使う
               </span>
             </div>
-            <div style={{ fontSize: 10, color: t.gd, textAlign: "center", marginTop: 8 }}>
-              対面の山を、対面から見て右端から7つ数えた位置で割る
+            <div style={{ fontSize: 10, color: t.gd, textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
+              対面から見て右端から7つ数える<br />
+              ※対面はこちら向きに座っているので、画面では左から数える
             </div>
           </div>
         );
