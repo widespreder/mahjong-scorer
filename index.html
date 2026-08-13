@@ -1925,22 +1925,22 @@ function MahjongScorer() {
         return (
           <div style={{ background: t.sf, borderRadius: 12, padding: 14, marginBottom: 12 }}>
             <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 12 }}>
-              卓を上から見た図（例: 2 + 3 = 5 → 自分の山）
+              卓を上から見た図（例: 4 + 5 = 9 → 自分の山）
             </div>
             {/* 対面 */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 6 }}>
-              {seatBox("対面 ③", false)}
+              {seatBox("対面 ③⑦", false)}
               <div style={{ marginTop: 4 }}>{hWall()}</div>
             </div>
             {/* 左右 */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "8px 0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                {seatBox("上家 ④", false)}
+                {seatBox("上家 ④⑧", false)}
                 {vWall()}
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                  {[2, 3].map((d, i) => (
+                  {[4, 5].map((d, i) => (
                     <div key={i} style={{
                       width: 30, height: 30, borderRadius: 6, background: "#fff",
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -1949,22 +1949,22 @@ function MahjongScorer() {
                     }}>{d}</div>
                   ))}
                 </div>
-                <div style={{ fontSize: 11, color: t.gd, fontWeight: 700, marginTop: 4 }}>2 + 3 = 5</div>
+                <div style={{ fontSize: 11, color: t.gd, fontWeight: 700, marginTop: 4 }}>4 + 5 = 9</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 {vWall()}
-                {seatBox("下家 ②", false)}
+                {seatBox("下家 ②⑥", false)}
               </div>
             </div>
             {/* 自分 */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 6 }}>
               {hWall()}
-              <div style={{ marginTop: 4 }}>{seatBox("自分（親）①⑤", true)}</div>
+              <div style={{ marginTop: 4 }}>{seatBox("自分（親）①⑤⑨", true)}</div>
             </div>
             {/* 数え方 */}
             <div style={{ fontSize: 10, color: t.gd, textAlign: "center", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${t.bd}33`, lineHeight: 1.7 }}>
-              自分①→下家②→対面③→上家④→自分⑤…と反時計回りに数える<br />
-              合計5なので自分の山に決定
+自分①→下家②→対面③→上家④→自分⑤→下家⑥→対面⑦→上家⑧→自分⑨<br />
+              合計9なので自分の山に決定
             </div>
           </div>
         );
@@ -1976,9 +1976,9 @@ function MahjongScorer() {
         "サイコロ合計が 5 か 9 なら自分の山です。自分から見て右端から、目の数だけ数えて割ります。",
       ],
       box: [
-        "例: 合計5 → 自分の山を選択",
-        "自分の山の右端から 1,2,3,4,5 と数える",
-        "5つ目の右側で山を割る（開門）",
+        "例: 合計9 → 自分の山を選択",
+        "自分の山の右端から 1,2,3…9 と数える",
+        "9つ目の右側で山を割る（開門）",
         "数えた側（右側）が王牌のもとになる",
         "割れ目の左側から配牌を始める",
       ],
@@ -1996,7 +1996,7 @@ function MahjongScorer() {
         return (
           <div style={{ background: t.sf, borderRadius: 12, padding: 14, marginBottom: 12 }}>
             <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 12 }}>
-              卓を上から見た図（サイコロ合計5 → 自分の山）
+              卓を上から見た図（サイコロ合計9 → 自分の山）
             </div>
             {/* 対面 */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 6 }}>
@@ -2019,7 +2019,7 @@ function MahjongScorer() {
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 22 }}>🎲🎲</div>
-                <div style={{ fontSize: 10, color: t.gd, fontWeight: 700 }}>2 + 3 = 5</div>
+                <div style={{ fontSize: 10, color: t.gd, fontWeight: 700 }}>4 + 5 = 9</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -2035,8 +2035,8 @@ function MahjongScorer() {
               <div style={{ display: "flex", gap: 2, alignItems: "flex-end" }}>
                 {[...Array(17)].map((_, i) => {
                   const fromRight = 17 - i;
-                  const isBreak = fromRight === 5;
-                  const isWanpai = fromRight < 5;
+                  const isBreak = fromRight === 9;
+                  const isWanpai = fromRight < 9;
                   return (
                     <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       {isBreak && <div style={{ fontSize: 12, color: t.rd, lineHeight: 1 }}>▼</div>}
@@ -2045,8 +2045,8 @@ function MahjongScorer() {
                         background: isBreak ? t.rd : isWanpai ? "#8a8578" : "#e8e4d4",
                         border: `1px solid ${isBreak ? t.rd : "#9a9484"}`,
                       }} />
-                      <div style={{ fontSize: 7, color: fromRight <= 5 ? t.rd : "transparent", marginTop: 1 }}>
-                        {fromRight <= 5 ? fromRight : "・"}
+                      <div style={{ fontSize: 7, color: fromRight <= 9 ? t.rd : "transparent", marginTop: 1 }}>
+                        {fromRight <= 9 ? fromRight : "・"}
                       </div>
                     </div>
                   );
@@ -2061,7 +2061,7 @@ function MahjongScorer() {
             {/* 凡例 */}
             <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${t.bd}33`, flexWrap: "wrap" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: t.dm }}>
-                <span style={{ width: 8, height: 10, background: t.rd, borderRadius: 1, display: "inline-block" }} />割れ目（右から5つ目）
+                <span style={{ width: 8, height: 10, background: t.rd, borderRadius: 1, display: "inline-block" }} />割れ目（右から9つ目）
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: t.dm }}>
                 <span style={{ width: 8, height: 10, background: "#8a8578", borderRadius: 1, display: "inline-block" }} />王牌側
@@ -2234,9 +2234,9 @@ function MahjongScorer() {
 
     const cellValue = (fu, han) => {
       // 存在しない組み合わせ
-      if (fu === 20 && !tableTsumo) return "—";      // 20符ロンは存在しない(平和ツモのみ)
-      if (fu === 20 && han >= 3) return "—";          // 平和ツモは2翻まで(リーチ等除く)
-      if (fu === 25 && han === 1) return "—";         // 七対子は2翻から
+      if (fu === 20 && !tableTsumo) return "—";   // 20符は平和ツモのみ（ロンは30符）
+      if (fu === 20 && han === 1) return "—";     // 平和1翻+ツモ1翻=最低2翻
+      if (fu === 25 && han === 1) return "—";     // 七対子は2翻から
       const r = calcScore(fu, han, tableParent, tableTsumo, tableKiriage);
       if (tableTsumo) {
         if (tableParent) return `${r.each.toLocaleString()}∀`;
@@ -2347,10 +2347,11 @@ function MahjongScorer() {
         <div style={{ ...card, padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>補足</div>
           <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.8 }}>
-            <div>・<span style={{ color: t.gd }}>金色のセル</span> = 満貫扱い（切り上げ満貫）</div>
-            <div>・20符は平和ツモのみ（ロンは存在しない）</div>
-            <div>・25符は七対子のみ（2翻から）</div>
-            <div>・4翻30符以上、3翻60符以上は満貫</div>
+            <div>・<span style={{ color: t.gd }}>金色のセル</span> = 満貫扱い（切り上げ満貫ON時）</div>
+            <div>・「—」= その組み合わせが存在しない</div>
+            <div>・20符 = 平和ツモのみ（ロンは30符、最低2翻）</div>
+            <div>・25符 = 七対子のみ（2翻から）</div>
+            <div>・切り上げ満貫ONで4翻30符・3翻60符が満貫に</div>
           </div>
         </div>
 
