@@ -3839,13 +3839,6 @@ function MahjongScorer() {
               }}>
                 {diceRolling ? "🎲 …" : diceSettled ? "🎲 振り直す" : "🎲 サイコロ"}
               </button>
-              {diceSettled && !diceRolling && (
-                <button onClick={() => { if (diceClearTimer.current) clearTimeout(diceClearTimer.current); setDiceSettled(false); }} style={{
-                  width: "100%", marginTop: 6, padding: "6px 0", borderRadius: 8,
-                  border: "none", background: "transparent",
-                  color: "rgba(255,255,255,0.45)", fontSize: 12, cursor: "pointer",
-                }}>クリア</button>
-              )}
 
             </div>
           </div>
