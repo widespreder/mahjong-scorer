@@ -66,7 +66,7 @@ function getLimitName(han) {
 
 const WINDS = ["東", "南", "西", "北"];
 const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
-const PRESET_NAMES = ["つとむ", "ひろこ", "はじめ", "こころ"];
+const DEFAULT_PRESET_NAMES = ["つとむ", "ひろこ", "はじめ", "こころ"];
 
 function MahjongScorer() {
   // ── Shared scoreboard (URL hash) ──
@@ -2259,6 +2259,136 @@ function MahjongScorer() {
     },
   ];
 
+  // ══════════════════════════════════
+  // ── PLAYER NAME REGISTRY ──
+  // ══════════════════════════════════
+  const renderNames = () => {
+    const addName = () => {
+      const v = newNameInput.trim();
+      if (!v) return;
+      if (presetNames.includes(v)) { setNewNameInput(""); return; }
+      savePresetNames([...presetNames, v]);
+      setNewNameInput("");
+    };
+    const removeName = (idx) => savePresetNames(presetNames.filter((_, i) => i !== idx));
+    const commitEdit = () => {
+      const v = editNameVal.trim();
+      if (!v) { setEditNameIdx(null); return; }
+      const arr = [...presetNames];
+      arr[editNameIdx] = v;
+      savePresetNames(arr);
+      setEditNameIdx(null);
+    };
+    const move = (idx, dir) => {
+      const j = idx + dir;
+      if (j < 0 || j >= presetNames.length) return;
+      const arr = [...presetNames];
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+      savePresetNames(arr);
+    };
+
+    return (
+      <div style={body}>
+        <div style={{ textAlign: "center", padding: "16px 0 12px" }}>
+          <div style={{ fontSize: 34, marginBottom: 6 }}>👤</div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>プレイヤー名の登録</h2>
+          <p style={{ fontSize: 12, color: t.dm }}>対局開始時のリストに表示される名前です</p>
+        </div>
+
+        {/* 追加 */}
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>新しく登録</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={newNameInput}
+              onChange={e => setNewNameInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") addName(); }}
+              placeholder="名前を入力"
+              style={{
+                flex: 1, padding: "12px 14px", fontSize: 15,
+                background: t.sf, border: `1px solid ${t.bd}`, borderRadius: 10,
+                color: t.tx, outline: "none", boxSizing: "border-box",
+              }}
+            />
+            <button onClick={addName} disabled={!newNameInput.trim()} style={{
+              padding: "12px 18px", borderRadius: 10, cursor: "pointer",
+              border: "none", background: newNameInput.trim() ? t.ac : t.bd,
+              color: "#fff", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap",
+            }}>追加</button>
+          </div>
+        </div>
+
+        {/* 一覧 */}
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: t.dm }}>登録済み（{presetNames.length}人）</span>
+          </div>
+          {presetNames.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: t.dm }}>まだ登録がありません</div>
+          ) : presetNames.map((n, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 0", borderBottom: i < presetNames.length - 1 ? `1px solid ${t.bd}33` : "none",
+            }}>
+              {editNameIdx === i ? (
+                <>
+                  <input
+                    value={editNameVal}
+                    onChange={e => setEditNameVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") commitEdit(); }}
+                    autoFocus
+                    style={{
+                      flex: 1, padding: "8px 10px", fontSize: 15,
+                      background: t.sf, border: `2px solid ${t.ac}`, borderRadius: 8,
+                      color: t.tx, outline: "none", boxSizing: "border-box",
+                    }}
+                  />
+                  <button onClick={commitEdit} style={{
+                    padding: "8px 12px", borderRadius: 8, border: "none",
+                    background: t.ac, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  }}>保存</button>
+                  <button onClick={() => setEditNameIdx(null)} style={{
+                    padding: "8px 10px", borderRadius: 8, border: `1px solid ${t.bd}`,
+                    background: "transparent", color: t.dm, fontSize: 12, cursor: "pointer",
+                  }}>✕</button>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <button onClick={() => move(i, -1)} disabled={i === 0} style={{
+                      width: 24, height: 18, borderRadius: 4, cursor: i === 0 ? "default" : "pointer",
+                      border: `1px solid ${t.bd}`, background: t.sf,
+                      color: i === 0 ? t.bd : t.dm, fontSize: 9, padding: 0, lineHeight: 1,
+                    }}>▲</button>
+                    <button onClick={() => move(i, 1)} disabled={i === presetNames.length - 1} style={{
+                      width: 24, height: 18, borderRadius: 4, cursor: i === presetNames.length - 1 ? "default" : "pointer",
+                      border: `1px solid ${t.bd}`, background: t.sf,
+                      color: i === presetNames.length - 1 ? t.bd : t.dm, fontSize: 9, padding: 0, lineHeight: 1,
+                    }}>▼</button>
+                  </div>
+                  <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n}</span>
+                  <button onClick={() => { setEditNameIdx(i); setEditNameVal(n); }} style={{
+                    padding: "7px 12px", borderRadius: 8, border: `1px solid ${t.bd}`,
+                    background: "transparent", color: t.dm, fontSize: 12, cursor: "pointer",
+                  }}>編集</button>
+                  <button onClick={() => removeName(i)} style={{
+                    padding: "7px 12px", borderRadius: 8, border: `1px solid ${t.rd}55`,
+                    background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  }}>削除</button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* 初期値に戻す */}
+        <button style={{ ...actionBtn(), fontSize: 12, color: t.dm }}
+          onClick={() => savePresetNames(DEFAULT_PRESET_NAMES)}>初期の名前に戻す</button>
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
+
   const renderStartGuide = () => {
     const s = GUIDE_STEPS[guideStep];
     return (
@@ -2721,6 +2851,21 @@ function MahjongScorer() {
   const [tableMode, setTableMode] = useState(false);
   const [playerDetail, setPlayerDetail] = useState(null); // タップしたプレイヤーのindex
 
+  // ── 登録プレイヤー名リスト ──
+  const [presetNames, setPresetNames] = useState(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem("mj_preset_names") || "null");
+      return Array.isArray(v) && v.length ? v : DEFAULT_PRESET_NAMES;
+    } catch { return DEFAULT_PRESET_NAMES; }
+  });
+  const savePresetNames = (arr) => {
+    setPresetNames(arr);
+    try { localStorage.setItem("mj_preset_names", JSON.stringify(arr)); } catch {}
+  };
+  const [newNameInput, setNewNameInput] = useState("");
+  const [editNameIdx, setEditNameIdx] = useState(null);
+  const [editNameVal, setEditNameVal] = useState("");
+
   // ══════════════════════════════════
   // ── DICE ROLLER ──
   // ══════════════════════════════════
@@ -3163,6 +3308,12 @@ function MahjongScorer() {
           setGuideStep(0);
         })}
 
+        {menuItem("👤", "プレイヤー名の登録", `${presetNames.length}人を登録中`, () => {
+          setView("names");
+          setNewNameInput("");
+          setEditNameIdx(null);
+        })}
+
         {menuItem("📋", "対局履歴", `${gameHistory.length}件の記録`, () => {
           setView("history");
         })}
@@ -3334,7 +3485,12 @@ function MahjongScorer() {
           <Back onClick={() => setSetupStep(1)} />
           <Dots total={4} cur={2} />
           <div style={question}>プレイヤー名</div>
-          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 14 }}>変更が必要な場合は「変更」をタップ</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 6 }}>変更が必要な場合は「変更」をタップ</div>
+          <div style={{ textAlign: "center", marginBottom: 14 }}>
+            <button onClick={() => { setView("names"); setNewNameInput(""); setEditNameIdx(null); }} style={{
+              background: "none", border: "none", color: t.ac, fontSize: 11, cursor: "pointer", textDecoration: "underline",
+            }}>👤 リストの名前を編集</button>
+          </div>
           {players.map((p, i) => (
             <div key={i} style={{ marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -3351,12 +3507,12 @@ function MahjongScorer() {
                   <>
                     <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
                       <select
-                        value={PRESET_NAMES.includes(p) ? p : ""}
+                        value={presetNames.includes(p) ? p : ""}
                         onChange={e => { if (e.target.value) { const np = [...players]; np[i] = e.target.value; setPlayers(np); const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); } }}
                         style={selectStyle}
                       >
                         <option value="">— リストから選択 —</option>
-                        {PRESET_NAMES.map(n => {
+                        {presetNames.map(n => {
                           const usedByOther = players.includes(n) && players[i] !== n;
                           return <option key={n} value={n}>{usedByOther ? `${n}（使用中）` : n}</option>;
                         })}
@@ -3364,7 +3520,7 @@ function MahjongScorer() {
                       <input
                         style={inputStyle}
                         placeholder="または直接入力"
-                        value={PRESET_NAMES.includes(p) ? "" : p}
+                        value={presetNames.includes(p) ? "" : p}
                         onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
                       />
                     </div>
@@ -4520,6 +4676,7 @@ function MahjongScorer() {
         {view === "fucourse" && renderFuCourse()}
         {view === "table" && renderTable()}
         {view === "startguide" && renderStartGuide()}
+        {view === "names" && renderNames()}
         {view === "scoreprob" && renderScoreProblems()}
         {showFuHelp && <FuHelpModal />}
       </div>
