@@ -3213,79 +3213,97 @@ function MahjongScorer() {
   // ══════════════════════════════════
   const renderTableMode = () => {
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
-    const POSITIONS = [
-      { key: "bottom", rotate: 0,    style: { bottom: 8, left: "50%", transform: "translateX(-50%) rotate(0deg)" } },
-      { key: "right",  rotate: -90,  style: { right: 8, top: "50%", transform: "translateY(-50%) rotate(-90deg)" } },
-      { key: "top",    rotate: 180,  style: { top: 8, left: "50%", transform: "translateX(-50%) rotate(180deg)" } },
-      { key: "left",   rotate: 90,   style: { left: 8, top: "50%", transform: "translateY(-50%) rotate(90deg)" } },
-    ];
+    const PW = 150;   // パネルの長辺
+    const PH = 62;    // パネルの短辺
 
-    const panel = (i, pos) => {
+    const panelInner = (i) => {
       const isDealer = i === dealerIdx;
       const seatWind = WINDS[(i - dealerIdx + 4) % 4];
       const score = scores[i];
       return (
-        <div key={i} style={{
-          position: "absolute", ...pos.style,
-          width: 170, padding: "12px 14px", borderRadius: 14,
+        <div style={{
+          width: PW, height: PH, padding: "6px 8px", borderRadius: 12,
           background: isDealer ? t.gdS : t.card,
           border: `2px solid ${isDealer ? t.gd : t.bd}`,
-          textAlign: "center",
+          textAlign: "center", boxSizing: "border-box",
+          display: "flex", flexDirection: "column", justifyContent: "center",
         }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 2 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: isDealer ? t.gd : t.dm }}>{seatWind}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 110 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: isDealer ? t.gd : t.dm }}>{seatWind}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
               {players[i]}
             </span>
           </div>
           <div style={{
-            fontSize: 30, fontWeight: 900, lineHeight: 1.1,
+            fontSize: 26, fontWeight: 900, lineHeight: 1.15,
             color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
           }}>{score.toLocaleString()}</div>
         </div>
       );
     };
 
+    // 上下パネル
+    const hSlot = (i, pos, rot) => (
+      <div key={i} style={{
+        position: "absolute", ...pos,
+        width: PW, height: PH,
+        transform: `translateX(-50%) rotate(${rot}deg)`,
+      }}>{panelInner(i)}</div>
+    );
+
+    // 左右パネル: 回転後の見た目サイズ(PH×PW)のラッパーで場所を確保して重なりを防ぐ
+    const vSlot = (i, side, rot) => (
+      <div key={i} style={{
+        position: "absolute", [side]: 6, top: "50%",
+        width: PH, height: PW,
+        transform: "translateY(-50%)",
+      }}>
+        <div style={{
+          position: "absolute", top: "50%", left: "50%",
+          width: PW, height: PH,
+          transform: `translate(-50%,-50%) rotate(${rot}deg)`,
+        }}>{panelInner(i)}</div>
+      </div>
+    );
+
     return (
       <div style={{ padding: "8px 8px 20px", boxSizing: "border-box" }}>
-        {/* ヘッダー */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "0 6px" }}>
           <span style={{ fontSize: 11, color: t.dm }}>卓上モード</span>
           <button style={{ background: "none", border: "none", color: t.ac, fontSize: 12, cursor: "pointer", fontWeight: 700 }}
             onClick={() => setTableMode(false)}>通常表示に戻す ↩</button>
         </div>
 
-        {/* 卓 */}
         <div style={{
-          position: "relative", width: "100%", height: "68vh", minHeight: 440,
+          position: "relative", width: "100%", height: "66vh", minHeight: 420,
           background: "linear-gradient(160deg, #16452f, #103526)",
-          borderRadius: 20, border: "3px solid #24583f",
+          borderRadius: 20, border: "3px solid #24583f", overflow: "hidden",
         }}>
-          {POSITIONS.map((pos, idx) => panel(idx, pos))}
+          {hSlot(2, { top: 8, left: "50%" }, 180)}
+          {vSlot(1, "right", -90)}
+          {vSlot(3, "left", 90)}
+          {hSlot(0, { bottom: 8, left: "50%" }, 0)}
 
-          {/* 中央: 局情報 */}
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-            textAlign: "center", background: "rgba(0,0,0,0.35)", borderRadius: 14,
-            padding: "14px 18px", minWidth: 130,
+            textAlign: "center", background: "rgba(0,0,0,0.4)", borderRadius: 14,
+            padding: "12px 10px", width: 120, boxSizing: "border-box",
           }}>
-            <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>
               {roundWind}{dealerIdx + 1}局
             </div>
-            {honba > 0 && <div style={{ fontSize: 12, color: t.gd, marginTop: 2 }}>{honba}本場</div>}
-            {riichiBets > 0 && <div style={{ fontSize: 12, color: t.ac, marginTop: 2 }}>供託 {riichiBets}本</div>}
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", marginTop: 6 }}>
-              {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"} / {rounds.length}局終了
+            {honba > 0 && <div style={{ fontSize: 11, color: t.gd, marginTop: 2 }}>{honba}本場</div>}
+            {riichiBets > 0 && <div style={{ fontSize: 11, color: t.ac, marginTop: 2 }}>供託 {riichiBets}本</div>}
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", marginTop: 6, lineHeight: 1.4 }}>
+              {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"}<br />{rounds.length}局終了
             </div>
           </div>
         </div>
 
-        {/* 操作ボタン */}
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
           <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
           <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
         </div>
-
       </div>
     );
   };
