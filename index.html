@@ -3932,9 +3932,9 @@ function MahjongScorer() {
       return (
         <div style={{
           width: PW, height: PH,
-          padding: "10px 12px", borderRadius: 14,
-          background: isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
-          border: `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
+          padding: tmWinStep ? 6 : "10px 12px", borderRadius: 14,
+          background: tmWinStep ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
+          border: tmWinStep ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
           display: "flex", flexDirection: "column", justifyContent: "center", gap: 4,
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
