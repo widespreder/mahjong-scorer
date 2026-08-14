@@ -3017,10 +3017,11 @@ function MahjongScorer() {
 
   // ── Score correction ──
   const [editingRoundIdx, setEditingRoundIdx] = useState(null);
-  const [tableMode, setTableMode] = useState(false);
+  const [tableMode, setTableMode] = useState(true);
   const [homeCat, setHomeCat] = useState(null); // null | play | practice | settings
   const [tmWinStep, setTmWinStep] = useState(null); // null | "winner" | "how"
   const [tmDrawMode, setTmDrawMode] = useState(false); // 卓上モードの流局入力
+  const [showRoundEdit, setShowRoundEdit] = useState(false); // 局の修正モーダル
   const [playerDetail, setPlayerDetail] = useState(null); // タップしたプレイヤーのindex
 
   // ── 登録プレイヤー名リスト ──
@@ -4023,9 +4024,16 @@ function MahjongScorer() {
 
     return (
       <div style={{ padding: "8px 8px 20px", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 4, padding: "0 6px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 4, padding: "0 6px" }}>
+          {rounds.length > 0 && (
+            <button style={{ background: "none", border: "none", color: t.dm, fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+              onClick={() => setShowRoundEdit(true)}>📋 局の修正</button>
+          )}
           <button style={{ background: "none", border: "none", color: t.dm, fontSize: 11, cursor: "pointer", fontWeight: 600 }}
-            onClick={() => setTableMode(false)}>通常表示 ↩</button>
+            onClick={() => {
+              setSuspendedGame({ config: gameConfig, players: [...players], scores: [...scores], rounds: [...rounds], dealerIdx, roundWind, honba, riichiBets });
+              setGameStarted(false); setView("home"); setHomeCat(null);
+            }}>⏸ 保留</button>
         </div>
 
         {actionRow(true)}
@@ -4166,6 +4174,50 @@ function MahjongScorer() {
           点数をタップすると変動履歴が見られます
         </div>
         <PlayerHistoryModal />
+
+        {/* 局の修正モーダル */}
+        {showRoundEdit && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", zIndex: 150, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto" }}>
+            <div style={{ width: "100%", maxWidth: 400 }}>
+              <div style={card}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <span style={{ fontSize: 16, fontWeight: 800 }}>局の修正</span>
+                  <button style={{ background: "none", border: "none", color: t.dm, fontSize: 20, cursor: "pointer" }}
+                    onClick={() => { setShowRoundEdit(false); setEditingRoundIdx(null); }}>✕</button>
+                </div>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 10 }}>修正したい局をタップしてください</div>
+                {rounds.map((r, idx) => (
+                  <div key={idx}>
+                    <button onClick={() => setEditingRoundIdx(editingRoundIdx === idx ? null : idx)}
+                      style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "10px 0", borderBottom: `1px solid ${t.bd}33`, fontSize: 13, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
+                      <span style={{ color: t.dm }}>{r.wind}{r.dealer + 1}局{r.honba > 0 ? ` ${r.honba}本場` : ""}</span>
+                      {r.draw ? <span style={{ color: t.dm }}>流局</span> : (
+                        <span>
+                          <span style={{ color: t.ac, fontWeight: 600 }}>{players[r.winner]}</span>
+                          {" "}<span style={{ fontWeight: 700, color: t.tx }}>{r.score?.toLocaleString()}</span>
+                        </span>
+                      )}
+                    </button>
+                    {editingRoundIdx === idx && (
+                      <div style={{ padding: "8px 0 12px", display: "flex", gap: 8 }}>
+                        {!r.draw ? (
+                          <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.ac}`, background: t.acS, color: t.ac, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                            onClick={() => { setShowRoundEdit(false); openCorrectionWizard(idx); }}>✏️ この局を修正</button>
+                        ) : (
+                          <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                            onClick={() => { deleteRound(idx); setShowRoundEdit(false); }}>🗑 この局を取り消す</button>
+                        )}
+                        <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
+                          onClick={() => setEditingRoundIdx(null)}>キャンセル</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <button style={{ ...actionBtn(), marginTop: 12 }} onClick={() => { setShowRoundEdit(false); setEditingRoundIdx(null); }}>閉じる</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -4228,11 +4280,7 @@ function MahjongScorer() {
         <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
         <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setShowDrawWiz(true); }}>流局</button>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        <button style={{ ...actionBtn(), flex: 1, fontSize: 13 }} onClick={() => setTableMode(true)}>
-          🀄 卓上モード
-        </button>
-      </div>
+
       <button style={{ ...actionBtn(), marginBottom: 14, fontSize: 13 }}
         onClick={() => { setDiceOpen(true); setDiceSettled(false); setTimeout(rollDice, 150); }}>
         🎲 サイコロを振る
