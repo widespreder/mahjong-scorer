@@ -3356,9 +3356,10 @@ function MahjongScorer() {
                         style={selectStyle}
                       >
                         <option value="">— リストから選択 —</option>
-                        {PRESET_NAMES.filter(n => !players.includes(n) || players[i] === n).map(n => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
+                        {PRESET_NAMES.map(n => {
+                          const usedByOther = players.includes(n) && players[i] !== n;
+                          return <option key={n} value={n}>{usedByOther ? `${n}（使用中）` : n}</option>;
+                        })}
                       </select>
                       <input
                         style={inputStyle}
