@@ -3024,6 +3024,7 @@ input, select { padding: 10px 14px; }
   const [tmWinStep, setTmWinStep] = useState(null); // null | "winner" | "how"
   const [tmDrawMode, setTmDrawMode] = useState(false); // 卓上モードの流局入力
   const [showRoundEdit, setShowRoundEdit] = useState(false); // 局の修正モーダル
+  const [seatRot, setSeatRot] = useState(0); // 卓の回転（0-3）自分を手前に持ってくる
   const [playerDetail, setPlayerDetail] = useState(null); // タップしたプレイヤーのindex
 
   // ── 登録プレイヤー名リスト ──
@@ -4019,6 +4020,7 @@ input, select { padding: 10px 14px; }
           <div style={{ display: "flex", gap: 8 }}>
             <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setTmWinStep("winner"); }}>アガリ入力</button>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
+            <button style={{ ...smallBtn(), flex: "0 0 68px" }} onClick={() => setSeatRot(r => (r + 1) % 4)}>🔄 回転</button>
           </div>
         )}
       </div>
@@ -4045,10 +4047,10 @@ input, select { padding: 10px 14px; }
           background: "linear-gradient(160deg, #16452f, #103526)",
           borderRadius: 20, border: "3px solid #24583f", overflow: "hidden",
         }}>
-          {hSlot(2, { top: 14, left: "50%" }, 180)}
-          {vSlot(1, "right", -90)}
-          {vSlot(3, "left", 90)}
-          {hSlot(0, { bottom: 14, left: "50%" }, 0)}
+          {hSlot((2 + seatRot) % 4, { top: 14, left: "50%" }, 180)}
+          {vSlot((1 + seatRot) % 4, "right", -90)}
+          {vSlot((3 + seatRot) % 4, "left", 90)}
+          {hSlot((0 + seatRot) % 4, { bottom: 14, left: "50%" }, 0)}
 
           {/* 中央: 局情報 + サイコロ */}
           <div style={{
@@ -4099,7 +4101,7 @@ input, select { padding: 10px 14px; }
               {!tmWinStep && !tmDrawMode && (diceRolling || diceSettled) && (() => {
                 // 選ばれた山のプレイヤーの向きに合わせて回転
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
-                const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
+                const rot = diceSettled && wallTargetIdx >= 0 ? ROT[(wallTargetIdx - seatRot + 4) % 4] : 0;
                 return (
                   <div style={{ position: "relative", width: 72, height: 48, margin: "0 auto" }}>
                     <div style={{
@@ -4126,7 +4128,7 @@ input, select { padding: 10px 14px; }
                 <button onClick={rollDice} aria-label="サイコロを振る" style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   border: "none", background: "transparent", padding: 2, cursor: "pointer",
-                  transform: `rotate(${[0, -90, 180, 90][dealerIdx] ?? 0}deg)`,
+                  transform: `rotate(${[0, -90, 180, 90][(dealerIdx - seatRot + 4) % 4] ?? 0}deg)`,
                   transition: "transform 0.4s cubic-bezier(.3,1.2,.4,1)",
                 }}>
                   <Die value={diceVals[0]} size={24} />
@@ -4138,7 +4140,7 @@ input, select { padding: 10px 14px; }
             {/* 局表示: 親の方を向いて配置（選択モード中は非表示） */}
             {!tmWinStep && !tmDrawMode && (() => {
               const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
-              const rot = ROT[dealerIdx] ?? 0;
+              const rot = ROT[(dealerIdx - seatRot + 4) % 4] ?? 0;
               return (
                 <div style={{
                   position: "absolute", top: "50%", left: "50%",
