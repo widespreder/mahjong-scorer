@@ -3857,7 +3857,7 @@ function MahjongScorer() {
   const renderTableMode = () => {
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
     const PW = 156;   // パネルの長辺
-    const PH = 108;   // パネルの短辺（局表示ぶん拡大）
+    const PH = 116;   // パネルの短辺（局表示ぶん拡大）
 
     // サイコロの結果で割る山の持ち主
     const diceSum = diceVals[0] + diceVals[1];
@@ -3880,10 +3880,16 @@ function MahjongScorer() {
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
           {/* 局表示（各プレイヤーの向きで読める） */}
-          <div style={{ fontSize: 12, fontWeight: 800, color: t.dm, lineHeight: 1 }}>
-            {roundWind}{dealerIdx + 1}局
-            {honba > 0 && <span style={{ color: t.gd, marginLeft: 4 }}>{honba}本場</span>}
-            {riichiBets > 0 && <span style={{ color: t.ac, marginLeft: 4 }}>供{riichiBets}</span>}
+          <div style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
+            alignSelf: "center", padding: "3px 12px", borderRadius: 8,
+            background: "rgba(255,255,255,0.09)", border: `1px solid ${t.bd}`,
+          }}>
+            <span style={{ fontSize: 16, fontWeight: 900, color: t.tx, lineHeight: 1.1, letterSpacing: "0.02em" }}>
+              {roundWind}{dealerIdx + 1}局
+            </span>
+            {honba > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.gd }}>{honba}本場</span>}
+            {riichiBets > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.ac }}>供{riichiBets}</span>}
           </div>
           {isWallTarget && (
             <div style={{
