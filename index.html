@@ -3941,11 +3941,11 @@ function MahjongScorer() {
       return (
         <div style={{
           width: PW, height: PH,
-          padding: (tmWinStep || tmDrawMode) ? 6 : "10px 12px", borderRadius: 14,
+          padding: (tmWinStep || tmDrawMode) ? 6 : "8px 10px", borderRadius: 14,
           background: (tmWinStep || tmDrawMode) ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
           border: (tmWinStep || tmDrawMode) ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
-          display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: 2,
+          display: "flex", flexDirection: "column", justifyContent: "center", gap: 5,
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
           {tmDrawMode ? (
@@ -4041,10 +4041,10 @@ function MahjongScorer() {
               {/* 局表示（各プレイヤーの向きで読める） */}
               <div style={{
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
-                alignSelf: "center", padding: "4px 12px", borderRadius: 8, margin: "2px 0",
+                alignSelf: "center", padding: "3px 10px", borderRadius: 7, margin: 0,
                 background: "rgba(255,255,255,0.09)", border: `1px solid ${t.bd}`,
               }}>
-                <span style={{ fontSize: 16, fontWeight: 900, color: t.tx, lineHeight: 1.1, letterSpacing: "0.02em" }}>
+                <span style={{ fontSize: 14, fontWeight: 900, color: t.tx, lineHeight: 1.1, letterSpacing: "0.02em" }}>
                   {roundWind}{dealerIdx + 1}局
                 </span>
                 {honba > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.gd }}>{honba}本場</span>}
@@ -4053,18 +4053,18 @@ function MahjongScorer() {
               <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer", padding: "0 2px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   <span style={{
-                    fontSize: 22, fontWeight: 900, lineHeight: 1,
+                    fontSize: 19, fontWeight: 900, lineHeight: 1,
                     color: isDealer ? "#1a1a1a" : t.tx,
                     background: isDealer ? t.gd : t.sf,
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                    borderRadius: 6, padding: "4px 8px", flexShrink: 0,
+                    borderRadius: 6, padding: "3px 7px", flexShrink: 0,
                   }}>{seatWind}</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 96 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
                     {players[i]}
                   </span>
                 </div>
                 <div style={{
-                  fontSize: 25, fontWeight: 900, lineHeight: 1.1,
+                  fontSize: 23, fontWeight: 900, lineHeight: 1.15, marginTop: 1,
                   color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
                 }}>{score.toLocaleString()}</div>
               </div>
