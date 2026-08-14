@@ -4831,8 +4831,22 @@ function MahjongScorer() {
     <>
       <style>{globalStyle}</style>
       <div style={{ minHeight: "100vh", background: t.bg, color: t.tx, fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',system-ui,sans-serif", maxWidth: 440, margin: "0 auto", overflowX: "hidden", width: "100%" }}>
-        <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${t.bd}` }}>
-          <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }} onClick={() => setView("home")}>🀄 <span>麻雀スコアラー</span></h1>
+        <div style={{ padding: "12px 14px 10px", borderBottom: `1px solid ${t.bd}`, display: "flex", alignItems: "center", gap: 8 }}>
+          {view !== "home" && view !== "shared" ? (
+            <button
+              onClick={() => {
+                // 対局中はホームに戻る前に確認不要（保留機能は別途）
+                setView("home");
+              }}
+              style={{
+                background: t.card, border: `1px solid ${t.bd}`, borderRadius: 10,
+                padding: "7px 12px", color: t.ac, fontSize: 13, fontWeight: 700,
+                cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+              }}>← 戻る</button>
+          ) : <span style={{ width: 62, flexShrink: 0 }} />}
+          <h1 style={{ flex: 1, fontSize: 17, fontWeight: 800, margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer" }}
+            onClick={() => setView("home")}>🀄 <span>麻雀スコアラー</span></h1>
+          <span style={{ width: 62, flexShrink: 0 }} />
         </div>
         {view === "shared" && renderShared()}
         {view === "home" && renderHome()}
