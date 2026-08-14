@@ -198,7 +198,7 @@ function MahjongScorer() {
     return total + pickerDora;
   };
   const resetFuGuide = () => { setFuGuide(null); setFuGuideStep(0); };
-  const initFuGuide = () => { setFuGuide({ mentsu: [], machi: "ryanmen", jantou: "suuhai", pinfu: false, chiitoi: false }); setFuGuideStep(1); };
+  const initFuGuide = () => { setFuGuide({ naki: null, mentsu: [], machi: "ryanmen", jantou: "suuhai", pinfu: false, chiitoi: false }); setFuGuideStep(0); };
   const [showFuHelp, setShowFuHelp] = useState(false);
   const MENTSU_OPTIONS = [
     { id: "minko_c", label: "明刻(中張)", fu: 2, desc: "ポンした2〜8の牌の3枚組" },
@@ -225,7 +225,7 @@ function MahjongScorer() {
     if (!guide) return 30;
     // 七対子は25符固定
     if (guide.chiitoi) return 25;
-    const hasNaki = guide.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_"));
+    const hasNaki = guide.naki === true || guide.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_"));
     // 平和の特例
     if (guide.pinfu) {
       if (gTsumo) return 20;        // 平和ツモ = 20符固定（ツモ符なし）
@@ -699,7 +699,7 @@ function MahjongScorer() {
     if (!fuGuide) return null;
     const g = fuGuide;
     const step = fuGuideStep;
-    const hasNaki = g.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_"));
+    const hasNaki = g.naki === true || g.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_"));
 
     // Total steps depends on path
     const StepLabel = ({ n, total, label }) => (
@@ -754,16 +754,42 @@ function MahjongScorer() {
       );
     };
 
+    // STEP 0: 鳴きの有無
+    if (step === 0) {
+      return (
+        <div>
+          <button style={backBtn} onClick={onBack}>← 戻る</button>
+          <StepLabel n={1} total={7} label="STEP 1 / 鳴きの有無" />
+          <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 6 }}>鳴きましたか？</div>
+          <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 16 }}>
+            ポン・チー・明カンをしたかどうか
+          </div>
+          <button onClick={() => { setFuGuide(gg => ({ ...gg, naki: false })); setFuGuideStep(1); }}
+            style={{ width: "100%", padding: "18px 12px", marginBottom: 10, borderRadius: 12, cursor: "pointer",
+              border: `2px solid ${t.ac}`, background: t.acS, color: t.ac, textAlign: "center" }}>
+            <div style={{ fontSize: 17, fontWeight: 800 }}>門前（メンゼン）</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 3 }}>鳴いていない → 門前加符10符</div>
+          </button>
+          <button onClick={() => { setFuGuide(gg => ({ ...gg, naki: true })); setFuGuideStep(1); }}
+            style={{ width: "100%", padding: "18px 12px", borderRadius: 12, cursor: "pointer",
+              border: `2px solid ${t.gn}`, background: t.gnS, color: t.gn, textAlign: "center" }}>
+            <div style={{ fontSize: 17, fontWeight: 800 }}>鳴きあり</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 3 }}>ポン・チー・明カンをした</div>
+          </button>
+        </div>
+      );
+    }
+
     // STEP 1: 特殊形（平和・七対子）
     if (step === 1) {
       return (
         <div>
-          <button style={backBtn} onClick={onBack}>← 戻る</button>
-          <StepLabel n={1} total={6} label="STEP 1 / 特殊な形" />
+          <button style={backBtn} onClick={() => setFuGuideStep(0)}>← 戻る</button>
+          <StepLabel n={2} total={7} label="STEP 2 / 特殊な形" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>平和や七対子ですか？</div>
           <button onClick={() => { setFuGuide(gg => ({ ...gg, pinfu: true, chiitoi: false })); setFuGuideStep(6); }}
             style={{ width: "100%", padding: "14px 10px", marginBottom: 8, borderRadius: 12, cursor: "pointer", border: `2px solid ${g.pinfu ? t.gn : t.bd}`, background: g.pinfu ? t.gnS : "transparent", color: g.pinfu ? t.gn : t.tx, textAlign: "center" }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>平和（ピンフ）</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>平和型（順子だけの形）</div>
             <div style={{ display: "flex", gap: 1.5, justifyContent: "center", marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
               <Tile label="2" sub="萬" size={17} /><Tile label="3" sub="萬" size={17} /><Tile label="4" sub="萬" size={17} />
               <span style={{ width: 5 }} />
@@ -806,11 +832,11 @@ function MahjongScorer() {
 
     // STEP 2: 刻子（明刻・暗刻）
     if (step === 2) {
-      const kotsuOpts = MENTSU_OPTIONS.filter(o => o.id.includes("ko_"));
+      const kotsuOpts = MENTSU_OPTIONS.filter(o => o.id.includes("ko_") && (g.naki || !o.id.startsWith("minko_")));
       return (
         <div>
           <button style={backBtn} onClick={() => setFuGuideStep(1)}>← 戻る</button>
-          <StepLabel n={2} total={6} label="STEP 2 / 刻子（コーツ）" />
+          <StepLabel n={3} total={7} label="STEP 3 / 刻子（コーツ）" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 6 }}>刻子はいくつありますか？</div>
           <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 14 }}>同じ牌3枚の組。なければ 0 のまま次へ</div>
           {kotsuOpts.map(counterRow)}
@@ -821,11 +847,11 @@ function MahjongScorer() {
 
     // STEP 3: 槓子（明槓・暗槓）
     if (step === 3) {
-      const kanOpts = MENTSU_OPTIONS.filter(o => o.id.includes("kan_"));
+      const kanOpts = MENTSU_OPTIONS.filter(o => o.id.includes("kan_") && (g.naki || !o.id.startsWith("minkan_")));
       return (
         <div>
           <button style={backBtn} onClick={() => setFuGuideStep(2)}>← 戻る</button>
-          <StepLabel n={3} total={6} label="STEP 3 / 槓子（カンツ）" />
+          <StepLabel n={4} total={7} label="STEP 4 / 槓子（カンツ）" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 6 }}>カンはしましたか？</div>
           <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 14 }}>同じ牌4枚の組。なければ 0 のまま次へ</div>
           {kanOpts.map(counterRow)}
@@ -839,7 +865,7 @@ function MahjongScorer() {
       return (
         <div>
           <button style={backBtn} onClick={() => setFuGuideStep(3)}>← 戻る</button>
-          <StepLabel n={4} total={6} label="STEP 4 / 待ち" />
+          <StepLabel n={5} total={7} label="STEP 5 / 待ち" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>どんな待ちでしたか？</div>
           {MACHI_OPTIONS.map(m => (
             <button key={m.id} onClick={() => { setFuGuide(gg => ({ ...gg, machi: m.id })); setFuGuideStep(5); }}
@@ -862,7 +888,7 @@ function MahjongScorer() {
       return (
         <div>
           <button style={backBtn} onClick={() => setFuGuideStep(4)}>← 戻る</button>
-          <StepLabel n={5} total={6} label="STEP 5 / 雀頭（アタマ）" />
+          <StepLabel n={6} total={7} label="STEP 6 / 雀頭（アタマ）" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>雀頭は何の牌ですか？</div>
           {JANTOU_OPTIONS.map(j => (
             <button key={j.id} onClick={() => { setFuGuide(gg => ({ ...gg, jantou: j.id })); setFuGuideStep(6); }}
@@ -898,7 +924,7 @@ function MahjongScorer() {
       return (
         <div>
           <button style={backBtn} onClick={() => { if (g.pinfu || g.chiitoi) setFuGuideStep(1); else setFuGuideStep(5); }}>← 戻る</button>
-          <StepLabel n={6} total={6} label="計算結果" />
+          <StepLabel n={7} total={7} label="計算結果" />
           <div style={{ background: `linear-gradient(135deg, ${t.card}, ${t.sf})`, borderRadius: 16, padding: 24, textAlign: "center", border: `1px solid ${t.ac}44`, marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: t.dm, marginBottom: 6 }}>符数</div>
             <div style={{ fontSize: 44, fontWeight: 900, color: t.ac, lineHeight: 1 }}>{fu}<span style={{ fontSize: 20 }}>符</span></div>
@@ -949,7 +975,7 @@ function MahjongScorer() {
             )}
           </div>
           <button style={actionBtn("p")} onClick={() => onComplete(fu)}>この符数で確定</button>
-          <button style={actionBtn()} onClick={() => { setFuGuideStep(1); }}>最初からやり直す</button>
+          <button style={actionBtn()} onClick={() => { setFuGuideStep(0); }}>最初からやり直す</button>
         </div>
       );
     }
