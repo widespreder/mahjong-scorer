@@ -3567,18 +3567,68 @@ function MahjongScorer() {
           {vSlot(3, "left", 90)}
           {hSlot(0, { bottom: 8, left: "50%" }, 0)}
 
+          {/* 中央: 局情報 + サイコロ */}
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-            textAlign: "center", background: "rgba(0,0,0,0.4)", borderRadius: 14,
-            padding: "12px 10px", width: 120, boxSizing: "border-box",
+            textAlign: "center", background: "rgba(0,0,0,0.45)", borderRadius: 16,
+            padding: "12px 10px", width: 138, boxSizing: "border-box",
           }}>
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>
               {roundWind}{dealerIdx + 1}局
             </div>
-            {honba > 0 && <div style={{ fontSize: 11, color: t.gd, marginTop: 2 }}>{honba}本場</div>}
-            {riichiBets > 0 && <div style={{ fontSize: 11, color: t.ac, marginTop: 2 }}>供託 {riichiBets}本</div>}
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", marginTop: 6, lineHeight: 1.4 }}>
-              {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"}<br />{rounds.length}局終了
+            {honba > 0 && <div style={{ fontSize: 11, color: t.gd, marginTop: 1 }}>{honba}本場</div>}
+            {riichiBets > 0 && <div style={{ fontSize: 11, color: t.ac, marginTop: 1 }}>供託 {riichiBets}本</div>}
+
+            {/* サイコロエリア */}
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.15)" }}>
+              {(diceRolling || diceSettled) ? (
+                <>
+                  <div style={{ display: "flex", gap: 7, justifyContent: "center", marginBottom: 6 }}>
+                    <Die value={diceVals[0]} size={38} rolling={diceRolling} />
+                    <Die value={diceVals[1]} size={38} rolling={diceRolling} />
+                  </div>
+                  {diceSettled && (() => {
+                    const sum = diceVals[0] + diceVals[1];
+                    const tIdx = (dealerIdx + (sum - 1)) % 4;
+                    const rel = ["親", "下家", "対面", "上家"][(sum - 1) % 4];
+                    return (
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>合計 {sum}</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: t.gd, marginTop: 3, lineHeight: 1.3 }}>
+                          {rel}の山
+                        </div>
+                        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.75)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {players[tIdx]}
+                        </div>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+                          右から{sum}つ目で割る
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {diceRolling && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>振っています…</div>}
+                </>
+              ) : (
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", lineHeight: 1.4 }}>
+                  {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"}<br />{rounds.length}局終了
+                </div>
+              )}
+              <button onClick={rollDice} disabled={diceRolling} style={{
+                width: "100%", marginTop: 8, padding: "7px 0", borderRadius: 9,
+                border: `1px solid ${diceRolling ? "rgba(255,255,255,0.2)" : t.ac}`,
+                background: diceRolling ? "rgba(255,255,255,0.08)" : t.ac,
+                color: "#fff", fontSize: 12, fontWeight: 800,
+                cursor: diceRolling ? "default" : "pointer",
+              }}>
+                {diceRolling ? "🎲 …" : diceSettled ? "🎲 振り直す" : "🎲 サイコロ"}
+              </button>
+              {diceSettled && !diceRolling && (
+                <button onClick={() => setDiceSettled(false)} style={{
+                  width: "100%", marginTop: 4, padding: "4px 0", borderRadius: 7,
+                  border: "none", background: "transparent",
+                  color: "rgba(255,255,255,0.45)", fontSize: 10, cursor: "pointer",
+                }}>クリア</button>
+              )}
             </div>
           </div>
         </div>
@@ -3587,15 +3637,10 @@ function MahjongScorer() {
           <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
           <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
         </div>
-        <button style={{ ...actionBtn(), marginTop: 8, fontSize: 14 }}
-          onClick={() => { setDiceOpen(true); setDiceSettled(false); setTimeout(rollDice, 150); }}>
-          🎲 サイコロを振る
-        </button>
         <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
           点数をタップすると変動履歴が見られます
         </div>
         <PlayerHistoryModal />
-        <DiceModal />
       </div>
     );
   };
