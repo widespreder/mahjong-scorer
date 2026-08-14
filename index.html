@@ -3890,7 +3890,7 @@ function MahjongScorer() {
   const renderTableMode = () => {
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
     const PW = 182;   // パネルの長辺
-    const PH = 128;   // パネルの短辺
+    const PH = 120;   // パネルの短辺
 
     // サイコロの結果で割る山の持ち主
     const diceSum = diceVals[0] + diceVals[1];
@@ -4023,8 +4023,12 @@ function MahjongScorer() {
           {/* 中央: 局情報 + サイコロ */}
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-            textAlign: "center", background: "rgba(0,0,0,0.45)", borderRadius: 16,
-            padding: "10px 8px", width: 116, boxSizing: "border-box",
+            width: 122, height: 122, boxSizing: "border-box",
+            background: "rgba(0,0,0,0.45)", borderRadius: 24,
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            padding: 8, textAlign: "center",
           }}>
             {/* サイコロエリア */}
             <div>
@@ -4033,19 +4037,19 @@ function MahjongScorer() {
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
                 const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
                 return (
-                  <div style={{ position: "relative", width: 104, height: 116, margin: "0 auto 4px" }}>
+                  <div style={{ position: "relative", width: 100, height: 68, margin: "0 auto 2px" }}>
                     <div style={{
                       position: "absolute", top: "50%", left: "50%",
                       transform: `translate(-50%,-50%) rotate(${rot}deg)`,
                       transition: "transform 0.45s cubic-bezier(.3,1.2,.4,1)",
                       textAlign: "center", whiteSpace: "nowrap",
                     }}>
-                      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 8 }}>
-                        <Die value={diceVals[0]} size={44} rolling={diceRolling} />
-                        <Die value={diceVals[1]} size={44} rolling={diceRolling} />
+                      <div style={{ display: "flex", gap: 7, justifyContent: "center", marginBottom: 5 }}>
+                        <Die value={diceVals[0]} size={34} rolling={diceRolling} />
+                        <Die value={diceVals[1]} size={34} rolling={diceRolling} />
                       </div>
                       {diceSettled && (
-                        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>
                           合計 {diceVals[0] + diceVals[1]}
                         </div>
                       )}
@@ -4055,11 +4059,11 @@ function MahjongScorer() {
                 );
               })()}
               <button onClick={rollDice} disabled={diceRolling} aria-label="サイコロを振る" style={{
-                width: 56, height: 56, borderRadius: "50%", margin: "4px auto 0",
+                width: 46, height: 46, borderRadius: "50%", margin: "2px auto 0",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 border: `2px solid ${diceRolling ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.35)"}`,
                 background: diceRolling ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.1)",
-                fontSize: 30, lineHeight: 1, padding: 0,
+                fontSize: 24, lineHeight: 1, padding: 0,
                 cursor: diceRolling ? "default" : "pointer",
                 opacity: diceRolling ? 0.5 : 1,
               }}>🎲</button>
