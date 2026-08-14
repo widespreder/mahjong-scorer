@@ -984,7 +984,25 @@ function MahjongScorer() {
   const body = { padding: "16px 20px 32px", boxSizing: "border-box", maxWidth: "100%", overflowX: "hidden" };
 
   // Global box-sizing reset
-  const globalStyle = `*, *::before, *::after { box-sizing: border-box; }`;
+  const globalStyle = `
+*, *::before, *::after { box-sizing: border-box; }
+@keyframes wallBlink {
+  0%, 100% {
+    background: rgba(56,189,248,0.28);
+    border-color: #38bdf8;
+    box-shadow: 0 0 22px rgba(56,189,248,0.8);
+  }
+  50% {
+    background: rgba(56,189,248,0.06);
+    border-color: rgba(56,189,248,0.35);
+    box-shadow: 0 0 4px rgba(56,189,248,0.15);
+  }
+}
+@keyframes wallLabelBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+`;
 
   // ══════════════════════════════════
   // ── YAKU DATA ──
@@ -3519,21 +3537,23 @@ function MahjongScorer() {
       const isWallTarget = i === wallTargetIdx;
       return (
         <div style={{
-          width: PW, height: isWallTarget ? PH + 18 : PH, padding: "6px 8px", borderRadius: 12,
-          background: isWallTarget ? "rgba(56,189,248,0.22)"
-            : isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
-          border: `${isWallTarget ? 3 : 2}px solid ${isWallTarget ? "#38bdf8" : isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
-          boxShadow: isWallTarget ? "0 0 18px rgba(56,189,248,0.65)" : "none",
+          width: PW, height: isWallTarget ? PH + 24 : PH,
+          padding: isWallTarget ? "8px 10px" : "8px 10px", borderRadius: 12,
+          background: isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
+          border: `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
-          display: "flex", flexDirection: "column", justifyContent: "center", gap: 2,
-          transition: "box-shadow 0.25s, background 0.25s",
+          display: "flex", flexDirection: "column", justifyContent: "center", gap: 4,
+          animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
           {isWallTarget && (
-            <div style={{ fontSize: 12, fontWeight: 900, color: "#38bdf8", letterSpacing: "0.05em" }}>
-              🎲 この山を割る（右から{diceSum}）
+            <div style={{
+              fontSize: 11, fontWeight: 900, color: "#7dd3fc", letterSpacing: "0.04em",
+              lineHeight: 1.2, animation: "wallLabelBlink 0.9s ease-in-out infinite",
+            }}>
+              🎲 この山を割る<br />（右から{diceSum}つ目）
             </div>
           )}
-          <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer" }}>
+          <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer", padding: "0 2px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
               <span style={{
                 fontSize: 18, fontWeight: 900, lineHeight: 1,
@@ -3575,19 +3595,22 @@ function MahjongScorer() {
     );
 
     // 左右パネル: 回転後の見た目サイズ(PH×PW)のラッパーで場所を確保して重なりを防ぐ
-    const vSlot = (i, side, rot) => (
-      <div key={i} style={{
-        position: "absolute", [side]: 6, top: "50%",
-        width: PH, height: PW,
-        transform: "translateY(-50%)",
-      }}>
-        <div style={{
-          position: "absolute", top: "50%", left: "50%",
-          width: PW, height: PH,
-          transform: `translate(-50%,-50%) rotate(${rot}deg)`,
-        }}>{panelInner(i)}</div>
-      </div>
-    );
+    const vSlot = (i, side, rot) => {
+      const h = i === wallTargetIdx ? PH + 24 : PH;
+      return (
+        <div key={i} style={{
+          position: "absolute", [side]: 6, top: "50%",
+          width: h, height: PW,
+          transform: "translateY(-50%)",
+        }}>
+          <div style={{
+            position: "absolute", top: "50%", left: "50%",
+            width: PW, height: h,
+            transform: `translate(-50%,-50%) rotate(${rot}deg)`,
+          }}>{panelInner(i)}</div>
+        </div>
+      );
+    };
 
     return (
       <div style={{ padding: "8px 8px 20px", boxSizing: "border-box" }}>
@@ -3611,7 +3634,7 @@ function MahjongScorer() {
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
             textAlign: "center", background: "rgba(0,0,0,0.45)", borderRadius: 16,
-            padding: "14px 12px", width: 168, boxSizing: "border-box",
+            padding: "16px 14px", width: 168, boxSizing: "border-box",
           }}>
             <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>
               {roundWind}{dealerIdx + 1}局
