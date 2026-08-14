@@ -3950,11 +3950,11 @@ function MahjongScorer() {
         }}>
           {tmDrawMode ? (
             /* 流局: テンパイ/ノーテンをトグル */
-            <button onClick={() => { const n = [...drawTenpai]; n[i] = !n[i]; setDrawTenpai(n); }} style={{
-              width: "100%", height: "100%", borderRadius: 10, cursor: "pointer",
-              border: `2px solid ${drawTenpai[i] ? t.gn : t.bd}`,
-              background: drawTenpai[i] ? t.gnS : t.card,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+            <button disabled={isRiichi} onClick={() => { if (isRiichi) return; const n = [...drawTenpai]; n[i] = !n[i]; setDrawTenpai(n); }} style={{
+              width: "100%", height: "100%", borderRadius: 10, cursor: isRiichi ? "default" : "pointer",
+              border: `2px solid ${isRiichi ? t.rd : drawTenpai[i] ? t.gn : t.bd}`,
+              background: isRiichi ? "rgba(220,60,60,0.14)" : drawTenpai[i] ? t.gnS : t.card,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
             }}>
               <div style={{
                 fontSize: 18, fontWeight: 900, lineHeight: 1,
@@ -3963,12 +3963,13 @@ function MahjongScorer() {
                 border: `1px solid ${isDealer ? t.gd : t.bd}`,
                 borderRadius: 6, padding: "3px 8px",
               }}>{seatWind}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%" }}>
                 {players[i]}
               </div>
-              <div style={{ fontSize: 17, fontWeight: 900, color: drawTenpai[i] ? t.gn : t.dm }}>
-                {drawTenpai[i] ? "✓ テンパイ" : "ノーテン"}
+              <div style={{ fontSize: 16, fontWeight: 900, color: isRiichi ? t.gn : drawTenpai[i] ? t.gn : t.dm }}>
+                {isRiichi ? "✓ テンパイ" : drawTenpai[i] ? "✓ テンパイ" : "ノーテン"}
               </div>
+              {isRiichi && <div style={{ fontSize: 9, color: t.rd, fontWeight: 700 }}>🔴 リーチ済み</div>}
             </button>
           ) : tmWinStep === "winner" ? (
             /* 和了者を選ぶ */
@@ -4240,7 +4241,7 @@ function MahjongScorer() {
         ) : (
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setTmWinStep("winner"); }}>アガリ入力</button>
-            <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setTmDrawMode(true); }}>流局</button>
+            <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
           </div>
         )}
         <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
@@ -4307,7 +4308,7 @@ function MahjongScorer() {
       {/* Actions */}
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
-        <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
+        <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setShowDrawWiz(true); }}>流局</button>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button style={{ ...actionBtn(), flex: 1, fontSize: 13 }} onClick={() => setTableMode(true)}>
@@ -4538,23 +4539,26 @@ function MahjongScorer() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
                 {players.map((p, i) => {
                   const isTenpai = drawTenpai[i];
+                  const lockedRiichi = declaredRiichi[i];
                   const sw = WINDS[(i - dealerIdx + 4) % 4];
                   return (
                     <button
                       key={i}
+                      disabled={lockedRiichi}
                       style={{
                         padding: "14px 8px",
-                        border: `2px solid ${isTenpai ? t.gn : t.bd}`,
+                        border: `2px solid ${lockedRiichi ? t.rd : isTenpai ? t.gn : t.bd}`,
                         borderRadius: 12,
-                        background: isTenpai ? t.gnS : "transparent",
+                        background: lockedRiichi ? "rgba(220,60,60,0.12)" : isTenpai ? t.gnS : "transparent",
                         color: isTenpai ? t.gn : t.tx,
                         fontSize: 14,
                         fontWeight: 700,
-                        cursor: "pointer",
+                        cursor: lockedRiichi ? "default" : "pointer",
                         textAlign: "center",
                         transition: "all 0.12s",
                       }}
                       onClick={() => {
+                        if (lockedRiichi) return;
                         const next = [...drawTenpai];
                         next[i] = !next[i];
                         setDrawTenpai(next);
@@ -4562,6 +4566,7 @@ function MahjongScorer() {
                     >
                       <div style={{ fontSize: 11, color: isTenpai ? t.gn : t.dm, marginBottom: 2 }}>{sw}{i === dealerIdx ? " (親)" : ""}</div>
                       <div>{p}</div>
+                      {lockedRiichi && <div style={{ fontSize: 9, color: t.rd, fontWeight: 700, marginTop: 2 }}>🔴 リーチ済み</div>}
                       <div style={{ fontSize: 12, marginTop: 4, fontWeight: 800 }}>
                         {isTenpai ? "テンパイ" : "ノーテン"}
                       </div>
