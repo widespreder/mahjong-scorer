@@ -4131,8 +4131,8 @@ function MahjongScorer() {
           {/* 中央: 局情報 + サイコロ */}
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-            width: 122, height: 122, boxSizing: "border-box",
-            background: "rgba(0,0,0,0.45)", borderRadius: 24,
+            width: 104, height: 104, boxSizing: "border-box",
+            background: "rgba(0,0,0,0.45)", borderRadius: 20,
             border: "1px solid rgba(255,255,255,0.1)",
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
@@ -4145,14 +4145,14 @@ function MahjongScorer() {
               const tc = drawTenpai.filter(Boolean).length;
               return (
                 <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: "#fff", lineHeight: 1.35 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "#fff", lineHeight: 1.3 }}>
                     テンパイの人<br />をタップ
                   </div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>
                     {tc}人テンパイ
                   </div>
                   <button onClick={(e) => { e.stopPropagation(); applyDraw(); setTmDrawMode(false); }} style={{
-                    padding: "9px 16px", borderRadius: 10, cursor: "pointer",
+                    padding: "7px 14px", borderRadius: 9, cursor: "pointer",
                     border: `2px solid ${t.ac}`, background: t.ac, color: "#fff",
                     fontSize: 13, fontWeight: 800,
                   }}>確定</button>
@@ -4160,9 +4160,9 @@ function MahjongScorer() {
               );
             })()}
             {tmWinStep === "winner" && (
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", lineHeight: 1.4 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#fff", lineHeight: 1.35 }}>
                 和了者を<br />タップ
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontWeight: 600, marginTop: 3 }}>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontWeight: 600, marginTop: 2 }}>
                   (あがった人)
                 </div>
               </div>
@@ -4177,8 +4177,8 @@ function MahjongScorer() {
                 border: `2px solid ${t.gn}`, background: t.gnS,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
               }}>
-                <div style={{ fontSize: 26 }}>🀄</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: t.gn }}>ツモ</div>
+                <div style={{ fontSize: 22 }}>🀄</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: t.gn }}>ツモ</div>
               </button>
             )}
             {/* サイコロエリア */}
@@ -4188,7 +4188,7 @@ function MahjongScorer() {
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
                 const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
                 return (
-                  <div style={{ position: "relative", width: 100, height: 68, margin: "0 auto 2px" }}>
+                  <div style={{ position: "relative", width: 88, height: 62, margin: "0 auto" }}>
                     <div style={{
                       position: "absolute", top: "50%", left: "50%",
                       transform: `translate(-50%,-50%) rotate(${rot}deg)`,
@@ -4196,11 +4196,11 @@ function MahjongScorer() {
                       textAlign: "center", whiteSpace: "nowrap",
                     }}>
                       <div style={{ display: "flex", gap: 7, justifyContent: "center", marginBottom: 5 }}>
-                        <Die value={diceVals[0]} size={34} rolling={diceRolling} />
-                        <Die value={diceVals[1]} size={34} rolling={diceRolling} />
+                        <Die value={diceVals[0]} size={30} rolling={diceRolling} />
+                        <Die value={diceVals[1]} size={30} rolling={diceRolling} />
                       </div>
                       {diceSettled && (
-                        <div style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>
+                        <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>
                           合計 {diceVals[0] + diceVals[1]}
                         </div>
                       )}
@@ -4214,8 +4214,8 @@ function MahjongScorer() {
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                   border: "none", background: "transparent", padding: 4, cursor: "pointer",
                 }}>
-                  <Die value={diceVals[0]} size={40} />
-                  <Die value={diceVals[1]} size={40} />
+                  <Die value={diceVals[0]} size={34} />
+                  <Die value={diceVals[1]} size={34} />
                 </button>
               )}
 
