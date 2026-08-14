@@ -132,6 +132,19 @@ function MahjongScorer() {
   const [roundWind, setRoundWind] = useState("東");
   const [honba, setHonba] = useState(0);
   const [riichiBets, setRiichiBets] = useState(0);
+  // 実況リーチ: 宣言した時点で1000点減算・供託に加算（この局で宣言済みの人）
+  const [declaredRiichi, setDeclaredRiichi] = useState([false, false, false, false]);
+
+  const toggleDeclaredRiichi = (i) => {
+    setDeclaredRiichi(prev => {
+      const next = [...prev];
+      const wasDeclared = next[i];
+      next[i] = !wasDeclared;
+      setScores(s => { const ns = [...s]; ns[i] += wasDeclared ? 1000 : -1000; return ns; });
+      setRiichiBets(b => b + (wasDeclared ? -1 : 1));
+      return next;
+    });
+  };
   const [gameStarted, setGameStarted] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
   const [showExtendConfirm, setShowExtendConfirm] = useState(false); // tonpu → hanchan extension // natural game end
@@ -334,6 +347,7 @@ function MahjongScorer() {
       }
     }
     setRiichiBets(0);
+    setDeclaredRiichi([false, false, false, false]);
     resetGW();
   }, [gWinner, gLoser, gResult, gTsumo, gParent, gHan, gFu, gLimit, gRiichi, scores, honba, riichiBets, dealerIdx, rounds, roundWind, resetGW, gameConfig, correctingIdx]);
 
@@ -356,6 +370,7 @@ function MahjongScorer() {
 
     setScores(ns);
     setHonba(h => h + 1);
+    setDeclaredRiichi([false, false, false, false]);
     setRounds(prev => [...prev, { id: prev.length + 1, wind: roundWind, dealer: dealerIdx, honba, draw: true, tenpai: [...drawTenpai] }]);
 
     // Renchan / game-end logic
@@ -403,6 +418,7 @@ function MahjongScorer() {
     setRoundWind("東");
     setHonba(0);
     setRiichiBets(0);
+    setDeclaredRiichi([false, false, false, false]);
     setRounds([]);
     setGameStarted(true);
     setGameFinished(false);
@@ -3331,31 +3347,44 @@ function MahjongScorer() {
   // ══════════════════════════════════
   const renderTableMode = () => {
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
-    const PW = 150;   // パネルの長辺
-    const PH = 62;    // パネルの短辺
+    const PW = 156;   // パネルの長辺
+    const PH = 92;    // パネルの短辺
 
     const panelInner = (i) => {
       const isDealer = i === dealerIdx;
       const seatWind = WINDS[(i - dealerIdx + 4) % 4];
       const score = scores[i];
+      const isRiichi = declaredRiichi[i];
       return (
-        <div onClick={() => setPlayerDetail(i)} style={{
+        <div style={{
           width: PW, height: PH, padding: "6px 8px", borderRadius: 12,
-          background: isDealer ? t.gdS : t.card,
-          border: `2px solid ${isDealer ? t.gd : t.bd}`,
-          textAlign: "center", boxSizing: "border-box", cursor: "pointer",
-          display: "flex", flexDirection: "column", justifyContent: "center",
+          background: isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
+          border: `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
+          textAlign: "center", boxSizing: "border-box",
+          display: "flex", flexDirection: "column", justifyContent: "center", gap: 2,
         }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: isDealer ? t.gd : t.dm }}>{seatWind}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
-              {players[i]}
-            </span>
+          <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: isDealer ? t.gd : t.dm }}>{seatWind}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 95 }}>
+                {players[i]}
+              </span>
+            </div>
+            <div style={{
+              fontSize: 25, fontWeight: 900, lineHeight: 1.1,
+              color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
+            }}>{score.toLocaleString()}</div>
           </div>
-          <div style={{
-            fontSize: 26, fontWeight: 900, lineHeight: 1.15,
-            color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
-          }}>{score.toLocaleString()}</div>
+          {/* リーチボタン */}
+          <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
+            width: "100%", padding: "3px 0", borderRadius: 7, cursor: "pointer",
+            border: `1px solid ${isRiichi ? t.rd : t.bd}`,
+            background: isRiichi ? t.rd : "transparent",
+            color: isRiichi ? "#fff" : t.dm,
+            fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
+          }}>
+            {isRiichi ? "🔴 リーチ中 (取消)" : "リーチ"}
+          </button>
         </div>
       );
     };
@@ -3452,12 +3481,21 @@ function MahjongScorer() {
           const sw = WINDS[(i - dealerIdx + 4) % 4];
           const isD = i === dealerIdx;
           return (
-            <div key={i} onClick={() => setPlayerDetail(i)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, marginBottom: 4, border: isD ? `1px solid ${t.gd}55` : "1px solid transparent", background: isD ? t.gdS : "transparent", cursor: "pointer" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: 10, marginBottom: 4,
+              border: declaredRiichi[i] ? `1px solid ${t.rd}` : isD ? `1px solid ${t.gd}55` : "1px solid transparent",
+              background: declaredRiichi[i] ? "rgba(220,60,60,0.12)" : isD ? t.gdS : "transparent" }}>
+              <div onClick={() => setPlayerDetail(i)} style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, cursor: "pointer" }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: isD ? t.gd : t.dm }}>{sw}</span>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{p}</span>
               </div>
-              <span style={{ fontSize: 17, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: scores[i] < 0 ? t.rd : t.tx }}>{scores[i].toLocaleString()}</span>
+              <button onClick={() => toggleDeclaredRiichi(i)} style={{
+                padding: "5px 10px", marginRight: 10, borderRadius: 7, cursor: "pointer",
+                border: `1px solid ${declaredRiichi[i] ? t.rd : t.bd}`,
+                background: declaredRiichi[i] ? t.rd : "transparent",
+                color: declaredRiichi[i] ? "#fff" : t.dm,
+                fontSize: 10, fontWeight: 800, whiteSpace: "nowrap",
+              }}>{declaredRiichi[i] ? "🔴 リーチ" : "リーチ"}</button>
+              <span onClick={() => setPlayerDetail(i)} style={{ fontSize: 17, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: scores[i] < 0 ? t.rd : t.tx, cursor: "pointer" }}>{scores[i].toLocaleString()}</span>
             </div>
           );
         })}
@@ -3535,19 +3573,25 @@ function MahjongScorer() {
                 <Back onClick={() => { if (gTsumo) { setGStep(2); setGTsumo(null); } else { setGStep(3); setGLoser(null); } }} />
                 <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>リーチ棒</div>
                 <div style={question}>リーチした人は？</div>
-                <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 12 }}>なければそのまま「次へ」</div>
+                <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 12 }}>
+                  {declaredRiichi.some(Boolean) ? "宣言済みの人は自動で反映されます" : "なければそのまま「次へ」"}
+                </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
                   {players.map((p, i) => {
-                    const isR = gRiichi[i];
+                    const already = declaredRiichi[i];
+                    const isR = already || gRiichi[i];
                     return (
-                      <button key={i} style={{
+                      <button key={i} disabled={already} style={{
                         padding: "12px 8px", border: `2px solid ${isR ? t.gd : t.bd}`, borderRadius: 12,
                         background: isR ? t.gdS : "transparent", color: isR ? t.gd : t.tx,
-                        fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center", transition: "all 0.12s",
-                      }} onClick={() => { const n = [...gRiichi]; n[i] = !n[i]; setGRiichi(n); }}>
+                        fontSize: 14, fontWeight: 700, cursor: already ? "default" : "pointer", textAlign: "center",
+                        opacity: already ? 0.85 : 1,
+                      }} onClick={() => { if (already) return; const n = [...gRiichi]; n[i] = !n[i]; setGRiichi(n); }}>
                         <div style={{ fontSize: 11, color: isR ? t.gd : t.dm, marginBottom: 2 }}>{WINDS[(i - dealerIdx + 4) % 4]}</div>
                         <div>{p}</div>
-                        <div style={{ fontSize: 11, marginTop: 4 }}>{isR ? "🔴 リーチ" : "—"}</div>
+                        <div style={{ fontSize: 10, marginTop: 4 }}>
+                          {already ? "🔒 宣言済み" : gRiichi[i] ? "🔴 リーチ" : "—"}
+                        </div>
                       </button>
                     );
                   })}
