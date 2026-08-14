@@ -1019,7 +1019,7 @@ function MahjongScorer() {
 
     return (
       <div>
-        <div style={{ fontSize: 15, fontWeight: 800, textAlign: "center", marginBottom: 4 }}>役を選んで翻数を計算</div>
+        <div style={{ fontSize: 14, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>役を選んで翻数を計算</div>
         {gWinner !== null && declaredRiichi[gWinner] && (
           <div style={{ fontSize: 11, color: t.rd, textAlign: "center", marginBottom: 8, fontWeight: 700 }}>
             🔴 リーチ宣言済みのため自動でチェック済み
@@ -1027,64 +1027,60 @@ function MahjongScorer() {
         )}
 
         {/* 門前/鳴き（切替可能） */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
           <button onClick={() => setPickerNaki(false)} style={{
-            flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer",
-            border: `2px solid ${!pickerNaki ? t.ac : t.bd}`,
+            flex: 1, padding: "7px", borderRadius: 8, cursor: "pointer",
+            border: `1.5px solid ${!pickerNaki ? t.ac : t.bd}`,
             background: !pickerNaki ? t.acS : "transparent",
-            color: !pickerNaki ? t.ac : t.dm, fontSize: 13, fontWeight: 700,
+            color: !pickerNaki ? t.ac : t.dm, fontSize: 12, fontWeight: 700,
           }}>門前</button>
           <button onClick={() => setPickerNaki(true)} style={{
-            flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer",
-            border: `2px solid ${pickerNaki ? t.gn : t.bd}`,
+            flex: 1, padding: "7px", borderRadius: 8, cursor: "pointer",
+            border: `1.5px solid ${pickerNaki ? t.gn : t.bd}`,
             background: pickerNaki ? t.gnS : "transparent",
-            color: pickerNaki ? t.gn : t.dm, fontSize: 13, fontWeight: 700,
+            color: pickerNaki ? t.gn : t.dm, fontSize: 12, fontWeight: 700,
           }}>鳴きあり</button>
         </div>
 
-        {/* 合計 */}
-        <div style={{
-          background: total >= 13 ? t.gdS : t.acS, borderRadius: 12, padding: "12px",
-          textAlign: "center", marginBottom: 12, border: `1px solid ${total >= 13 ? t.gd : t.ac}44`,
-        }}>
-          <div style={{ fontSize: 11, color: t.dm }}>合計</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: total >= 13 ? t.gd : t.ac, lineHeight: 1.1 }}>
-            {total >= 13 ? "役満" : `${total}翻`}
-          </div>
-          {pickedYaku.length > 0 && (
-            <div style={{ fontSize: 10, color: t.dm, marginTop: 4 }}>
-              {pickedYaku.length}役{pickerDora > 0 ? ` + ドラ${pickerDora}` : ""}
+        {/* 合計 + ドラ（横並び） */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          {/* 合計 */}
+          <div style={{
+            flex: "0 0 40%", background: total >= 13 ? t.gdS : t.acS, borderRadius: 10,
+            padding: "8px 6px", textAlign: "center",
+            border: `1px solid ${total >= 13 ? t.gd : t.ac}44`,
+            display: "flex", flexDirection: "column", justifyContent: "center",
+          }}>
+            <div style={{ fontSize: 10, color: t.dm, lineHeight: 1 }}>合計</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: total >= 13 ? t.gd : t.ac, lineHeight: 1.15 }}>
+              {total >= 13 ? "役満" : `${total}翻`}
             </div>
-          )}
-        </div>
-
-        {/* ドラ */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          background: t.sf, borderRadius: 12, padding: "14px 14px", marginBottom: 14,
-          border: `1px solid ${pickerDora > 0 ? t.gd + "55" : t.bd}`,
-        }}>
-          <div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: t.tx }}>ドラ</div>
-            <div style={{ fontSize: 10, color: t.dm }}>赤ドラ・裏ドラも含む</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <button onClick={() => setPickerDora(d => Math.max(0, d - 1))} style={{
-              width: 48, height: 48, borderRadius: 12, border: `1.5px solid ${pickerDora > 0 ? t.gd : t.bd}`,
-              background: t.card, color: pickerDora > 0 ? t.gd : t.dm, fontSize: 26, fontWeight: 700,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
-            }}>−</button>
-            <span style={{ fontSize: 30, fontWeight: 900, width: 36, textAlign: "center", color: pickerDora > 0 ? t.gd : t.dm }}>{pickerDora}</span>
-            <button onClick={() => setPickerDora(d => d + 1)} style={{
-              width: 48, height: 48, borderRadius: 12, border: `1.5px solid ${t.gd}`,
-              background: t.gdS, color: t.gd, fontSize: 26, fontWeight: 700,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
-            }}>+</button>
+          {/* ドラ */}
+          <div style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: t.sf, borderRadius: 10, padding: "6px 8px",
+            border: `1px solid ${pickerDora > 0 ? t.gd + "55" : t.bd}`,
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: t.tx }}>ドラ</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button onClick={() => setPickerDora(d => Math.max(0, d - 1))} style={{
+                width: 38, height: 38, borderRadius: 9, border: `1.5px solid ${pickerDora > 0 ? t.gd : t.bd}`,
+                background: t.card, color: pickerDora > 0 ? t.gd : t.dm, fontSize: 22, fontWeight: 700,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0,
+              }}>−</button>
+              <span style={{ fontSize: 24, fontWeight: 900, width: 24, textAlign: "center", color: pickerDora > 0 ? t.gd : t.dm }}>{pickerDora}</span>
+              <button onClick={() => setPickerDora(d => d + 1)} style={{
+                width: 38, height: 38, borderRadius: 9, border: `1.5px solid ${t.gd}`,
+                background: t.gdS, color: t.gd, fontSize: 22, fontWeight: 700,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0,
+              }}>+</button>
+            </div>
           </div>
         </div>
 
         {/* 役リスト */}
-        <div style={{ maxHeight: 380, overflowY: "auto", marginBottom: 12 }}>
+        <div style={{ maxHeight: 420, overflowY: "auto", marginBottom: 10 }}>
           {CATS.map(cat => {
             const list = YAKU_DATA.filter(y => catOf(y) === cat && (!pickerNaki || y.naki !== null));
             if (!list.length) return null;
