@@ -4055,7 +4055,10 @@ function MahjongScorer() {
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
             padding: 8, textAlign: "center",
-          }}>
+            cursor: diceRolling ? "default" : "pointer",
+          }}
+            onClick={() => { if (!diceRolling && diceSettled) rollDice(); }}
+          >
             {/* サイコロエリア */}
             <div>
               {(diceRolling || diceSettled) && (() => {
@@ -4084,26 +4087,15 @@ function MahjongScorer() {
                   </div>
                 );
               })()}
-              <button onClick={rollDice} disabled={diceRolling} aria-label="サイコロを振る" style={{
-                marginTop: (diceRolling || diceSettled) ? 2 : 0,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                border: "none", background: "transparent", padding: 4,
-                cursor: diceRolling ? "default" : "pointer",
-                opacity: diceRolling ? 0.4 : 1,
-              }}>
-                {(diceRolling || diceSettled) ? (
-                  <span style={{
-                    fontSize: 13, fontWeight: 800, color: "#fff",
-                    padding: "7px 16px", borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)",
-                  }}>🎲 もう一度</span>
-                ) : (
-                  <>
-                    <Die value={diceVals[0]} size={40} />
-                    <Die value={diceVals[1]} size={40} />
-                  </>
-                )}
-              </button>
+              {!(diceRolling || diceSettled) && (
+                <button onClick={rollDice} aria-label="サイコロを振る" style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  border: "none", background: "transparent", padding: 4, cursor: "pointer",
+                }}>
+                  <Die value={diceVals[0]} size={40} />
+                  <Die value={diceVals[1]} size={40} />
+                </button>
+              )}
 
             </div>
           </div>
