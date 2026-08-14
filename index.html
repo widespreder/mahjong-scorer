@@ -1155,6 +1155,8 @@ function MahjongScorer() {
   // Global box-sizing reset
   const globalStyle = `
 *, *::before, *::after { box-sizing: border-box; }
+button { padding: 8px 12px; }
+input, select { padding: 10px 14px; }
 @keyframes wallBlink {
   0%, 100% {
     background: rgba(56,189,248,0.28);
@@ -3814,7 +3816,7 @@ function MahjongScorer() {
   const renderTableMode = () => {
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
     const PW = 166;   // パネルの長辺
-    const PH = 112;   // パネルの短辺
+    const PH = 122;   // パネルの短辺
 
     // サイコロの結果で割る山の持ち主
     const diceSum = diceVals[0] + diceVals[1];
@@ -3829,7 +3831,7 @@ function MahjongScorer() {
       return (
         <div style={{
           width: PW, height: PH,
-          padding: (tmWinStep || tmDrawMode) ? 6 : "8px 10px", borderRadius: 14,
+          padding: (tmWinStep || tmDrawMode) ? 8 : "12px 14px", borderRadius: 14,
           background: (tmWinStep || tmDrawMode) ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
           border: (tmWinStep || tmDrawMode) ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
@@ -3840,7 +3842,7 @@ function MahjongScorer() {
           {tmDrawMode ? (
             /* 流局: テンパイ/ノーテンをトグル */
             <button disabled={isRiichi} onClick={() => { if (isRiichi) return; const n = [...drawTenpai]; n[i] = !n[i]; setDrawTenpai(n); }} style={{
-              width: "100%", height: "100%", borderRadius: 10, cursor: isRiichi ? "default" : "pointer",
+              width: "100%", height: "100%", borderRadius: 10, cursor: isRiichi ? "default" : "pointer", padding: "8px 6px",
               border: `2px solid ${isRiichi ? t.rd : drawTenpai[i] ? t.gn : t.bd}`,
               background: isRiichi ? "rgba(220,60,60,0.14)" : drawTenpai[i] ? t.gnS : t.card,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
@@ -3850,7 +3852,7 @@ function MahjongScorer() {
                 color: isDealer ? "#1a1a1a" : t.tx,
                 background: isDealer ? t.gd : t.sf,
                 border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                borderRadius: 6, padding: "3px 8px",
+                borderRadius: 6, padding: "5px 9px",
               }}>{seatWind}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%" }}>
                 {players[i]}
@@ -3863,7 +3865,7 @@ function MahjongScorer() {
           ) : tmWinStep === "winner" ? (
             /* 和了者を選ぶ */
             <button onClick={() => { setGWinner(i); setTmWinStep("how"); }} style={{
-              width: "100%", height: "100%", borderRadius: 10, cursor: "pointer",
+              width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "8px 6px",
               border: `2px solid ${t.ac}`, background: t.acS,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
             }}>
@@ -3883,7 +3885,7 @@ function MahjongScorer() {
             i === gWinner ? (
               /* 和了者本人 */
               <div style={{
-                width: "100%", height: "100%", borderRadius: 10,
+                width: "100%", height: "100%", borderRadius: 10, padding: "8px 6px",
                 border: `2px solid ${t.gd}`, background: t.gdS,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
               }}>
@@ -3899,7 +3901,7 @@ function MahjongScorer() {
                 setGTsumo(false); setGLoser(i); setTmWinStep(null);
                 setShowGW(true); setGStep(5);
               }} style={{
-                width: "100%", height: "100%", borderRadius: 10, cursor: "pointer",
+                width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "8px 6px",
                 border: `2px solid ${t.rd}`, background: t.rdS,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
               }}>
@@ -3934,7 +3936,7 @@ function MahjongScorer() {
                     color: isDealer ? "#1a1a1a" : t.tx,
                     background: isDealer ? t.gd : t.sf,
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                    borderRadius: 6, padding: "3px 7px", flexShrink: 0,
+                    borderRadius: 6, padding: "5px 9px", flexShrink: 0,
                   }}>{seatWind}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
                     {players[i]}
@@ -3947,7 +3949,7 @@ function MahjongScorer() {
               </div>
               {/* リーチボタン */}
               <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
-                width: "100%", padding: "5px 0", borderRadius: 7, cursor: "pointer", marginTop: 2,
+                width: "100%", padding: "7px 8px", borderRadius: 8, cursor: "pointer", marginTop: 3,
                 border: `1px solid ${isRiichi ? t.rd : t.bd}`,
                 background: isRiichi ? t.rd : "transparent",
                 color: isRiichi ? "#fff" : t.dm,
