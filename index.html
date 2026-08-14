@@ -1046,6 +1046,15 @@ function MahjongScorer() {
   const isReverse = () => quizMode === "reverse";
 
   const [quizInput, setQuizInput] = useState("");
+  const [quizComposing, setQuizComposing] = useState(false);
+
+  // ひらがな以外を除去（カタカナは自動変換、漢字・英数は削除）
+  const toHiraganaOnly = (s) => {
+    if (!s) return "";
+    return s
+      .replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60)) // カタカナ→ひらがな
+      .replace(/[^ぁ-んー]/g, "");  // ひらがな・長音以外を削除
+  };
 
   // ひらがな正規化（濁点・長音・小文字の揺れを吸収）
   const normalizeYomi = (s) => {
@@ -1095,7 +1104,7 @@ function MahjongScorer() {
     setQuizMode(mode);
     setQuizOrder(scored.map(s => s.i));
     setQuizIdx(0);
-    setQuizAnswer(null); setQuizRevealed(false); setQuizInput("");
+    setQuizAnswer(null); setQuizRevealed(false); setQuizInput(""); setQuizComposing(false);
     setQuizScore({ correct: 0, total: 0 }); setQuizFinished(false);
   };
 
@@ -1289,9 +1298,18 @@ function MahjongScorer() {
                   <input
                     type="text"
                     value={quizInput}
-                    onChange={e => setQuizInput(e.target.value)}
+                    onCompositionStart={() => setQuizComposing(true)}
+                    onCompositionEnd={e => {
+                      setQuizComposing(false);
+                      setQuizInput(toHiraganaOnly(e.target.value));
+                    }}
+                    onChange={e => {
+                      // 変換確定前（IME入力中）はそのまま、確定後はひらがなのみに
+                      if (quizComposing) setQuizInput(e.target.value);
+                      else setQuizInput(toHiraganaOnly(e.target.value));
+                    }}
                     onKeyDown={e => {
-                      if (e.key === "Enter" && quizInput.trim()) {
+                      if (e.key === "Enter" && !quizComposing && quizInput.trim()) {
                         const ok = checkYomi(quizInput, yaku);
                         setQuizRevealed(true);
                         setQuizScore(s => ({ correct: s.correct + (ok ? 1 : 0), total: s.total + 1 }));
@@ -1300,12 +1318,18 @@ function MahjongScorer() {
                     }}
                     placeholder="ひらがなで入力"
                     autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                     style={{
                       width: "100%", padding: "14px 16px", fontSize: 18, textAlign: "center",
                       background: t.sf, border: `2px solid ${t.bd}`, borderRadius: 12,
-                      color: t.tx, outline: "none", marginBottom: 10, boxSizing: "border-box",
+                      color: t.tx, outline: "none", marginBottom: 6, boxSizing: "border-box",
                     }}
                   />
+                  <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 10 }}>
+                    ※ひらがなのみ（漢字に変換すると消えます）
+                  </div>
                   <button style={{ ...actionBtn("p"), opacity: quizInput.trim() ? 1 : 0.4 }} disabled={!quizInput.trim()}
                     onClick={() => {
                       const ok = checkYomi(quizInput, yaku);
@@ -1350,18 +1374,18 @@ function MahjongScorer() {
                           if (!masteredYaku.includes(yaku.name)) saveMastered([...masteredYaku, yaku.name]);
                           const nw = { ...wrongYaku }; delete nw[yaku.name]; saveWrong(nw);
                           if (quizIdx + 1 >= total) setQuizFinished(true);
-                          else { setQuizIdx(quizIdx + 1); setQuizInput(""); setQuizRevealed(false); }
+                          else { setQuizIdx(quizIdx + 1); setQuizInput(""); setQuizComposing(false); setQuizRevealed(false); }
                         }}>✓ 覚えた<div style={{ fontSize: 9, opacity: 0.8, fontWeight: 400 }}>今後出題しない</div></button>
                       <button style={{ flex: 1, padding: "12px 8px", borderRadius: 10, cursor: "pointer", border: `2px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 13, fontWeight: 700 }}
                         onClick={() => {
                           saveWrong({ ...wrongYaku, [yaku.name]: (wrongYaku[yaku.name] || 0) + 1 });
                           if (quizIdx + 1 >= total) setQuizFinished(true);
-                          else { setQuizIdx(quizIdx + 1); setQuizInput(""); setQuizRevealed(false); }
+                          else { setQuizIdx(quizIdx + 1); setQuizInput(""); setQuizComposing(false); setQuizRevealed(false); }
                         }}>△ まだ覚えてない<div style={{ fontSize: 9, opacity: 0.7, fontWeight: 400 }}>次回優先で出題</div></button>
                     </div>
                     <button style={actionBtn()} onClick={() => {
                       if (quizIdx + 1 >= total) setQuizFinished(true);
-                      else { setQuizIdx(quizIdx + 1); setQuizInput(""); setQuizRevealed(false); }
+                      else { setQuizIdx(quizIdx + 1); setQuizInput(""); setQuizComposing(false); setQuizRevealed(false); }
                     }}>{quizIdx + 1 >= total ? "結果を見る" : "スキップして次へ"}</button>
                   </div>
                 );
