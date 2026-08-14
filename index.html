@@ -3485,54 +3485,65 @@ function MahjongScorer() {
           <Back onClick={() => setSetupStep(1)} />
           <Dots total={4} cur={2} />
           <div style={question}>プレイヤー名</div>
-          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 6 }}>変更が必要な場合は「変更」をタップ</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 6 }}>名前の欄をタップして選択</div>
           <div style={{ textAlign: "center", marginBottom: 14 }}>
             <button onClick={() => { setView("names"); setNewNameInput(""); setEditNameIdx(null); }} style={{
               background: "none", border: "none", color: t.ac, fontSize: 11, cursor: "pointer", textDecoration: "underline",
             }}>👤 リストの名前を編集</button>
           </div>
-          {players.map((p, i) => (
-            <div key={i} style={{ marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 15, fontWeight: 800, color: i === 0 ? t.gd : t.dm, width: 22 }}>{WINDS[i]}</span>
-                {!playerMode[i] ? (
-                  <>
-                    <div style={{ flex: 1, padding: "10px 14px", background: t.sf, borderRadius: 10, border: `1px solid ${t.bd}`, fontSize: 14, color: t.tx }}>{p}</div>
-                    <button
-                      style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "6px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
-                      onClick={() => { const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm); }}
-                    >変更</button>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                      <select
-                        value={presetNames.includes(p) ? p : ""}
-                        onChange={e => { if (e.target.value) { const np = [...players]; np[i] = e.target.value; setPlayers(np); const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); } }}
-                        style={selectStyle}
-                      >
-                        <option value="">— リストから選択 —</option>
-                        {presetNames.map(n => {
-                          const usedByOther = players.includes(n) && players[i] !== n;
-                          return <option key={n} value={n}>{usedByOther ? `${n}（使用中）` : n}</option>;
-                        })}
-                      </select>
+          {players.map((p, i) => {
+            const isCustom = playerMode[i]; // true = 直接入力モード
+            return (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    fontSize: 18, fontWeight: 900, lineHeight: 1, flexShrink: 0,
+                    color: i === 0 ? "#1a1a1a" : t.tx,
+                    background: i === 0 ? t.gd : t.sf,
+                    border: `1px solid ${i === 0 ? t.gd : t.bd}`,
+                    borderRadius: 6, padding: "5px 8px",
+                  }}>{WINDS[i]}</span>
+
+                  {isCustom ? (
+                    <>
                       <input
-                        style={inputStyle}
-                        placeholder="または直接入力"
-                        value={presetNames.includes(p) ? "" : p}
+                        autoFocus
+                        style={{ ...inputStyle, flex: 1 }}
+                        placeholder="名前を入力"
+                        value={p}
                         onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
                       />
-                    </div>
-                    <button
-                      style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "6px 10px", color: t.ac, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
-                      onClick={() => { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); }}
-                    >決定</button>
-                  </>
-                )}
+                      <button
+                        style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "8px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
+                        onClick={() => { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); }}
+                      >リスト</button>
+                    </>
+                  ) : (
+                    <select
+                      value={presetNames.includes(p) ? p : "__current__"}
+                      onChange={e => {
+                        const v = e.target.value;
+                        if (v === "__custom__") {
+                          const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm);
+                          const np = [...players]; np[i] = ""; setPlayers(np);
+                        } else {
+                          const np = [...players]; np[i] = v; setPlayers(np);
+                        }
+                      }}
+                      style={{ ...selectStyle, flex: 1, fontSize: 15 }}
+                    >
+                      {!presetNames.includes(p) && <option value="__current__">{p}</option>}
+                      {presetNames.map(n => {
+                        const usedByOther = players.includes(n) && players[i] !== n;
+                        return <option key={n} value={n}>{usedByOther ? `${n}（使用中）` : n}</option>;
+                      })}
+                      <option value="__custom__">✏️ 直接入力…</option>
+                    </select>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <div style={{ marginTop: 8 }}>
             <button
               style={{
