@@ -3955,7 +3955,7 @@ function MahjongScorer() {
           }}>
             {/* サイコロエリア */}
             <div>
-              {(diceRolling || diceSettled) ? (
+              {(diceRolling || diceSettled) && (
                 <>
                   <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 10 }}>
                     <Die value={diceVals[0]} size={52} rolling={diceRolling} />
@@ -3968,8 +3968,6 @@ function MahjongScorer() {
                   )}
                   {diceRolling && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>振っています…</div>}
                 </>
-              ) : (
-
               )}
               <button onClick={rollDice} disabled={diceRolling} aria-label="サイコロを振る" style={{
                 width: 62, height: 62, borderRadius: "50%", margin: "6px auto 0",
