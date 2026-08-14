@@ -4121,8 +4121,8 @@ function MahjongScorer() {
           {/* 中央: 局情報 + サイコロ */}
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-            width: 112, height: 112, boxSizing: "border-box",
-            background: "rgba(0,0,0,0.45)", borderRadius: 20,
+            width: 98, height: 98, boxSizing: "border-box",
+            background: "rgba(0,0,0,0.45)", borderRadius: 18,
             border: "1px solid rgba(255,255,255,0.1)",
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
@@ -4179,7 +4179,7 @@ function MahjongScorer() {
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
                 const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
                 return (
-                  <div style={{ position: "relative", width: 88, height: 58, margin: "0 auto" }}>
+                  <div style={{ position: "relative", width: 78, height: 52, margin: "0 auto" }}>
                     <div style={{
                       position: "absolute", top: "50%", left: "50%",
                       transform: `translate(-50%,-50%) rotate(${rot}deg)`,
@@ -4187,11 +4187,11 @@ function MahjongScorer() {
                       textAlign: "center", whiteSpace: "nowrap",
                     }}>
                       <div style={{ display: "flex", gap: 7, justifyContent: "center", marginBottom: 5 }}>
-                        <Die value={diceVals[0]} size={28} rolling={diceRolling} />
-                        <Die value={diceVals[1]} size={28} rolling={diceRolling} />
+                        <Die value={diceVals[0]} size={25} rolling={diceRolling} />
+                        <Die value={diceVals[1]} size={25} rolling={diceRolling} />
                       </div>
                       {diceSettled && (
-                        <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>
+                        <div style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>
                           合計 {diceVals[0] + diceVals[1]}
                         </div>
                       )}
@@ -4202,11 +4202,13 @@ function MahjongScorer() {
               })()}
               {!tmWinStep && !tmDrawMode && !(diceRolling || diceSettled) && (
                 <button onClick={rollDice} aria-label="サイコロを振る" style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  border: "none", background: "transparent", padding: 4, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  border: "none", background: "transparent", padding: 2, cursor: "pointer",
+                  transform: `rotate(${[0, -90, 180, 90][dealerIdx] ?? 0}deg)`,
+                  transition: "transform 0.4s cubic-bezier(.3,1.2,.4,1)",
                 }}>
-                  <Die value={diceVals[0]} size={30} />
-                  <Die value={diceVals[1]} size={30} />
+                  <Die value={diceVals[0]} size={26} />
+                  <Die value={diceVals[1]} size={26} />
                 </button>
               )}
             </div>
@@ -4218,12 +4220,12 @@ function MahjongScorer() {
               return (
                 <div style={{
                   position: "absolute", top: "50%", left: "50%",
-                  transform: `translate(-50%,-50%) rotate(${rot}deg) translateY(42px)`,
+                  transform: `translate(-50%,-50%) rotate(${rot}deg) translateY(36px)`,
                   transition: "transform 0.4s cubic-bezier(.3,1.2,.4,1)",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
                   whiteSpace: "nowrap", lineHeight: 1,
                 }}>
-                  <span style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>
                     {roundWind}{dealerIdx + 1}局
                   </span>
                   {honba > 0 && <span style={{ color: t.gd, fontSize: 12, fontWeight: 800 }}>{honba}本</span>}
