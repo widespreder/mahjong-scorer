@@ -2703,6 +2703,136 @@ function MahjongScorer() {
   const [tableMode, setTableMode] = useState(false);
   const [playerDetail, setPlayerDetail] = useState(null); // タップしたプレイヤーのindex
 
+  // ══════════════════════════════════
+  // ── DICE ROLLER ──
+  // ══════════════════════════════════
+  const [diceOpen, setDiceOpen] = useState(false);
+  const [diceVals, setDiceVals] = useState([1, 1]);
+  const [diceRolling, setDiceRolling] = useState(false);
+  const [diceSettled, setDiceSettled] = useState(false);
+
+  const rollDice = () => {
+    setDiceRolling(true);
+    setDiceSettled(false);
+    let ticks = 0;
+    const timer = setInterval(() => {
+      setDiceVals([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]);
+      ticks++;
+      if (ticks >= 16) {
+        clearInterval(timer);
+        const final = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+        setDiceVals(final);
+        setDiceRolling(false);
+        setDiceSettled(true);
+      }
+    }, 70);
+  };
+
+  // サイコロの目（ピップ配置）
+  const Die = ({ value, size = 68, rolling }) => {
+    // 3x3グリッド上のピップ位置
+    const LAYOUT = {
+      1: [4],
+      2: [0, 8],
+      3: [0, 4, 8],
+      4: [0, 2, 6, 8],
+      5: [0, 2, 4, 6, 8],
+      6: [0, 2, 3, 5, 6, 8],
+    };
+    const pips = LAYOUT[value] || [4];
+    const dot = size * 0.16;
+    return (
+      <div style={{
+        width: size, height: size, borderRadius: size * 0.18,
+        background: "linear-gradient(150deg, #ffffff, #e8e4dc)",
+        border: "1px solid #c9c4b8",
+        boxShadow: rolling
+          ? "0 6px 16px rgba(0,0,0,0.5)"
+          : "0 3px 8px rgba(0,0,0,0.45), inset 0 -2px 4px rgba(0,0,0,0.08)",
+        display: "grid",
+        gridTemplateColumns: "repeat(3,1fr)",
+        gridTemplateRows: "repeat(3,1fr)",
+        padding: size * 0.13,
+        boxSizing: "border-box",
+        transform: rolling ? "rotate(12deg) scale(1.06)" : "rotate(0deg) scale(1)",
+        transition: rolling ? "none" : "transform 0.25s cubic-bezier(.2,1.4,.4,1)",
+      }}>
+        {[...Array(9)].map((_, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {pips.includes(i) && (
+              <div style={{
+                width: dot, height: dot, borderRadius: "50%",
+                background: (value === 1 || value === 4) ? "#c0392b" : "#22262c",
+                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.35)",
+              }} />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const DiceModal = () => {
+    if (!diceOpen) return null;
+    const sum = diceVals[0] + diceVals[1];
+    // 親から反時計回りに 1=親, 2=下家, 3=対面, 4=上家 と数える
+    const targetIdx = (dealerIdx + (sum - 1)) % 4;
+    const relLabel = ["自分（親）の山", "下家（右）の山", "対面の山", "上家（左）の山"][(sum - 1) % 4];
+
+    return (
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        onClick={() => { if (!diceRolling) { setDiceOpen(false); setDiceSettled(false); } }}>
+        <div style={{ width: "100%", maxWidth: 340 }} onClick={e => e.stopPropagation()}>
+          <div style={{
+            background: "linear-gradient(160deg, #16452f, #103526)",
+            borderRadius: 20, border: "3px solid #24583f", padding: "28px 20px", textAlign: "center",
+          }}>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginBottom: 20 }}>
+              {diceRolling ? "振っています…" : diceSettled ? "結果" : "タップして振る"}
+            </div>
+
+            {/* サイコロ */}
+            <div style={{ display: "flex", gap: 16, justifyContent: "center", marginBottom: 20, minHeight: 76 }}>
+              <Die value={diceVals[0]} rolling={diceRolling} />
+              <Die value={diceVals[1]} rolling={diceRolling} />
+            </div>
+
+            {/* 合計 */}
+            <div style={{
+              opacity: diceSettled ? 1 : 0.25,
+              transition: "opacity 0.3s",
+              background: "rgba(0,0,0,0.35)", borderRadius: 14, padding: "14px 12px", marginBottom: 16,
+            }}>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>合計</div>
+              <div style={{ fontSize: 44, fontWeight: 900, color: "#fff", lineHeight: 1.1 }}>{sum}</div>
+              {diceSettled && (
+                <>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: t.gd, marginTop: 6 }}>{relLabel}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>
+                    {players[targetIdx]} の山を右から {sum} つ目で割る
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button style={{
+              width: "100%", padding: "14px", borderRadius: 12, marginBottom: 8,
+              border: "none", background: diceRolling ? "#2a5d4a" : t.ac,
+              color: "#fff", fontSize: 15, fontWeight: 800, cursor: diceRolling ? "default" : "pointer",
+            }} disabled={diceRolling} onClick={rollDice}>
+              {diceRolling ? "🎲 …" : diceSettled ? "🎲 もう一度振る" : "🎲 サイコロを振る"}
+            </button>
+            <button style={{
+              width: "100%", padding: "12px", borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
+              color: "rgba(255,255,255,0.7)", fontSize: 14, cursor: "pointer",
+            }} onClick={() => { if (!diceRolling) { setDiceOpen(false); setDiceSettled(false); } }}>閉じる</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // 指定プレイヤーの点数変動履歴を算出
   const getPlayerHistory = (pi) => {
     const cfg = gameConfig || {};
@@ -3457,10 +3587,15 @@ function MahjongScorer() {
           <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
           <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
         </div>
+        <button style={{ ...actionBtn(), marginTop: 8, fontSize: 14 }}
+          onClick={() => { setDiceOpen(true); setDiceSettled(false); setTimeout(rollDice, 150); }}>
+          🎲 サイコロを振る
+        </button>
         <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
           点数をタップすると変動履歴が見られます
         </div>
         <PlayerHistoryModal />
+        <DiceModal />
       </div>
     );
   };
@@ -3523,7 +3658,7 @@ function MahjongScorer() {
         <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
         <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button style={{ ...actionBtn(), flex: 1, fontSize: 13 }} onClick={() => setTableMode(true)}>
           🀄 卓上モード
         </button>
@@ -3531,7 +3666,12 @@ function MahjongScorer() {
           📤 スコア共有
         </button>
       </div>
+      <button style={{ ...actionBtn(), marginBottom: 14, fontSize: 13 }}
+        onClick={() => { setDiceOpen(true); setDiceSettled(false); setTimeout(rollDice, 150); }}>
+        🎲 サイコロを振る
+      </button>
       {shareUrl && <ShareModal />}
+      <DiceModal />
 
       {/* ── Round Wizard Modal ── */}
       {showGW && (
