@@ -3904,7 +3904,7 @@ function MahjongScorer() {
       const isWallTarget = i === wallTargetIdx;
       return (
         <div style={{
-          width: PW, height: isWallTarget ? PH + 24 : PH,
+          width: PW, height: PH,
           padding: "10px 12px", borderRadius: 14,
           background: isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
           border: `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
@@ -3912,54 +3912,65 @@ function MahjongScorer() {
           display: "flex", flexDirection: "column", justifyContent: "center", gap: 4,
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
-          {/* 局表示（各プレイヤーの向きで読める） */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
-            alignSelf: "center", padding: "3px 12px", borderRadius: 8,
-            background: "rgba(255,255,255,0.09)", border: `1px solid ${t.bd}`,
-          }}>
-            <span style={{ fontSize: 16, fontWeight: 900, color: t.tx, lineHeight: 1.1, letterSpacing: "0.02em" }}>
-              {roundWind}{dealerIdx + 1}局
-            </span>
-            {honba > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.gd }}>{honba}本場</span>}
-            {riichiBets > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.ac }}>供{riichiBets}</span>}
-          </div>
-          {isWallTarget && (
+          {isWallTarget ? (
+            /* 山に選ばれた時は「山を割る」表示のみ */
             <div style={{
-              fontSize: 11, fontWeight: 900, color: "#7dd3fc", letterSpacing: "0.04em",
-              lineHeight: 1.2, animation: "wallLabelBlink 0.9s ease-in-out infinite",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: 6, height: "100%",
+              animation: "wallLabelBlink 0.9s ease-in-out infinite",
             }}>
-              🎲 この山を割る<br />（右から{diceSum}つ目）
+              <div style={{ fontSize: 26 }}>🎲</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: "#7dd3fc", lineHeight: 1.2 }}>
+                この山を割る
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>
+                右から {diceSum} つ目
+              </div>
             </div>
+          ) : (
+            <>
+              {/* 局表示（各プレイヤーの向きで読める） */}
+              <div style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
+                alignSelf: "center", padding: "3px 12px", borderRadius: 8,
+                background: "rgba(255,255,255,0.09)", border: `1px solid ${t.bd}`,
+              }}>
+                <span style={{ fontSize: 16, fontWeight: 900, color: t.tx, lineHeight: 1.1, letterSpacing: "0.02em" }}>
+                  {roundWind}{dealerIdx + 1}局
+                </span>
+                {honba > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.gd }}>{honba}本場</span>}
+                {riichiBets > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.ac }}>供{riichiBets}</span>}
+              </div>
+              <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer", padding: "0 2px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <span style={{
+                    fontSize: 18, fontWeight: 900, lineHeight: 1,
+                    color: isDealer ? "#1a1a1a" : t.tx,
+                    background: isDealer ? t.gd : t.sf,
+                    border: `1px solid ${isDealer ? t.gd : t.bd}`,
+                    borderRadius: 5, padding: "3px 6px", flexShrink: 0,
+                  }}>{seatWind}</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 96 }}>
+                    {players[i]}
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: 25, fontWeight: 900, lineHeight: 1.1,
+                  color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
+                }}>{score.toLocaleString()}</div>
+              </div>
+              {/* リーチボタン */}
+              <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
+                width: "100%", padding: "3px 0", borderRadius: 7, cursor: "pointer",
+                border: `1px solid ${isRiichi ? t.rd : t.bd}`,
+                background: isRiichi ? t.rd : "transparent",
+                color: isRiichi ? "#fff" : t.dm,
+                fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
+              }}>
+                {isRiichi ? "🔴 リーチ中 (取消)" : "リーチ"}
+              </button>
+            </>
           )}
-          <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer", padding: "0 2px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-              <span style={{
-                fontSize: 18, fontWeight: 900, lineHeight: 1,
-                color: isDealer ? "#1a1a1a" : t.tx,
-                background: isDealer ? t.gd : t.sf,
-                border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                borderRadius: 5, padding: "3px 6px", flexShrink: 0,
-              }}>{seatWind}</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 96 }}>
-                {players[i]}
-              </span>
-            </div>
-            <div style={{
-              fontSize: 25, fontWeight: 900, lineHeight: 1.1,
-              color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
-            }}>{score.toLocaleString()}</div>
-          </div>
-          {/* リーチボタン */}
-          <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
-            width: "100%", padding: "3px 0", borderRadius: 7, cursor: "pointer",
-            border: `1px solid ${isRiichi ? t.rd : t.bd}`,
-            background: isRiichi ? t.rd : "transparent",
-            color: isRiichi ? "#fff" : t.dm,
-            fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
-          }}>
-            {isRiichi ? "🔴 リーチ中 (取消)" : "リーチ"}
-          </button>
         </div>
       );
     };
@@ -3975,7 +3986,7 @@ function MahjongScorer() {
 
     // 左右パネル: 回転後の見た目サイズ(PH×PW)のラッパーで場所を確保して重なりを防ぐ
     const vSlot = (i, side, rot) => {
-      const h = i === wallTargetIdx ? PH + 24 : PH;
+      const h = PH;
       return (
         <div key={i} style={{
           position: "absolute", [side]: 6, top: "50%",
