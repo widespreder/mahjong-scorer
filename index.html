@@ -3946,6 +3946,7 @@ function MahjongScorer() {
           border: (tmWinStep || tmDrawMode) ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
           display: "flex", flexDirection: "column", justifyContent: "center", gap: 5,
+          position: "relative",
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
           {tmDrawMode ? (
@@ -4038,17 +4039,15 @@ function MahjongScorer() {
             </div>
           ) : (
             <>
-              {/* 局表示（各プレイヤーの向きで読める） */}
+              {/* 局表示（右下・各プレイヤーの向きで読める） */}
               <div style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
-                alignSelf: "center", padding: "3px 10px", borderRadius: 7, margin: 0,
-                background: "rgba(255,255,255,0.09)", border: `1px solid ${t.bd}`,
+                position: "absolute", right: 7, bottom: 5,
+                display: "flex", alignItems: "center", gap: 4,
+                fontSize: 11, fontWeight: 800, color: t.dm, lineHeight: 1,
               }}>
-                <span style={{ fontSize: 14, fontWeight: 900, color: t.tx, lineHeight: 1.1, letterSpacing: "0.02em" }}>
-                  {roundWind}{dealerIdx + 1}局
-                </span>
-                {honba > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.gd }}>{honba}本場</span>}
-                {riichiBets > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: t.ac }}>供{riichiBets}</span>}
+                <span>{roundWind}{dealerIdx + 1}局</span>
+                {honba > 0 && <span style={{ color: t.gd }}>{honba}本</span>}
+                {riichiBets > 0 && <span style={{ color: t.ac }}>供{riichiBets}</span>}
               </div>
               <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer", padding: "0 2px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -4070,7 +4069,7 @@ function MahjongScorer() {
               </div>
               {/* リーチボタン */}
               <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
-                width: "100%", padding: "5px 0", borderRadius: 7, cursor: "pointer", marginTop: 2,
+                width: "72%", alignSelf: "center", padding: "5px 0", borderRadius: 7, cursor: "pointer", marginTop: 2,
                 border: `1px solid ${isRiichi ? t.rd : t.bd}`,
                 background: isRiichi ? t.rd : "transparent",
                 color: isRiichi ? "#fff" : t.dm,
