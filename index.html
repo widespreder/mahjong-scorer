@@ -3946,7 +3946,13 @@ function MahjongScorer() {
               border: `2px solid ${t.ac}`, background: t.acS,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
             }}>
-              <div style={{ fontSize: 11, color: t.dm }}>{seatWind}</div>
+              <div style={{
+                fontSize: 20, fontWeight: 900, lineHeight: 1,
+                color: isDealer ? "#1a1a1a" : t.tx,
+                background: isDealer ? t.gd : t.sf,
+                border: `1px solid ${isDealer ? t.gd : t.bd}`,
+                borderRadius: 6, padding: "4px 9px",
+              }}>{seatWind}</div>
               <div style={{ fontSize: 19, fontWeight: 900, color: t.ac, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
                 {players[i]}
               </div>
@@ -4015,11 +4021,11 @@ function MahjongScorer() {
               <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer", padding: "0 2px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   <span style={{
-                    fontSize: 18, fontWeight: 900, lineHeight: 1,
+                    fontSize: 22, fontWeight: 900, lineHeight: 1,
                     color: isDealer ? "#1a1a1a" : t.tx,
                     background: isDealer ? t.gd : t.sf,
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                    borderRadius: 5, padding: "3px 6px", flexShrink: 0,
+                    borderRadius: 6, padding: "4px 8px", flexShrink: 0,
                   }}>{seatWind}</span>
                   <span style={{ fontSize: 15, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 96 }}>
                     {players[i]}
@@ -4213,11 +4219,11 @@ function MahjongScorer() {
               background: declaredRiichi[i] ? "rgba(220,60,60,0.12)" : isD ? t.gdS : "transparent" }}>
               <div onClick={() => setPlayerDetail(i)} style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, cursor: "pointer", minWidth: 0 }}>
                 <span style={{
-                  fontSize: 20, fontWeight: 900, lineHeight: 1,
+                  fontSize: 24, fontWeight: 900, lineHeight: 1,
                   color: isD ? "#1a1a1a" : t.tx,
                   background: isD ? t.gd : t.sf,
                   border: `1px solid ${isD ? t.gd : t.bd}`,
-                  borderRadius: 6, padding: "4px 8px", flexShrink: 0,
+                  borderRadius: 7, padding: "5px 10px", flexShrink: 0,
                 }}>{sw}</span>
                 <span style={{ fontSize: 18, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p}</span>
               </div>
