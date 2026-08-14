@@ -2685,6 +2685,124 @@ function MahjongScorer() {
   // ── Score correction ──
   const [editingRoundIdx, setEditingRoundIdx] = useState(null);
   const [tableMode, setTableMode] = useState(false);
+  const [playerDetail, setPlayerDetail] = useState(null); // タップしたプレイヤーのindex
+
+  // 指定プレイヤーの点数変動履歴を算出
+  const getPlayerHistory = (pi) => {
+    const cfg = gameConfig || {};
+    let running = cfg.rules?.startPoints || 30000;
+    const log = [{ label: "開始", delta: null, total: running }];
+
+    rounds.forEach(r => {
+      const before = running;
+      let delta = 0;
+      let desc = "";
+
+      if (r.draw) {
+        const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
+        if (tc > 0 && tc < 4) {
+          const nc = 4 - tc;
+          if (r.tenpai[pi]) { delta = Math.floor(3000 / tc); desc = "流局・テンパイ"; }
+          else { delta = -Math.floor(3000 / nc); desc = "流局・ノーテン"; }
+        } else {
+          desc = tc === 4 ? "流局（全員テンパイ）" : "流局（全員ノーテン）";
+        }
+      } else {
+        const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
+        const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
+        const hb = r.honba * 300;
+        // リーチ棒
+        if (r.riichi && r.riichi[pi]) { delta -= 1000; }
+
+        if (r.winner === pi) {
+          const gain = (r.tsumo && r.winner === r.dealer) ? res.each * 3 : res.total;
+          delta += gain + hb + rc * 1000;
+          desc = `${r.tsumo ? "ツモ" : "ロン"} ${r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}`;
+        } else if (r.tsumo) {
+          if (r.winner === r.dealer) delta -= res.each + Math.floor(hb / 3);
+          else if (pi === r.dealer) delta -= res.fromParent + Math.floor(hb / 3);
+          else delta -= res.fromChild + Math.floor(hb / 3);
+          desc = `${players[r.winner]}のツモ`;
+        } else if (r.loser === pi) {
+          delta -= res.total + hb;
+          desc = `${players[r.winner]}へ放銃`;
+        } else {
+          desc = "—";
+        }
+      }
+      running = before + delta;
+      log.push({
+        label: `${r.wind}${r.dealer + 1}局${r.honba > 0 ? ` ${r.honba}本場` : ""}`,
+        desc, delta, total: running,
+      });
+    });
+    return log;
+  };
+
+  const PlayerHistoryModal = () => {
+    if (playerDetail === null) return null;
+    const pi = playerDetail;
+    const log = getPlayerHistory(pi);
+    const startPt = gameConfig?.rules?.startPoints || 30000;
+    const diff = scores[pi] - startPt;
+    return (
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", zIndex: 150, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 400 }}>
+          <div style={card}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800 }}>{players[pi]}</div>
+                <div style={{ fontSize: 11, color: t.dm }}>点数の変動履歴</div>
+              </div>
+              <button style={{ background: "none", border: "none", color: t.dm, fontSize: 20, cursor: "pointer" }}
+                onClick={() => setPlayerDetail(null)}>✕</button>
+            </div>
+
+            {/* 現在の点数 */}
+            <div style={{ background: t.sf, borderRadius: 12, padding: 14, marginBottom: 12, textAlign: "center" }}>
+              <div style={{ fontSize: 32, fontWeight: 900, color: scores[pi] < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums" }}>
+                {scores[pi].toLocaleString()}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, marginTop: 2, color: diff > 0 ? t.gn : diff < 0 ? t.rd : t.dm }}>
+                {diff > 0 ? "+" : ""}{diff.toLocaleString()}
+              </div>
+            </div>
+
+            {/* 履歴 */}
+            {log.length === 1 ? (
+              <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: t.dm }}>まだ記録がありません</div>
+            ) : (
+              <div>
+                {log.map((row, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "10px 0", borderBottom: i < log.length - 1 ? `1px solid ${t.bd}33` : "none",
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: t.tx }}>{row.label}</div>
+                      {row.desc && row.desc !== "—" && (
+                        <div style={{ fontSize: 10, color: t.dm, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.desc}</div>
+                      )}
+                    </div>
+                    <div style={{ textAlign: "right", marginLeft: 10 }}>
+                      {row.delta !== null && row.delta !== 0 && (
+                        <div style={{ fontSize: 14, fontWeight: 800, color: row.delta > 0 ? t.gn : t.rd, fontVariantNumeric: "tabular-nums" }}>
+                          {row.delta > 0 ? "+" : ""}{row.delta.toLocaleString()}
+                        </div>
+                      )}
+                      {row.delta === 0 && <div style={{ fontSize: 12, color: t.dm }}>±0</div>}
+                      <div style={{ fontSize: 11, color: t.dm, fontVariantNumeric: "tabular-nums" }}>{row.total.toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button style={{ ...actionBtn(), marginTop: 12 }} onClick={() => setPlayerDetail(null)}>閉じる</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const deleteRound = useCallback((idx) => {
     const cfg = gameConfig || {};
@@ -3221,11 +3339,11 @@ function MahjongScorer() {
       const seatWind = WINDS[(i - dealerIdx + 4) % 4];
       const score = scores[i];
       return (
-        <div style={{
+        <div onClick={() => setPlayerDetail(i)} style={{
           width: PW, height: PH, padding: "6px 8px", borderRadius: 12,
           background: isDealer ? t.gdS : t.card,
           border: `2px solid ${isDealer ? t.gd : t.bd}`,
-          textAlign: "center", boxSizing: "border-box",
+          textAlign: "center", boxSizing: "border-box", cursor: "pointer",
           display: "flex", flexDirection: "column", justifyContent: "center",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
@@ -3304,6 +3422,10 @@ function MahjongScorer() {
           <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
           <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
         </div>
+        <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
+          点数をタップすると変動履歴が見られます
+        </div>
+        <PlayerHistoryModal />
       </div>
     );
   };
@@ -3330,7 +3452,7 @@ function MahjongScorer() {
           const sw = WINDS[(i - dealerIdx + 4) % 4];
           const isD = i === dealerIdx;
           return (
-            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, marginBottom: 4, border: isD ? `1px solid ${t.gd}55` : "1px solid transparent", background: isD ? t.gdS : "transparent" }}>
+            <div key={i} onClick={() => setPlayerDetail(i)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, marginBottom: 4, border: isD ? `1px solid ${t.gd}55` : "1px solid transparent", background: isD ? t.gdS : "transparent", cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: isD ? t.gd : t.dm }}>{sw}</span>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{p}</span>
@@ -3340,6 +3462,11 @@ function MahjongScorer() {
           );
         })}
       </div>
+
+      <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 10, marginTop: -8 }}>
+        点数をタップすると変動履歴が見られます
+      </div>
+      <PlayerHistoryModal />
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
