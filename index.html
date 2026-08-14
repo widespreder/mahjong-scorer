@@ -3490,6 +3490,7 @@ function MahjongScorer() {
               setHonba(suspendedGame.honba);
               setRiichiBets(suspendedGame.riichiBets);
               setGameStarted(true); setGameFinished(false);
+              setTableMode(true);
               setView("game");
             }, true)}
 
@@ -3514,10 +3515,11 @@ function MahjongScorer() {
 
         {homeCat === "play" && (
           <>
-            {menuItem("▶", "新しい対局を始める", "対局設定 → スコア管理", () => {
+            {menuItem("▶", "新しい対局を始める", "卓上モードで開始します", () => {
               setView("game"); setGameStarted(false); setGameFinished(false); setSetupStep(0);
               setPlayerMode([false, false, false, false]);
               setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
+              setTableMode(true);
             })}
             {menuItem("📋", "対局履歴", `${gameHistory.length}件の記録`, () => {
               setView("history"); setHistoryDetail(null);
