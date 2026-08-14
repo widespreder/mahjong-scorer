@@ -3627,18 +3627,11 @@ function MahjongScorer() {
                     <Die value={diceVals[0]} size={52} rolling={diceRolling} />
                     <Die value={diceVals[1]} size={52} rolling={diceRolling} />
                   </div>
-                  {diceSettled && (() => {
-                    const sum = diceVals[0] + diceVals[1];
-                    const rel = ["親", "下家", "対面", "上家"][(sum - 1) % 4];
-                    return (
-                      <div style={{ marginBottom: 8 }}>
-                        <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>合計 {sum}</div>
-                        <div style={{ fontSize: 15, fontWeight: 900, color: "#38bdf8", marginTop: 4 }}>
-                          {rel}の山
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  {diceSettled && (
+                    <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 8 }}>
+                      合計 {diceVals[0] + diceVals[1]}
+                    </div>
+                  )}
                   {diceRolling && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>振っています…</div>}
                 </>
               ) : (
