@@ -3372,7 +3372,7 @@ function MahjongScorer() {
                 border: `1px solid ${isDealer ? t.gd : t.bd}`,
                 borderRadius: 5, padding: "3px 6px", flexShrink: 0,
               }}>{seatWind}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 88 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 96 }}>
                 {players[i]}
               </span>
             </div>
@@ -3498,7 +3498,7 @@ function MahjongScorer() {
                   border: `1px solid ${isD ? t.gd : t.bd}`,
                   borderRadius: 6, padding: "4px 8px", flexShrink: 0,
                 }}>{sw}</span>
-                <span style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p}</span>
+                <span style={{ fontSize: 18, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p}</span>
               </div>
               <button onClick={() => toggleDeclaredRiichi(i)} style={{
                 padding: "5px 10px", marginRight: 10, borderRadius: 7, cursor: "pointer",
