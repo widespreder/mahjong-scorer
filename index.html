@@ -3984,20 +3984,32 @@ function MahjongScorer() {
           }}>
             {/* サイコロエリア */}
             <div>
-              {(diceRolling || diceSettled) && (
-                <>
-                  <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 10 }}>
-                    <Die value={diceVals[0]} size={52} rolling={diceRolling} />
-                    <Die value={diceVals[1]} size={52} rolling={diceRolling} />
-                  </div>
-                  {diceSettled && (
-                    <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 8 }}>
-                      合計 {diceVals[0] + diceVals[1]}
+              {(diceRolling || diceSettled) && (() => {
+                // 選ばれた山のプレイヤーの向きに合わせて回転
+                const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
+                const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
+                return (
+                  <div style={{ position: "relative", width: 118, height: 122, margin: "0 auto 6px" }}>
+                    <div style={{
+                      position: "absolute", top: "50%", left: "50%",
+                      transform: `translate(-50%,-50%) rotate(${rot}deg)`,
+                      transition: "transform 0.45s cubic-bezier(.3,1.2,.4,1)",
+                      textAlign: "center", whiteSpace: "nowrap",
+                    }}>
+                      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 8 }}>
+                        <Die value={diceVals[0]} size={50} rolling={diceRolling} />
+                        <Die value={diceVals[1]} size={50} rolling={diceRolling} />
+                      </div>
+                      {diceSettled && (
+                        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>
+                          合計 {diceVals[0] + diceVals[1]}
+                        </div>
+                      )}
+                      {diceRolling && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>振っています…</div>}
                     </div>
-                  )}
-                  {diceRolling && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>振っています…</div>}
-                </>
-              )}
+                  </div>
+                );
+              })()}
               <button onClick={rollDice} disabled={diceRolling} aria-label="サイコロを振る" style={{
                 width: 62, height: 62, borderRadius: "50%", margin: "6px auto 0",
                 display: "flex", alignItems: "center", justifyContent: "center",
