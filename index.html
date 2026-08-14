@@ -178,10 +178,10 @@ function MahjongScorer() {
   // ── 役から翻数を計算するピッカー ──
   const [yakuPickerOpen, setYakuPickerOpen] = useState(false);
   const [pickedYaku, setPickedYaku] = useState([]);
-  const [pickerNaki, setPickerNaki] = useState(false);
+  const [pickerNaki, setPickerNaki] = useState(null);
   const [pickerDora, setPickerDora] = useState(0);
 
-  const resetYakuPicker = () => { setPickedYaku([]); setPickerNaki(false); setPickerDora(0); setYakuPickerOpen(false); };
+  const resetYakuPicker = () => { setPickedYaku([]); setPickerNaki(null); setPickerDora(0); setYakuPickerOpen(false); };
 
   const pickerTotalHan = () => {
     let total = 0;
@@ -964,11 +964,38 @@ function MahjongScorer() {
     const CATS = ["1翻", "2翻", "3翻以上", "役満"];
     const catOf = (y) => y.han >= 13 ? "役満" : y.han >= 3 ? "3翻以上" : `${y.han}翻`;
 
+    // STEP1: 門前か鳴きかを先に確認
+    if (pickerNaki === null) {
+      return (
+        <div>
+          <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>鳴きましたか？</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 20 }}>
+            ポン・チー・明カンをしたかどうか
+          </div>
+          <button onClick={() => setPickerNaki(false)} style={{
+            width: "100%", padding: "18px 12px", marginBottom: 10, borderRadius: 14, cursor: "pointer",
+            border: `2px solid ${t.ac}`, background: t.acS, color: t.ac, textAlign: "center",
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 800 }}>門前（メンゼン）</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 4 }}>鳴いていない</div>
+          </button>
+          <button onClick={() => setPickerNaki(true)} style={{
+            width: "100%", padding: "18px 12px", marginBottom: 16, borderRadius: 14, cursor: "pointer",
+            border: `2px solid ${t.gn}`, background: t.gnS, color: t.gn, textAlign: "center",
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 800 }}>鳴きあり</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 4 }}>ポン・チー・明カンをした</div>
+          </button>
+          <button style={actionBtn()} onClick={onCancel}>キャンセル</button>
+        </div>
+      );
+    }
+
     return (
       <div>
         <div style={{ fontSize: 15, fontWeight: 800, textAlign: "center", marginBottom: 10 }}>役を選んで翻数を計算</div>
 
-        {/* 門前/鳴き */}
+        {/* 門前/鳴き（切替可能） */}
         <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
           <button onClick={() => setPickerNaki(false)} style={{
             flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer",
@@ -1003,18 +1030,24 @@ function MahjongScorer() {
         {/* ドラ */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          background: t.sf, borderRadius: 10, padding: "10px 12px", marginBottom: 12,
+          background: t.sf, borderRadius: 12, padding: "14px 14px", marginBottom: 14,
+          border: `1px solid ${pickerDora > 0 ? t.gd + "55" : t.bd}`,
         }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>ドラ</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: t.tx }}>ドラ</div>
+            <div style={{ fontSize: 10, color: t.dm }}>赤ドラ・裏ドラも含む</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <button onClick={() => setPickerDora(d => Math.max(0, d - 1))} style={{
-              width: 36, height: 36, borderRadius: 9, border: `1px solid ${t.bd}`,
-              background: t.card, color: t.tx, fontSize: 20, cursor: "pointer",
+              width: 48, height: 48, borderRadius: 12, border: `1.5px solid ${pickerDora > 0 ? t.gd : t.bd}`,
+              background: t.card, color: pickerDora > 0 ? t.gd : t.dm, fontSize: 26, fontWeight: 700,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
             }}>−</button>
-            <span style={{ fontSize: 20, fontWeight: 900, width: 26, textAlign: "center", color: pickerDora > 0 ? t.gd : t.dm }}>{pickerDora}</span>
+            <span style={{ fontSize: 30, fontWeight: 900, width: 36, textAlign: "center", color: pickerDora > 0 ? t.gd : t.dm }}>{pickerDora}</span>
             <button onClick={() => setPickerDora(d => d + 1)} style={{
-              width: 36, height: 36, borderRadius: 9, border: `1px solid ${t.gd}`,
-              background: t.gdS, color: t.gd, fontSize: 20, cursor: "pointer",
+              width: 48, height: 48, borderRadius: 12, border: `1.5px solid ${t.gd}`,
+              background: t.gdS, color: t.gd, fontSize: 26, fontWeight: 700,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
             }}>+</button>
           </div>
         </div>
@@ -3557,7 +3590,7 @@ function MahjongScorer() {
               <Dots total={4} cur={2} />
               <div style={question}>翻数は？</div>
               <button style={{ ...actionBtn("p"), marginBottom: 12, background: t.gd, color: "#1a1a1a" }}
-                onClick={() => { setPickedYaku([]); setPickerDora(0); setPickerNaki(false); setYakuPickerOpen(true); }}>
+                onClick={() => { setPickedYaku([]); setPickerDora(0); setPickerNaki(null); setYakuPickerOpen(true); }}>
                 📖 役を選んで計算する
               </button>
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
@@ -4206,7 +4239,7 @@ function MahjongScorer() {
                     <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>翻数</div>
                     <div style={question}>翻数は？</div>
                     <button style={{ ...actionBtn("p"), marginBottom: 12, background: t.gd, color: "#1a1a1a" }}
-                      onClick={() => { setPickedYaku([]); setPickerDora(0); setPickerNaki(false); setYakuPickerOpen(true); }}>
+                      onClick={() => { setPickedYaku([]); setPickerDora(0); setPickerNaki(null); setYakuPickerOpen(true); }}>
                       📖 役を選んで計算する
                     </button>
                     <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
