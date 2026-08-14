@@ -2711,6 +2711,11 @@ function MahjongScorer() {
   const [diceRolling, setDiceRolling] = useState(false);
   const [diceSettled, setDiceSettled] = useState(false);
   const diceClearTimer = React.useRef(null);
+  const [diceHoldSec, setDiceHoldSec] = useState(() => {
+    try { const v = parseInt(localStorage.getItem("mj_dice_hold") || "5", 10); return isNaN(v) ? 5 : v; } catch { return 5; }
+  });
+  const saveDiceHold = (v) => { setDiceHoldSec(v); try { localStorage.setItem("mj_dice_hold", String(v)); } catch {} };
+  const [diceSettingOpen, setDiceSettingOpen] = useState(false);
 
   const rollDice = () => {
     if (diceClearTimer.current) clearTimeout(diceClearTimer.current);
@@ -2726,9 +2731,11 @@ function MahjongScorer() {
         setDiceVals(final);
         setDiceRolling(false);
         setDiceSettled(true);
-        // 5秒後に自動でクリア
+        // 設定した秒数後に自動でクリア（0=ずっと表示）
         if (diceClearTimer.current) clearTimeout(diceClearTimer.current);
-        diceClearTimer.current = setTimeout(() => setDiceSettled(false), 5000);
+        if (diceHoldSec > 0) {
+          diceClearTimer.current = setTimeout(() => setDiceSettled(false), diceHoldSec * 1000);
+        }
       }
     }, 70);
   };
@@ -3633,6 +3640,36 @@ function MahjongScorer() {
                   border: "none", background: "transparent",
                   color: "rgba(255,255,255,0.45)", fontSize: 12, cursor: "pointer",
                 }}>クリア</button>
+              )}
+
+              {/* 表示時間の設定 */}
+              {!diceRolling && (
+                diceSettingOpen ? (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.12)" }}>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", marginBottom: 6 }}>表示時間</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
+                      {[3, 5, 10, 0].map(v => (
+                        <button key={v} onClick={() => saveDiceHold(v)} style={{
+                          padding: "5px 8px", borderRadius: 7, cursor: "pointer",
+                          border: `1px solid ${diceHoldSec === v ? t.ac : "rgba(255,255,255,0.2)"}`,
+                          background: diceHoldSec === v ? t.ac : "transparent",
+                          color: "#fff", fontSize: 11, fontWeight: 700,
+                        }}>{v === 0 ? "ずっと" : `${v}秒`}</button>
+                      ))}
+                    </div>
+                    <button onClick={() => setDiceSettingOpen(false)} style={{
+                      width: "100%", marginTop: 6, padding: "4px 0", borderRadius: 7,
+                      border: "none", background: "transparent",
+                      color: "rgba(255,255,255,0.4)", fontSize: 10, cursor: "pointer",
+                    }}>閉じる</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setDiceSettingOpen(true)} style={{
+                    width: "100%", marginTop: 6, padding: "4px 0", borderRadius: 7,
+                    border: "none", background: "transparent",
+                    color: "rgba(255,255,255,0.35)", fontSize: 10, cursor: "pointer",
+                  }}>⚙ 表示時間: {diceHoldSec === 0 ? "ずっと" : `${diceHoldSec}秒`}</button>
+                )
               )}
             </div>
           </div>
