@@ -3987,6 +3987,40 @@ function MahjongScorer() {
       );
     };
 
+    // 操作ボタン列（上段は対面向きに180度回転）
+    const smallBtn = (v) => ({
+      width: "100%", padding: "10px 0", border: "none", borderRadius: 10,
+      fontSize: 13, fontWeight: 700, cursor: "pointer", boxSizing: "border-box",
+      ...(v === "p" ? { background: t.ac, color: "#fff" } : { background: t.sf, color: t.tx, border: `1px solid ${t.bd}` }),
+    });
+    const actionRow = (flip) => (
+      <div style={{
+        transform: flip ? "rotate(180deg)" : "none",
+        marginBottom: flip ? 8 : 0, marginTop: flip ? 0 : 10,
+      }}>
+        {tmDrawMode ? (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.gn, textAlign: "center", marginBottom: 6 }}>
+              流局 — テンパイの人をタップして「確定」
+            </div>
+            <button style={smallBtn()} onClick={() => { setTmDrawMode(false); setDrawTenpai([false,false,false,false]); }}>キャンセル</button>
+          </>
+        ) : tmWinStep ? (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.ac, textAlign: "center", marginBottom: 6 }}>
+              {tmWinStep === "winner" ? "① 和了者（アガった人）をタップ" : "② ツモ or 放銃者をタップ"}
+            </div>
+            <button style={smallBtn()} onClick={() => { setTmWinStep(null); setGWinner(null); }}>キャンセル</button>
+          </>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setTmWinStep("winner"); }}>アガリ入力</button>
+            <button style={{ ...smallBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
+          </div>
+        )}
+      </div>
+    );
+
     return (
       <div style={{ padding: "8px 8px 20px", boxSizing: "border-box" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "0 6px" }}>
@@ -3995,8 +4029,10 @@ function MahjongScorer() {
             onClick={() => setTableMode(false)}>通常表示に戻す ↩</button>
         </div>
 
+        {actionRow(true)}
+
         <div style={{
-          position: "relative", width: "100%", height: "66vh", minHeight: 420,
+          position: "relative", width: "100%", height: "62vh", minHeight: 400,
           background: "linear-gradient(160deg, #16452f, #103526)",
           borderRadius: 20, border: "3px solid #24583f", overflow: "hidden",
         }}>
@@ -4126,27 +4162,8 @@ function MahjongScorer() {
           </div>
         </div>
 
-        {tmDrawMode ? (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: t.gn, textAlign: "center", marginBottom: 8 }}>
-              流局 — テンパイの人をタップして「確定」
-            </div>
-            <button style={actionBtn()} onClick={() => { setTmDrawMode(false); setDrawTenpai([false,false,false,false]); }}>キャンセル</button>
-          </div>
-        ) : tmWinStep ? (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: t.ac, textAlign: "center", marginBottom: 8 }}>
-              {tmWinStep === "winner" ? "① 和了者（アガった人）をタップ" : "② ツモ or 放銃者をタップ"}
-            </div>
-            <button style={actionBtn()} onClick={() => { setTmWinStep(null); setGWinner(null); }}>キャンセル</button>
-          </div>
-        ) : (
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setTmWinStep("winner"); }}>アガリ入力</button>
-            <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
-          </div>
-        )}
-        <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
+        {actionRow(false)}
+        <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 6 }}>
           点数をタップすると変動履歴が見られます
         </div>
         <PlayerHistoryModal />
