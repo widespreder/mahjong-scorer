@@ -3040,6 +3040,7 @@ function MahjongScorer() {
   const [tableMode, setTableMode] = useState(false);
   const [homeCat, setHomeCat] = useState(null); // null | play | practice | settings
   const [tmWinStep, setTmWinStep] = useState(null); // null | "winner" | "how"
+  const [tmDrawMode, setTmDrawMode] = useState(false); // 卓上モードの流局入力
   const [playerDetail, setPlayerDetail] = useState(null); // タップしたプレイヤーのindex
 
   // ── 登録プレイヤー名リスト ──
@@ -3940,14 +3941,36 @@ function MahjongScorer() {
       return (
         <div style={{
           width: PW, height: PH,
-          padding: tmWinStep ? 6 : "10px 12px", borderRadius: 14,
-          background: tmWinStep ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
-          border: tmWinStep ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
+          padding: (tmWinStep || tmDrawMode) ? 6 : "10px 12px", borderRadius: 14,
+          background: (tmWinStep || tmDrawMode) ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
+          border: (tmWinStep || tmDrawMode) ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
           display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: 2,
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
-          {tmWinStep === "winner" ? (
+          {tmDrawMode ? (
+            /* 流局: テンパイ/ノーテンをトグル */
+            <button onClick={() => { const n = [...drawTenpai]; n[i] = !n[i]; setDrawTenpai(n); }} style={{
+              width: "100%", height: "100%", borderRadius: 10, cursor: "pointer",
+              border: `2px solid ${drawTenpai[i] ? t.gn : t.bd}`,
+              background: drawTenpai[i] ? t.gnS : t.card,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+            }}>
+              <div style={{
+                fontSize: 18, fontWeight: 900, lineHeight: 1,
+                color: isDealer ? "#1a1a1a" : t.tx,
+                background: isDealer ? t.gd : t.sf,
+                border: `1px solid ${isDealer ? t.gd : t.bd}`,
+                borderRadius: 6, padding: "3px 8px",
+              }}>{seatWind}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%" }}>
+                {players[i]}
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: drawTenpai[i] ? t.gn : t.dm }}>
+                {drawTenpai[i] ? "✓ テンパイ" : "ノーテン"}
+              </div>
+            </button>
+          ) : tmWinStep === "winner" ? (
             /* 和了者を選ぶ */
             <button onClick={() => { setGWinner(i); setTmWinStep("how"); }} style={{
               width: "100%", height: "100%", borderRadius: 10, cursor: "pointer",
@@ -4118,6 +4141,24 @@ function MahjongScorer() {
           }}
             onClick={() => { if (!tmWinStep && !diceRolling && diceSettled) rollDice(); }}
           >
+            {tmDrawMode && (() => {
+              const tc = drawTenpai.filter(Boolean).length;
+              return (
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "#fff", lineHeight: 1.35 }}>
+                    テンパイの人<br />をタップ
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
+                    {tc}人テンパイ
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); applyDraw(); setTmDrawMode(false); }} style={{
+                    padding: "9px 16px", borderRadius: 10, cursor: "pointer",
+                    border: `2px solid ${t.ac}`, background: t.ac, color: "#fff",
+                    fontSize: 13, fontWeight: 800,
+                  }}>確定</button>
+                </div>
+              );
+            })()}
             {tmWinStep === "winner" && (
               <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", lineHeight: 1.4 }}>
                 和了者を<br />タップ
@@ -4142,7 +4183,7 @@ function MahjongScorer() {
             )}
             {/* サイコロエリア */}
             <div>
-              {!tmWinStep && (diceRolling || diceSettled) && (() => {
+              {!tmWinStep && !tmDrawMode && (diceRolling || diceSettled) && (() => {
                 // 選ばれた山のプレイヤーの向きに合わせて回転
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
                 const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
@@ -4168,7 +4209,7 @@ function MahjongScorer() {
                   </div>
                 );
               })()}
-              {!tmWinStep && !(diceRolling || diceSettled) && (
+              {!tmWinStep && !tmDrawMode && !(diceRolling || diceSettled) && (
                 <button onClick={rollDice} aria-label="サイコロを振る" style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                   border: "none", background: "transparent", padding: 4, cursor: "pointer",
@@ -4182,7 +4223,14 @@ function MahjongScorer() {
           </div>
         </div>
 
-        {tmWinStep ? (
+        {tmDrawMode ? (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: t.gn, textAlign: "center", marginBottom: 8 }}>
+              流局 — テンパイの人をタップして「確定」
+            </div>
+            <button style={actionBtn()} onClick={() => { setTmDrawMode(false); setDrawTenpai([false,false,false,false]); }}>キャンセル</button>
+          </div>
+        ) : tmWinStep ? (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: t.ac, textAlign: "center", marginBottom: 8 }}>
               {tmWinStep === "winner" ? "① 和了者（アガった人）をタップ" : "② ツモ or 放銃者をタップ"}
@@ -4192,7 +4240,7 @@ function MahjongScorer() {
         ) : (
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setTmWinStep("winner"); }}>アガリ入力</button>
-            <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
+            <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setTmDrawMode(true); }}>流局</button>
           </div>
         )}
         <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
