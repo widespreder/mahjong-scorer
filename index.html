@@ -445,6 +445,9 @@ function MahjongScorer() {
     setRounds([]);
     setGameStarted(true);
     setGameFinished(false);
+    setTableMode(true);   // 卓上モードで開始
+    setTmWinStep(null);
+    setTmDrawMode(false);
   }, [gameDate, matchType, players, rules]);
 
   // ── Theme ──
