@@ -2978,6 +2978,7 @@ function MahjongScorer() {
   // ── Score correction ──
   const [editingRoundIdx, setEditingRoundIdx] = useState(null);
   const [tableMode, setTableMode] = useState(false);
+  const [homeCat, setHomeCat] = useState(null); // null | play | practice | settings
   const [playerDetail, setPlayerDetail] = useState(null); // タップしたプレイヤーのindex
 
   // ── 登録プレイヤー名リスト ──
@@ -3380,105 +3381,115 @@ function MahjongScorer() {
         onClick={onClick}
         style={{
           width: "100%", display: "flex", alignItems: "center", gap: 14,
-          padding: "16px 18px", background: highlight ? t.gdS : t.card, border: `1px solid ${highlight ? t.gd + "55" : t.bd}`,
+          padding: "16px 18px", background: highlight ? t.gdS : t.card,
+          border: `1px solid ${highlight ? t.gd + "55" : t.bd}`,
           borderRadius: 14, cursor: "pointer", marginBottom: 10, textAlign: "left",
-          transition: "all 0.12s",
         }}
       >
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: highlight ? t.gdS : t.acS, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
-          {icon}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: highlight ? t.gd : t.tx }}>{label}</div>
-          <div style={{ fontSize: 12, color: t.dm, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>
-        </div>
+        <span style={{
+          fontSize: 22, width: 44, height: 44, borderRadius: 12,
+          background: highlight ? t.gd + "22" : t.acS,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>{icon}</span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 16, fontWeight: 700, color: t.tx }}>{label}</span>
+          {sub && <span style={{ display: "block", fontSize: 12, color: t.dm, marginTop: 2 }}>{sub}</span>}
+        </span>
+        <span style={{ color: t.dm, fontSize: 18 }}>›</span>
       </button>
     );
 
+    // ── トップ: 3カテゴリ ──
+    if (homeCat === null) {
+      return (
+        <div style={body}>
+          <div style={{ textAlign: "center", padding: "20px 0 22px" }}>
+            <h1 style={{ fontSize: 22, fontWeight: 900, margin: "0 0 4px" }}>🀄 麻雀スコアラー</h1>
+            <p style={{ fontSize: 13, color: t.dm, margin: 0 }}>かんたん点数計算 & 対局管理</p>
+          </div>
+
+          {suspendedGame && menuItem("⏸", "保留中の対局を再開",
+            `${suspendedGame.config.date} ${suspendedGame.config.matchType === "tonpu" ? "東風" : "半荘"} — ${suspendedGame.players.join("・")}`,
+            () => {
+              setGameConfig(suspendedGame.config);
+              setPlayers(suspendedGame.players);
+              setScores(suspendedGame.scores);
+              setRounds(suspendedGame.rounds);
+              setDealerIdx(suspendedGame.dealerIdx);
+              setRoundWind(suspendedGame.roundWind);
+              setHonba(suspendedGame.honba);
+              setRiichiBets(suspendedGame.riichiBets);
+              setGameStarted(true); setGameFinished(false);
+              setView("game");
+            }, true)}
+
+          {menuItem("▶", "対局", suspendedGame ? "※ 保留中の対局があります" : "対局の開始・履歴・1局計算", () => setHomeCat("play"))}
+          {menuItem("🎓", "練習問題", "点数計算・役・符を学ぶ", () => setHomeCat("practice"))}
+          {menuItem("⚙️", "設定", "プレイヤー名・使い方ガイド", () => setHomeCat("settings"))}
+        </div>
+      );
+    }
+
+    const CATS = {
+      play: { title: "対局", icon: "▶" },
+      practice: { title: "練習問題", icon: "🎓" },
+      settings: { title: "設定", icon: "⚙️" },
+    };
+    const cat = CATS[homeCat];
+
     return (
       <div style={body}>
-        <div style={{ textAlign: "center", padding: "40px 0 28px" }}>
-          <div style={{ fontSize: 56, marginBottom: 10 }}>🀄</div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>麻雀スコアラー</h2>
-          <p style={{ fontSize: 13, color: t.dm, margin: 0 }}>かんたん点数計算 ＆ 対局管理</p>
-        </div>
+        <button style={backBtn} onClick={() => setHomeCat(null)}>← メニュー</button>
+        <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 16 }}>{cat.icon} {cat.title}</div>
 
-        {/* Suspended game - show at top if exists */}
-        {suspendedGame && menuItem("⏸", "保留中の対局を再開", `${suspendedGame.config.date} ${suspendedGame.config.matchType === "tonpu" ? "東風" : "半荘"} — ${suspendedGame.players.join("・")}`, () => {
-          // Restore game state
-          setGameConfig(suspendedGame.config);
-          setPlayers(suspendedGame.players);
-          setScores(suspendedGame.scores);
-          setRounds(suspendedGame.rounds);
-          setDealerIdx(suspendedGame.dealerIdx);
-          setRoundWind(suspendedGame.roundWind);
-          setHonba(suspendedGame.honba);
-          setRiichiBets(suspendedGame.riichiBets);
-          setGameStarted(true);
-          setSuspendedGame(null);
-          setView("game");
-        }, true)}
+        {homeCat === "play" && (
+          <>
+            {menuItem("▶", "新しい対局を始める", "対局設定 → スコア管理", () => {
+              setView("game"); setGameStarted(false); setGameFinished(false); setSetupStep(0);
+              setPlayerMode([false, false, false, false]);
+              setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
+            })}
+            {menuItem("📋", "対局履歴", `${gameHistory.length}件の記録`, () => {
+              setView("history"); setHistoryDetail(null);
+            })}
+            {menuItem("🔢", "1局計算", "翻・符から点数をすぐ計算", () => {
+              setView("calc"); setCalcStep(0); setCTsumo(null); setCParent(null); setCHan(null); setCFu(null); resetFuGuide();
+            })}
+          </>
+        )}
 
-        {menuItem("▶", "対局を始める", suspendedGame ? "※ 保留中の対局があります" : "対局設定 → スコア管理", () => {
-          if (suspendedGame) {
-            if (!window.confirm("保留中の対局があります。破棄して新しい対局を始めますか？")) return;
-            setSuspendedGame(null);
-          }
-          setView("game");
-          setSetupStep(0);
-          setMatchType(null);
-          setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
-          setPlayerMode([false, false, false, false]);
-          setGameStarted(false);
-        })}
+        {homeCat === "practice" && (
+          <>
+            {menuItem("🧮", "点数計算 総合問題", "手牌から翻・符・点数を答える", () => {
+              setView("scoreprob"); setSpPhase("menu");
+            })}
+            {menuItem("🎯", "翻数テスト", "役の翻数クイズ・逆引き", () => {
+              setView("quiz"); setQuizMode(null);
+            })}
+            {menuItem("📐", "符計算講座", "レベル別に符を学ぶ", () => {
+              setView("fucourse"); setFuLessonPhase("menu");
+            })}
+            {menuItem("📖", "役一覧", "全ての役の解説と翻数", () => {
+              setView("dict"); setDictCat("1翻"); setDictExpanded(null);
+            })}
+            {menuItem("📊", "点数早見表", "符×翻のマトリックス表", () => setView("table"))}
+          </>
+        )}
 
-        {menuItem("🎴", "麻雀の始め方", "席決め・配牌を図解で解説", () => {
-          setView("startguide");
-          setGuideStep(0);
-        })}
-
-        {menuItem("👤", "プレイヤー名の登録", `${presetNames.length}人を登録中`, () => {
-          setView("names");
-          setNewNameInput("");
-          setEditNameIdx(null);
-        })}
-
-        {menuItem("📋", "対局履歴", `${gameHistory.length}件の記録`, () => {
-          setView("history");
-        })}
-
-        {menuItem("🔢", "1局計算", "翻・符から点数をすぐ計算", () => {
-          setView("calc");
-          resetCalc();
-        })}
-
-        {menuItem("🎯", "翻数テスト", "役の翻数クイズで腕試し", () => {
-          setView("quiz");
-          setQuizMode(null);
-        })}
-
-        {menuItem("📖", "役一覧", "全ての役の解説と翻数", () => {
-          setView("dict");
-          setDictCat("1翻");
-          setDictExpanded(null);
-        })}
-
-        {menuItem("📐", "符計算講座", "レベル別に符を学ぶ", () => {
-          setView("fucourse");
-          setFuLessonPhase("menu");
-        })}
-
-        {menuItem("📊", "点数早見表", "符×翻のマトリックス表", () => {
-          setView("table");
-        })}
-
-        {menuItem("🧮", "点数計算 総合問題", "手牌から翻・符・点数を答える", () => {
-          setView("scoreprob");
-          setSpPhase("menu");
-        })}
+        {homeCat === "settings" && (
+          <>
+            {menuItem("👤", "プレイヤー名の登録", `${presetNames.length}人を登録中`, () => {
+              setView("names"); setNewNameInput(""); setEditNameIdx(null);
+            })}
+            {menuItem("🎴", "麻雀の始め方", "席決め・配牌を図解で解説", () => {
+              setView("startguide"); setGuideStep(0);
+            })}
+          </>
+        )}
       </div>
     );
   };
+
 
   // ══════════════════════════════════
   // ── CALCULATOR WIZARD ──
