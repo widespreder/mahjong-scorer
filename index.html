@@ -3507,19 +3507,32 @@ function MahjongScorer() {
     const PW = 156;   // パネルの長辺
     const PH = 92;    // パネルの短辺
 
+    // サイコロの結果で割る山の持ち主
+    const diceSum = diceVals[0] + diceVals[1];
+    const wallTargetIdx = diceSettled ? (dealerIdx + (diceSum - 1)) % 4 : -1;
+
     const panelInner = (i) => {
       const isDealer = i === dealerIdx;
       const seatWind = WINDS[(i - dealerIdx + 4) % 4];
       const score = scores[i];
       const isRiichi = declaredRiichi[i];
+      const isWallTarget = i === wallTargetIdx;
       return (
         <div style={{
-          width: PW, height: PH, padding: "6px 8px", borderRadius: 12,
-          background: isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
-          border: `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
+          width: PW, height: isWallTarget ? PH + 18 : PH, padding: "6px 8px", borderRadius: 12,
+          background: isWallTarget ? "rgba(56,189,248,0.22)"
+            : isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
+          border: `${isWallTarget ? 3 : 2}px solid ${isWallTarget ? "#38bdf8" : isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
+          boxShadow: isWallTarget ? "0 0 18px rgba(56,189,248,0.65)" : "none",
           textAlign: "center", boxSizing: "border-box",
           display: "flex", flexDirection: "column", justifyContent: "center", gap: 2,
+          transition: "box-shadow 0.25s, background 0.25s",
         }}>
+          {isWallTarget && (
+            <div style={{ fontSize: 12, fontWeight: 900, color: "#38bdf8", letterSpacing: "0.05em" }}>
+              🎲 この山を割る（右から{diceSum}）
+            </div>
+          )}
           <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
               <span style={{
@@ -3616,19 +3629,12 @@ function MahjongScorer() {
                   </div>
                   {diceSettled && (() => {
                     const sum = diceVals[0] + diceVals[1];
-                    const tIdx = (dealerIdx + (sum - 1)) % 4;
                     const rel = ["親", "下家", "対面", "上家"][(sum - 1) % 4];
                     return (
-                      <div style={{ marginBottom: 10 }}>
-                        <div style={{ fontSize: 19, fontWeight: 900, color: "#fff" }}>合計 {sum}</div>
-                        <div style={{ fontSize: 17, fontWeight: 900, color: t.gd, marginTop: 5, lineHeight: 1.25 }}>
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>合計 {sum}</div>
+                        <div style={{ fontSize: 15, fontWeight: 900, color: "#38bdf8", marginTop: 4 }}>
                           {rel}の山
-                        </div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {players[tIdx]}
-                        </div>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 4, lineHeight: 1.4 }}>
-                          右から{sum}つ目<br />で割る
                         </div>
                       </div>
                     );
