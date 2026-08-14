@@ -3951,7 +3951,7 @@ function MahjongScorer() {
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
             textAlign: "center", background: "rgba(0,0,0,0.45)", borderRadius: 16,
-            padding: "14px 12px", width: 160, boxSizing: "border-box",
+            padding: "12px 10px", width: 130, boxSizing: "border-box",
           }}>
             {/* サイコロエリア */}
             <div>
@@ -3969,19 +3969,17 @@ function MahjongScorer() {
                   {diceRolling && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>振っています…</div>}
                 </>
               ) : (
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 1.5, marginBottom: 8 }}>
-                  {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"}<br />{rounds.length}局終了
-                </div>
+
               )}
-              <button onClick={rollDice} disabled={diceRolling} style={{
-                width: "100%", marginTop: 6, padding: "12px 0", borderRadius: 11,
-                border: `1px solid ${diceRolling ? "rgba(255,255,255,0.2)" : t.ac}`,
-                background: diceRolling ? "rgba(255,255,255,0.08)" : t.ac,
-                color: "#fff", fontSize: 15, fontWeight: 800,
+              <button onClick={rollDice} disabled={diceRolling} aria-label="サイコロを振る" style={{
+                width: 62, height: 62, borderRadius: "50%", margin: "6px auto 0",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: `2px solid ${diceRolling ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.35)"}`,
+                background: diceRolling ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.1)",
+                fontSize: 30, lineHeight: 1, padding: 0,
                 cursor: diceRolling ? "default" : "pointer",
-              }}>
-                {diceRolling ? "🎲 …" : diceSettled ? "🎲 振り直す" : "🎲 サイコロ"}
-              </button>
+                opacity: diceRolling ? 0.5 : 1,
+              }}>🎲</button>
 
             </div>
           </div>
