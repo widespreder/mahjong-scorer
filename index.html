@@ -2710,8 +2710,10 @@ function MahjongScorer() {
   const [diceVals, setDiceVals] = useState([1, 1]);
   const [diceRolling, setDiceRolling] = useState(false);
   const [diceSettled, setDiceSettled] = useState(false);
+  const diceClearTimer = React.useRef(null);
 
   const rollDice = () => {
+    if (diceClearTimer.current) clearTimeout(diceClearTimer.current);
     setDiceRolling(true);
     setDiceSettled(false);
     let ticks = 0;
@@ -2724,6 +2726,9 @@ function MahjongScorer() {
         setDiceVals(final);
         setDiceRolling(false);
         setDiceSettled(true);
+        // 5秒後に自動でクリア
+        if (diceClearTimer.current) clearTimeout(diceClearTimer.current);
+        diceClearTimer.current = setTimeout(() => setDiceSettled(false), 5000);
       }
     }, 70);
   };
@@ -3623,7 +3628,7 @@ function MahjongScorer() {
                 {diceRolling ? "🎲 …" : diceSettled ? "🎲 振り直す" : "🎲 サイコロ"}
               </button>
               {diceSettled && !diceRolling && (
-                <button onClick={() => setDiceSettled(false)} style={{
+                <button onClick={() => { if (diceClearTimer.current) clearTimeout(diceClearTimer.current); setDiceSettled(false); }} style={{
                   width: "100%", marginTop: 6, padding: "6px 0", borderRadius: 8,
                   border: "none", background: "transparent",
                   color: "rgba(255,255,255,0.45)", fontSize: 12, cursor: "pointer",
