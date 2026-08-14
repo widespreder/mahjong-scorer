@@ -1019,7 +1019,12 @@ function MahjongScorer() {
 
     return (
       <div>
-        <div style={{ fontSize: 15, fontWeight: 800, textAlign: "center", marginBottom: 10 }}>役を選んで翻数を計算</div>
+        <div style={{ fontSize: 15, fontWeight: 800, textAlign: "center", marginBottom: 4 }}>役を選んで翻数を計算</div>
+        {gWinner !== null && declaredRiichi[gWinner] && (
+          <div style={{ fontSize: 11, color: t.rd, textAlign: "center", marginBottom: 8, fontWeight: 700 }}>
+            🔴 リーチ宣言済みのため自動でチェック済み
+          </div>
+        )}
 
         {/* 門前/鳴き（切替可能） */}
         <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
@@ -1079,7 +1084,7 @@ function MahjongScorer() {
         </div>
 
         {/* 役リスト */}
-        <div style={{ maxHeight: 300, overflowY: "auto", marginBottom: 12 }}>
+        <div style={{ maxHeight: 380, overflowY: "auto", marginBottom: 12 }}>
           {CATS.map(cat => {
             const list = YAKU_DATA.filter(y => catOf(y) === cat && (!pickerNaki || y.naki !== null));
             if (!list.length) return null;
@@ -4372,7 +4377,7 @@ function MahjongScorer() {
                     <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>翻数</div>
                     <div style={question}>翻数は？</div>
                     <button style={{ ...actionBtn("p"), marginBottom: 12, background: t.gd, color: "#1a1a1a" }}
-                      onClick={() => { setPickedYaku([]); setPickerDora(0); setPickerNaki(null); setYakuPickerOpen(true); }}>
+                      onClick={() => { setPickedYaku(gWinner !== null && declaredRiichi[gWinner] ? ["リーチ（立直）"] : []); setPickerDora(0); setPickerNaki(gWinner !== null && declaredRiichi[gWinner] ? false : null); setYakuPickerOpen(true); }}>
                       📖 役を選んで計算する
                     </button>
                     <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
