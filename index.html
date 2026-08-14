@@ -2715,7 +2715,6 @@ function MahjongScorer() {
     try { const v = parseInt(localStorage.getItem("mj_dice_hold") || "5", 10); return isNaN(v) ? 5 : v; } catch { return 5; }
   });
   const saveDiceHold = (v) => { setDiceHoldSec(v); try { localStorage.setItem("mj_dice_hold", String(v)); } catch {} };
-  const [diceSettingOpen, setDiceSettingOpen] = useState(false);
 
   const rollDice = () => {
     if (diceClearTimer.current) clearTimeout(diceClearTimer.current);
@@ -3393,6 +3392,22 @@ function MahjongScorer() {
             <div style={{ fontSize: 10, color: t.dm, paddingLeft: 2, marginTop: -4, marginBottom: 6 }}>
               ONにすると4翻30符・3翻60符を満貫扱い
             </div>
+
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginTop: 16, marginBottom: 8 }}>サイコロ</div>
+            <div style={{ fontSize: 12, color: t.tx, marginBottom: 8 }}>結果の表示時間</div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+              {[3, 5, 10, 0].map(v => (
+                <button key={v} onClick={() => saveDiceHold(v)} style={{
+                  flex: 1, padding: "10px 4px", borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${diceHoldSec === v ? t.ac : t.bd}`,
+                  background: diceHoldSec === v ? t.acS : "transparent",
+                  color: diceHoldSec === v ? t.ac : t.tx, fontSize: 13, fontWeight: 700,
+                }}>{v === 0 ? "ずっと" : `${v}秒`}</button>
+              ))}
+            </div>
+            <div style={{ fontSize: 10, color: t.dm, paddingLeft: 2, marginBottom: 6 }}>
+              振った後、自動で消えるまでの時間
+            </div>
           </div>
 
           <div style={{ marginTop: 16, marginBottom: 8 }}>
@@ -3642,35 +3657,6 @@ function MahjongScorer() {
                 }}>クリア</button>
               )}
 
-              {/* 表示時間の設定 */}
-              {!diceRolling && (
-                diceSettingOpen ? (
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.12)" }}>
-                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", marginBottom: 6 }}>表示時間</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
-                      {[3, 5, 10, 0].map(v => (
-                        <button key={v} onClick={() => saveDiceHold(v)} style={{
-                          padding: "5px 8px", borderRadius: 7, cursor: "pointer",
-                          border: `1px solid ${diceHoldSec === v ? t.ac : "rgba(255,255,255,0.2)"}`,
-                          background: diceHoldSec === v ? t.ac : "transparent",
-                          color: "#fff", fontSize: 11, fontWeight: 700,
-                        }}>{v === 0 ? "ずっと" : `${v}秒`}</button>
-                      ))}
-                    </div>
-                    <button onClick={() => setDiceSettingOpen(false)} style={{
-                      width: "100%", marginTop: 6, padding: "4px 0", borderRadius: 7,
-                      border: "none", background: "transparent",
-                      color: "rgba(255,255,255,0.4)", fontSize: 10, cursor: "pointer",
-                    }}>閉じる</button>
-                  </div>
-                ) : (
-                  <button onClick={() => setDiceSettingOpen(true)} style={{
-                    width: "100%", marginTop: 6, padding: "4px 0", borderRadius: 7,
-                    border: "none", background: "transparent",
-                    color: "rgba(255,255,255,0.35)", fontSize: 10, cursor: "pointer",
-                  }}>⚙ 表示時間: {diceHoldSec === 0 ? "ずっと" : `${diceHoldSec}秒`}</button>
-                )
-              )}
             </div>
           </div>
         </div>
