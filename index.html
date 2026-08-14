@@ -4111,8 +4111,11 @@ function MahjongScorer() {
             onClick={() => { if (!tmWinStep && !diceRolling && diceSettled) rollDice(); }}
           >
             {tmWinStep === "winner" && (
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", lineHeight: 1.5 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", lineHeight: 1.4 }}>
                 和了者を<br />タップ
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontWeight: 600, marginTop: 3 }}>
+                  (あがった人)
+                </div>
               </div>
             )}
             {tmWinStep === "how" && (
