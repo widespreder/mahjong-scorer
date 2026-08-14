@@ -3812,8 +3812,8 @@ function MahjongScorer() {
   // ══════════════════════════════════
   const renderTableMode = () => {
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
-    const PW = 182;   // パネルの長辺
-    const PH = 126;   // パネルの短辺
+    const PW = 166;   // パネルの長辺
+    const PH = 112;   // パネルの短辺
 
     // サイコロの結果で割る山の持ち主
     const diceSum = diceVals[0] + diceVals[1];
@@ -3929,7 +3929,7 @@ function MahjongScorer() {
               <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer", padding: "0 2px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   <span style={{
-                    fontSize: 19, fontWeight: 900, lineHeight: 1,
+                    fontSize: 17, fontWeight: 900, lineHeight: 1,
                     color: isDealer ? "#1a1a1a" : t.tx,
                     background: isDealer ? t.gd : t.sf,
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
@@ -3940,7 +3940,7 @@ function MahjongScorer() {
                   </span>
                 </div>
                 <div style={{
-                  fontSize: 23, fontWeight: 900, lineHeight: 1.15, marginTop: 1,
+                  fontSize: 21, fontWeight: 900, lineHeight: 1.15, marginTop: 1,
                   color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
                 }}>{score.toLocaleString()}</div>
               </div>
@@ -3974,7 +3974,7 @@ function MahjongScorer() {
       const h = PH;
       return (
         <div key={i} style={{
-          position: "absolute", [side]: 6, top: "50%",
+          position: "absolute", [side]: 12, top: "50%",
           width: h, height: PW,
           transform: "translateY(-50%)",
         }}>
@@ -4000,15 +4000,15 @@ function MahjongScorer() {
           background: "linear-gradient(160deg, #16452f, #103526)",
           borderRadius: 20, border: "3px solid #24583f", overflow: "hidden",
         }}>
-          {hSlot(2, { top: 8, left: "50%" }, 180)}
+          {hSlot(2, { top: 14, left: "50%" }, 180)}
           {vSlot(1, "right", -90)}
           {vSlot(3, "left", 90)}
-          {hSlot(0, { bottom: 8, left: "50%" }, 0)}
+          {hSlot(0, { bottom: 14, left: "50%" }, 0)}
 
           {/* 中央: 局情報 + サイコロ */}
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-            width: tmWinStep === "how" ? 132 : 106, height: tmWinStep === "how" ? 132 : 106, boxSizing: "border-box",
+            width: tmWinStep === "how" ? 118 : 96, height: tmWinStep === "how" ? 118 : 96, boxSizing: "border-box",
             background: "rgba(0,0,0,0.45)", borderRadius: 18, transition: "width 0.25s, height 0.25s",
             border: "1px solid rgba(255,255,255,0.1)",
             display: "flex", flexDirection: "column",
@@ -4056,8 +4056,8 @@ function MahjongScorer() {
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
                 padding: 6, boxSizing: "border-box",
               }}>
-                <div style={{ fontSize: 30 }}>🀄</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: t.gn, letterSpacing: "0.05em" }}>ツモ</div>
+                <div style={{ fontSize: 26 }}>🀄</div>
+                <div style={{ fontSize: 19, fontWeight: 900, color: t.gn, letterSpacing: "0.05em" }}>ツモ</div>
               </button>
             )}
             {/* サイコロエリア */}
@@ -4067,7 +4067,7 @@ function MahjongScorer() {
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
                 const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
                 return (
-                  <div style={{ position: "relative", width: 78, height: 52, margin: "0 auto" }}>
+                  <div style={{ position: "relative", width: 72, height: 48, margin: "0 auto" }}>
                     <div style={{
                       position: "absolute", top: "50%", left: "50%",
                       transform: `translate(-50%,-50%) rotate(${rot}deg)`,
@@ -4075,8 +4075,8 @@ function MahjongScorer() {
                       textAlign: "center", whiteSpace: "nowrap",
                     }}>
                       <div style={{ display: "flex", gap: 7, justifyContent: "center", marginBottom: 5 }}>
-                        <Die value={diceVals[0]} size={25} rolling={diceRolling} />
-                        <Die value={diceVals[1]} size={25} rolling={diceRolling} />
+                        <Die value={diceVals[0]} size={23} rolling={diceRolling} />
+                        <Die value={diceVals[1]} size={23} rolling={diceRolling} />
                       </div>
                       {diceSettled && (
                         <div style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>
@@ -4095,8 +4095,8 @@ function MahjongScorer() {
                   transform: `rotate(${[0, -90, 180, 90][dealerIdx] ?? 0}deg)`,
                   transition: "transform 0.4s cubic-bezier(.3,1.2,.4,1)",
                 }}>
-                  <Die value={diceVals[0]} size={26} />
-                  <Die value={diceVals[1]} size={26} />
+                  <Die value={diceVals[0]} size={24} />
+                  <Die value={diceVals[1]} size={24} />
                 </button>
               )}
             </div>
@@ -4108,12 +4108,12 @@ function MahjongScorer() {
               return (
                 <div style={{
                   position: "absolute", top: "50%", left: "50%",
-                  transform: `translate(-50%,-50%) rotate(${rot}deg) translateY(38px)`,
+                  transform: `translate(-50%,-50%) rotate(${rot}deg) translateY(34px)`,
                   transition: "transform 0.4s cubic-bezier(.3,1.2,.4,1)",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
                   whiteSpace: "nowrap", lineHeight: 1,
                 }}>
-                  <span style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>
+                  <span style={{ fontSize: 13, fontWeight: 900, color: "#fff" }}>
                     {roundWind}{dealerIdx + 1}局
                   </span>
                   {honba > 0 && <span style={{ color: t.gd, fontSize: 12, fontWeight: 800 }}>{honba}本</span>}
