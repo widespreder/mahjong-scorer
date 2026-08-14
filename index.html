@@ -3621,11 +3621,18 @@ function MahjongScorer() {
                 📖 役を選んで計算する
               </button>
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
-                {[1,2,3,4,5,6,7,8,9,10,11,13].map(h => (
-                  <button key={h} style={numBtn(cHan===h)} onClick={() => { setCHan(h); if(h>=5){setCFu(30);setCalcStep(4);} else setCalcStep(3); }}>{h>=13?"役満":`${h}翻`}</button>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 9 }}>
+                {[1,2,3,4,5,6,7,8,9,10,11,12].map(h => (
+                  <button key={h} style={{ ...numBtn(cHan===h), padding: "20px 0", fontSize: 19 }}
+                    onClick={() => { setCHan(h); if(h>=5){setCFu(30);setCalcStep(4);} else setCalcStep(3); }}>{h}翻</button>
                 ))}
               </div>
+              <button style={{
+                width: "100%", marginTop: 10, padding: "20px 0", borderRadius: 12,
+                border: `2px solid ${cHan === 13 ? t.gd : t.bd}`,
+                background: cHan === 13 ? t.gdS : "transparent",
+                color: cHan === 13 ? t.gd : t.tx, fontSize: 19, fontWeight: 800, cursor: "pointer",
+              }} onClick={() => { setCHan(13); setCFu(30); setCalcStep(4); }}>役満</button>
             </>
           )}
         </div>
@@ -4369,11 +4376,18 @@ function MahjongScorer() {
                       📖 役を選んで計算する
                     </button>
                     <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13].map(h => (
-                        <button key={h} style={numBtn(gHan === h)} onClick={() => { setGHan(h); if (h >= 5) { setGFu(30); setGStep(7); } else setGStep(6); }}>{h >= 13 ? "役満" : `${h}翻`}</button>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 9 }}>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h => (
+                        <button key={h} style={{ ...numBtn(gHan === h), padding: "20px 0", fontSize: 19 }}
+                          onClick={() => { setGHan(h); if (h >= 5) { setGFu(30); setGStep(7); } else setGStep(6); }}>{h}翻</button>
                       ))}
                     </div>
+                    <button style={{
+                      width: "100%", marginTop: 10, padding: "20px 0", borderRadius: 12,
+                      border: `2px solid ${gHan === 13 ? t.gd : t.bd}`,
+                      background: gHan === 13 ? t.gdS : "transparent",
+                      color: gHan === 13 ? t.gd : t.tx, fontSize: 19, fontWeight: 800, cursor: "pointer",
+                    }} onClick={() => { setGHan(13); setGFu(30); setGStep(7); }}>役満</button>
                   </>
                 )}
               </div>
