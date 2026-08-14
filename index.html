@@ -4039,16 +4039,6 @@ function MahjongScorer() {
             </div>
           ) : (
             <>
-              {/* 局表示（右下・各プレイヤーの向きで読める） */}
-              <div style={{
-                position: "absolute", right: 7, bottom: 5,
-                display: "flex", alignItems: "center", gap: 4,
-                fontSize: 11, fontWeight: 800, color: t.dm, lineHeight: 1,
-              }}>
-                <span>{roundWind}{dealerIdx + 1}局</span>
-                {honba > 0 && <span style={{ color: t.gd }}>{honba}本</span>}
-                {riichiBets > 0 && <span style={{ color: t.ac }}>供{riichiBets}</span>}
-              </div>
               <div onClick={() => setPlayerDetail(i)} style={{ cursor: "pointer", padding: "0 2px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   <span style={{
@@ -4069,7 +4059,7 @@ function MahjongScorer() {
               </div>
               {/* リーチボタン */}
               <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
-                width: "72%", alignSelf: "center", padding: "5px 0", borderRadius: 7, cursor: "pointer", marginTop: 2,
+                width: "100%", padding: "5px 0", borderRadius: 7, cursor: "pointer", marginTop: 2,
                 border: `1px solid ${isRiichi ? t.rd : t.bd}`,
                 background: isRiichi ? t.rd : "transparent",
                 color: isRiichi ? "#fff" : t.dm,
@@ -4131,16 +4121,28 @@ function MahjongScorer() {
           {/* 中央: 局情報 + サイコロ */}
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-            width: 104, height: 104, boxSizing: "border-box",
+            width: 112, height: 112, boxSizing: "border-box",
             background: "rgba(0,0,0,0.45)", borderRadius: 20,
             border: "1px solid rgba(255,255,255,0.1)",
             display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            padding: 8, textAlign: "center",
+            alignItems: "center", justifyContent: "space-between",
+            padding: "6px 6px", textAlign: "center",
             cursor: (!tmWinStep && !diceRolling && diceSettled) ? "pointer" : "default",
           }}
             onClick={() => { if (!tmWinStep && !diceRolling && diceSettled) rollDice(); }}
           >
+            {/* 上段: 対面に向けた局表示 */}
+            <div style={{
+              transform: "rotate(180deg)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              fontSize: 12, fontWeight: 900, color: "rgba(255,255,255,0.9)", lineHeight: 1,
+            }}>
+              <span>{roundWind}{dealerIdx + 1}局</span>
+              {honba > 0 && <span style={{ color: t.gd, fontSize: 10 }}>{honba}本</span>}
+              {riichiBets > 0 && <span style={{ color: t.ac, fontSize: 10 }}>供{riichiBets}</span>}
+            </div>
+
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
             {tmDrawMode && (() => {
               const tc = drawTenpai.filter(Boolean).length;
               return (
@@ -4188,7 +4190,7 @@ function MahjongScorer() {
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
                 const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
                 return (
-                  <div style={{ position: "relative", width: 88, height: 62, margin: "0 auto" }}>
+                  <div style={{ position: "relative", width: 88, height: 58, margin: "0 auto" }}>
                     <div style={{
                       position: "absolute", top: "50%", left: "50%",
                       transform: `translate(-50%,-50%) rotate(${rot}deg)`,
@@ -4196,8 +4198,8 @@ function MahjongScorer() {
                       textAlign: "center", whiteSpace: "nowrap",
                     }}>
                       <div style={{ display: "flex", gap: 7, justifyContent: "center", marginBottom: 5 }}>
-                        <Die value={diceVals[0]} size={30} rolling={diceRolling} />
-                        <Die value={diceVals[1]} size={30} rolling={diceRolling} />
+                        <Die value={diceVals[0]} size={28} rolling={diceRolling} />
+                        <Die value={diceVals[1]} size={28} rolling={diceRolling} />
                       </div>
                       {diceSettled && (
                         <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>
@@ -4214,10 +4216,21 @@ function MahjongScorer() {
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                   border: "none", background: "transparent", padding: 4, cursor: "pointer",
                 }}>
-                  <Die value={diceVals[0]} size={34} />
-                  <Die value={diceVals[1]} size={34} />
+                  <Die value={diceVals[0]} size={30} />
+                  <Die value={diceVals[1]} size={30} />
                 </button>
               )}
+            </div>
+
+            {/* 下段: 自分に向けた局表示 */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              fontSize: 12, fontWeight: 900, color: "rgba(255,255,255,0.9)", lineHeight: 1,
+            }}>
+              <span>{roundWind}{dealerIdx + 1}局</span>
+              {honba > 0 && <span style={{ color: t.gd, fontSize: 10 }}>{honba}本</span>}
+              {riichiBets > 0 && <span style={{ color: t.ac, fontSize: 10 }}>供{riichiBets}</span>}
+            </div>
 
             </div>
           </div>
