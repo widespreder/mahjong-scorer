@@ -4023,10 +4023,9 @@ function MahjongScorer() {
 
     return (
       <div style={{ padding: "8px 8px 20px", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "0 6px" }}>
-          <span style={{ fontSize: 11, color: t.dm }}>卓上モード</span>
-          <button style={{ background: "none", border: "none", color: t.ac, fontSize: 12, cursor: "pointer", fontWeight: 700 }}
-            onClick={() => setTableMode(false)}>通常表示に戻す ↩</button>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 4, padding: "0 6px" }}>
+          <button style={{ background: "none", border: "none", color: t.dm, fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+            onClick={() => setTableMode(false)}>通常表示 ↩</button>
         </div>
 
         {actionRow(true)}
@@ -5003,6 +5002,7 @@ function MahjongScorer() {
     <>
       <style>{globalStyle}</style>
       <div style={{ minHeight: "100vh", background: t.bg, color: t.tx, fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',system-ui,sans-serif", maxWidth: 440, margin: "0 auto", overflowX: "hidden", width: "100%" }}>
+        {!(view === "game" && tableMode && gameStarted && !gameFinished) && (
         <div style={{ padding: "12px 14px 10px", borderBottom: `1px solid ${t.bd}`, display: "flex", alignItems: "center", gap: 8 }}>
           {view !== "home" ? (
             <button
@@ -5020,6 +5020,7 @@ function MahjongScorer() {
             onClick={() => setView("home")}>🀄 <span>麻雀スコアラー</span></h1>
           <span style={{ width: 62, flexShrink: 0 }} />
         </div>
+        )}
         {view === "home" && renderHome()}
         {view === "calc" && renderCalc()}
         {view === "game" && renderGame()}
