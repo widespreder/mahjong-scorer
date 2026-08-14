@@ -4213,8 +4213,8 @@ function MahjongScorer() {
               )}
             </div>
 
-            {/* 局表示: 親の方を向いて配置 */}
-            {(() => {
+            {/* 局表示: 親の方を向いて配置（選択モード中は非表示） */}
+            {!tmWinStep && !tmDrawMode && (() => {
               const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
               const rot = ROT[dealerIdx] ?? 0;
               return (
