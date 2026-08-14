@@ -3038,6 +3038,7 @@ function MahjongScorer() {
   const [editingRoundIdx, setEditingRoundIdx] = useState(null);
   const [tableMode, setTableMode] = useState(false);
   const [homeCat, setHomeCat] = useState(null); // null | play | practice | settings
+  const [tmWinStep, setTmWinStep] = useState(null); // null | "winner" | "how"
   const [playerDetail, setPlayerDetail] = useState(null); // タップしたプレイヤーのindex
 
   // ── 登録プレイヤー名リスト ──
@@ -3938,7 +3939,51 @@ function MahjongScorer() {
           display: "flex", flexDirection: "column", justifyContent: "center", gap: 4,
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
-          {isWallTarget ? (
+          {tmWinStep === "winner" ? (
+            /* 和了者を選ぶ */
+            <button onClick={() => { setGWinner(i); setTmWinStep("how"); }} style={{
+              width: "100%", height: "100%", borderRadius: 10, cursor: "pointer",
+              border: `2px solid ${t.ac}`, background: t.acS,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+            }}>
+              <div style={{ fontSize: 11, color: t.dm }}>{seatWind}</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: t.ac, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                {players[i]}
+              </div>
+              <div style={{ fontSize: 10, color: t.dm }}>タップで選択</div>
+            </button>
+          ) : tmWinStep === "how" ? (
+            i === gWinner ? (
+              /* 和了者本人 */
+              <div style={{
+                width: "100%", height: "100%", borderRadius: 10,
+                border: `2px solid ${t.gd}`, background: t.gdS,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+              }}>
+                <div style={{ fontSize: 22 }}>🏆</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: t.gd, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                  {players[i]}
+                </div>
+                <div style={{ fontSize: 10, color: t.dm }}>和了者</div>
+              </div>
+            ) : (
+              /* 放銃者候補 */
+              <button onClick={() => {
+                setGTsumo(false); setGLoser(i); setTmWinStep(null);
+                setShowGW(true); setGStep(5);
+              }} style={{
+                width: "100%", height: "100%", borderRadius: 10, cursor: "pointer",
+                border: `2px solid ${t.rd}`, background: t.rdS,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+              }}>
+                <div style={{ fontSize: 17, fontWeight: 900, color: t.rd }}>ロン</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                  {players[i]}
+                </div>
+                <div style={{ fontSize: 10, color: t.dm }}>から出アガリ</div>
+              </button>
+            )
+          ) : isWallTarget ? (
             /* 山に選ばれた時は「山を割る」表示のみ */
             <div style={{
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -4055,13 +4100,32 @@ function MahjongScorer() {
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
             padding: 8, textAlign: "center",
-            cursor: diceRolling ? "default" : "pointer",
+            cursor: (!tmWinStep && !diceRolling && diceSettled) ? "pointer" : "default",
           }}
-            onClick={() => { if (!diceRolling && diceSettled) rollDice(); }}
+            onClick={() => { if (!tmWinStep && !diceRolling && diceSettled) rollDice(); }}
           >
+            {tmWinStep === "winner" && (
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", lineHeight: 1.5 }}>
+                和了者を<br />タップ
+              </div>
+            )}
+            {tmWinStep === "how" && (
+              <button onClick={(e) => {
+                e.stopPropagation();
+                setGTsumo(true); setGLoser(null); setTmWinStep(null);
+                setShowGW(true); setGStep(5);
+              }} style={{
+                width: "100%", height: "100%", borderRadius: 18, cursor: "pointer",
+                border: `2px solid ${t.gn}`, background: t.gnS,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+              }}>
+                <div style={{ fontSize: 26 }}>🀄</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: t.gn }}>ツモ</div>
+              </button>
+            )}
             {/* サイコロエリア */}
             <div>
-              {(diceRolling || diceSettled) && (() => {
+              {!tmWinStep && (diceRolling || diceSettled) && (() => {
                 // 選ばれた山のプレイヤーの向きに合わせて回転
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
                 const rot = diceSettled && wallTargetIdx >= 0 ? ROT[wallTargetIdx] : 0;
@@ -4087,7 +4151,7 @@ function MahjongScorer() {
                   </div>
                 );
               })()}
-              {!(diceRolling || diceSettled) && (
+              {!tmWinStep && !(diceRolling || diceSettled) && (
                 <button onClick={rollDice} aria-label="サイコロを振る" style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                   border: "none", background: "transparent", padding: 4, cursor: "pointer",
@@ -4101,10 +4165,19 @@ function MahjongScorer() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
-          <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
-        </div>
+        {tmWinStep ? (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: t.ac, textAlign: "center", marginBottom: 8 }}>
+              {tmWinStep === "winner" ? "① 和了者（アガった人）をタップ" : "② ツモ or 放銃者をタップ"}
+            </div>
+            <button style={actionBtn()} onClick={() => { setTmWinStep(null); setGWinner(null); }}>キャンセル</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setTmWinStep("winner"); }}>アガリ入力</button>
+            <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([false,false,false,false]); setShowDrawWiz(true); }}>流局</button>
+          </div>
+        )}
         <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
           点数をタップすると変動履歴が見られます
         </div>
