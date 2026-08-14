@@ -69,38 +69,7 @@ const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 const DEFAULT_PRESET_NAMES = ["つとむ", "ひろこ", "はじめ", "こころ"];
 
 function MahjongScorer() {
-  // ── Shared scoreboard (URL hash) ──
-  const decodeShared = () => {
-    try {
-      const h = window.location.hash;
-      if (!h.startsWith("#s=")) return null;
-      const json = decodeURIComponent(escape(atob(h.slice(3).replace(/-/g, "+").replace(/_/g, "/"))));
-      return JSON.parse(json);
-    } catch { return null; }
-  };
-  const [sharedData] = useState(() => decodeShared());
-  const [view, setView] = useState(() => decodeShared() ? "shared" : "home");
-  const [shareUrl, setShareUrl] = useState(null);
-  const [shareCopied, setShareCopied] = useState(false);
-
-  const makeShareUrl = () => {
-    const payload = {
-      d: gameConfig?.date || "",
-      m: gameConfig?.matchType || "",
-      p: players,
-      s: scores,
-      w: roundWind,
-      k: dealerIdx,
-      h: honba,
-      r: riichiBets,
-      n: rounds.length,
-      t: Date.now(),
-    };
-    const json = JSON.stringify(payload);
-    const b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g, "-").replace(/\//g, "_");
-    const base = window.location.origin + window.location.pathname;
-    return `${base}#s=${b64}`;
-  };
+  const [view, setView] = useState("home");
   const [gameHistory, setGameHistory] = useState([]); // completed games
   const [suspendedGame, setSuspendedGame] = useState(null); // paused game
 
@@ -3353,101 +3322,6 @@ function MahjongScorer() {
     });
     setRounds(newRounds); setScores(newScores); setEditingRoundIdx(null);
   }, [rounds, gameConfig]);
-
-  // ══════════════════════════════════
-  // ── HOME ──
-  // ══════════════════════════════════
-  // ══════════════════════════════════
-  // ── SHARED SCOREBOARD (read-only) ──
-  // ══════════════════════════════════
-  const renderShared = () => {
-    const d = sharedData;
-    if (!d) return <div style={body}><div style={card}>データを読み込めませんでした</div></div>;
-    const sorted = d.p.map((p, i) => ({ name: p, score: d.s[i], idx: i })).sort((a, b) => b.score - a.score);
-    const updated = d.t ? new Date(d.t) : null;
-    return (
-      <div style={body}>
-        <div style={{ textAlign: "center", padding: "12px 0 16px" }}>
-          <div style={{ fontSize: 12, color: t.dm }}>{d.d} / {d.m === "tonpu" ? "東風戦" : "半荘戦"}</div>
-          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>
-            {d.w}{d.k + 1}局
-            {d.h > 0 && <span style={{ fontSize: 14, color: t.gd, marginLeft: 6 }}>{d.h}本場</span>}
-          </div>
-          {d.r > 0 && <div style={{ fontSize: 12, color: t.ac, marginTop: 2 }}>供託 {d.r}本</div>}
-        </div>
-
-        <div style={card}>
-          {sorted.map((s, rank) => {
-            const seatWind = WINDS[(s.idx - d.k + 4) % 4];
-            const isDealer = s.idx === d.k;
-            return (
-              <div key={s.idx} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 14px", borderRadius: 10, marginBottom: 6,
-                background: rank === 0 ? t.gdS : "transparent",
-                border: rank === 0 ? `1px solid ${t.gd}44` : `1px solid ${t.bd}33`,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 16, fontWeight: 900, color: rank === 0 ? t.gd : t.dm, width: 20 }}>{rank + 1}</span>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 700 }}>{s.name}</div>
-                    <div style={{ fontSize: 10, color: isDealer ? t.gd : t.dm }}>{seatWind}{isDealer ? " (親)" : ""}</div>
-                  </div>
-                </div>
-                <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: s.score < 0 ? t.rd : t.tx }}>
-                  {s.score.toLocaleString()}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ textAlign: "center", fontSize: 11, color: t.dm, marginBottom: 14 }}>
-          {d.n}局終了時点
-          {updated && ` / ${updated.getHours()}:${String(updated.getMinutes()).padStart(2, "0")} 更新`}
-        </div>
-
-        <button style={actionBtn()} onClick={() => { window.location.hash = ""; window.location.reload(); }}>
-          自分の対局を始める
-        </button>
-      </div>
-    );
-  };
-
-  const ShareModal = () => (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", zIndex: 150, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto" }}>
-      <div style={{ width: "100%", maxWidth: 400 }}>
-        <div style={card}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <span style={{ fontSize: 16, fontWeight: 800 }}>スコアを共有</span>
-            <button style={{ background: "none", border: "none", color: t.dm, fontSize: 18, cursor: "pointer" }} onClick={() => { setShareUrl(null); setShareCopied(false); }}>✕</button>
-          </div>
-          <div style={{ fontSize: 12, color: t.dm, marginBottom: 14, lineHeight: 1.7 }}>
-            このURLを他のプレイヤーに送ると、現在のスコアを見られます。<br />
-            <span style={{ color: t.gd }}>※点数が変わったら再度共有してください</span>
-          </div>
-          <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12, wordBreak: "break-all", fontSize: 10, color: t.dm, maxHeight: 100, overflowY: "auto" }}>
-            {shareUrl}
-          </div>
-          <button style={{ ...actionBtn("p"), marginBottom: 8 }} onClick={() => {
-            if (navigator.share) {
-              navigator.share({ title: "麻雀スコア", url: shareUrl }).catch(() => {});
-            } else if (navigator.clipboard) {
-              navigator.clipboard.writeText(shareUrl).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); });
-            }
-          }}>
-            {shareCopied ? "✓ コピーしました" : "📤 共有する"}
-          </button>
-          <button style={actionBtn()} onClick={() => {
-            if (navigator.clipboard) {
-              navigator.clipboard.writeText(shareUrl).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); });
-            }
-          }}>{shareCopied ? "✓ コピー済み" : "📋 URLをコピー"}</button>
-        </div>
-      </div>
-    </div>
-  );
-
   const renderHome = () => {
     const menuItem = (icon, label, sub, onClick, highlight) => (
       <button
@@ -4342,15 +4216,11 @@ function MahjongScorer() {
         <button style={{ ...actionBtn(), flex: 1, fontSize: 13 }} onClick={() => setTableMode(true)}>
           🀄 卓上モード
         </button>
-        <button style={{ ...actionBtn(), flex: 1, fontSize: 13 }} onClick={() => { setShareUrl(makeShareUrl()); setShareCopied(false); }}>
-          📤 スコア共有
-        </button>
       </div>
       <button style={{ ...actionBtn(), marginBottom: 14, fontSize: 13 }}
         onClick={() => { setDiceOpen(true); setDiceSettled(false); setTimeout(rollDice, 150); }}>
         🎲 サイコロを振る
       </button>
-      {shareUrl && <ShareModal />}
       <DiceModal />
 
       {/* ── Round Wizard Modal ── */}
@@ -5117,7 +4987,7 @@ function MahjongScorer() {
       <style>{globalStyle}</style>
       <div style={{ minHeight: "100vh", background: t.bg, color: t.tx, fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',system-ui,sans-serif", maxWidth: 440, margin: "0 auto", overflowX: "hidden", width: "100%" }}>
         <div style={{ padding: "12px 14px 10px", borderBottom: `1px solid ${t.bd}`, display: "flex", alignItems: "center", gap: 8 }}>
-          {view !== "home" && view !== "shared" ? (
+          {view !== "home" ? (
             <button
               onClick={() => {
                 // 対局中はホームに戻る前に確認不要（保留機能は別途）
@@ -5133,7 +5003,6 @@ function MahjongScorer() {
             onClick={() => setView("home")}>🀄 <span>麻雀スコアラー</span></h1>
           <span style={{ width: 62, flexShrink: 0 }} />
         </div>
-        {view === "shared" && renderShared()}
         {view === "home" && renderHome()}
         {view === "calc" && renderCalc()}
         {view === "game" && renderGame()}
