@@ -2752,7 +2752,7 @@ input, select { padding: 10px 14px; }
   const [diceSettled, setDiceSettled] = useState(false);
   const diceClearTimer = React.useRef(null);
   const [diceHoldSec, setDiceHoldSec] = useState(() => {
-    try { const v = parseInt(localStorage.getItem("mj_dice_hold") || "5", 10); return isNaN(v) ? 5 : v; } catch { return 5; }
+    try { const v = parseInt(localStorage.getItem("mj_dice_hold") || "5", 10); return (isNaN(v) || v <= 0) ? 5 : v; } catch { return 5; }
   });
   const saveDiceHold = (v) => { setDiceHoldSec(v); try { localStorage.setItem("mj_dice_hold", String(v)); } catch {} };
 
@@ -3149,13 +3149,13 @@ input, select { padding: 10px 14px; }
                 </div>
               </div>
               <div style={{ display: "flex", gap: 6 }}>
-                {[3, 5, 10, 0].map(v => (
+                {[3, 5, 8, 10].map(v => (
                   <button key={v} onClick={() => saveDiceHold(v)} style={{
                     flex: 1, padding: "12px 4px", borderRadius: 10, cursor: "pointer",
                     border: `2px solid ${diceHoldSec === v ? t.ac : t.bd}`,
                     background: diceHoldSec === v ? t.acS : "transparent",
                     color: diceHoldSec === v ? t.ac : t.tx, fontSize: 13, fontWeight: 700,
-                  }}>{v === 0 ? "ずっと" : `${v}秒`}</button>
+                  }}>{v}秒</button>
                 ))}
               </div>
               <div style={{ fontSize: 10, color: t.dm, marginTop: 8 }}>
