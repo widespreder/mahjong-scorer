@@ -4811,7 +4811,7 @@ input, select { padding: 10px 14px; }
     <>
       <style>{globalStyle}</style>
       <div style={{ minHeight: "100vh", background: t.bg, color: t.tx, fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',system-ui,sans-serif", maxWidth: 440, margin: "0 auto", overflowX: "hidden", width: "100%" }}>
-        {!(view === "game" && tableMode && gameStarted && !gameFinished) && (
+        {!(view === "game" && tableMode && gameStarted && !gameFinished) && !(view === "home" && homeCat === null) && (
         <div style={{ padding: "12px 14px 10px", borderBottom: `1px solid ${t.bd}`, display: "flex", alignItems: "center", gap: 8 }}>
           {view !== "home" ? (
             <button
