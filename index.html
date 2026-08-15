@@ -960,7 +960,9 @@ function MahjongScorer() {
   const YakuPicker = ({ onConfirm, onCancel }) => {
     const total = pickerTotalHan();
     const CATS = ["1翻", "2翻", "3翻以上", "役満"];
-    const catOf = (y) => y.han >= 13 ? "役満" : y.han >= 3 ? "3翻以上" : `${y.han}翻`;
+    // 鳴き時は食い下がり後の翻数でグループ分け
+    const effHan = (y) => (pickerNaki ? y.naki : y.han);
+    const catOf = (y) => { const eh = effHan(y); return eh >= 13 ? "役満" : eh >= 3 ? "3翻以上" : `${eh}翻`; };
 
     // STEP1: 門前か鳴きかを先に確認
     if (pickerNaki === null) {
@@ -1093,7 +1095,18 @@ function MahjongScorer() {
                       }}>
                         <div style={{ fontSize: 10, opacity: 0.7, fontWeight: 600 }}>{kana}</div>
                         <div style={{ fontSize: 16, fontWeight: on ? 900 : 700 }}>{main}</div>
-                        <div style={{ fontSize: 10, opacity: 0.75, marginTop: 1, fontWeight: 700 }}>{h >= 13 ? "役満" : `${h}翻`}</div>
+                        <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2, fontWeight: 700 }}>
+                          {pickerNaki && y.naki !== null && y.naki < y.han ? (
+                            <span>
+                              <span style={{ textDecoration: "line-through", opacity: 0.5 }}>{y.han}翻</span>
+                              <span style={{ margin: "0 3px" }}>→</span>
+                              <span style={{ color: t.gn }}>{h}翻</span>
+                            </span>
+                          ) : (h >= 13 ? "役満" : `${h}翻`)}
+                        </div>
+                        {pickerNaki && y.naki !== null && y.naki < y.han && (
+                          <div style={{ fontSize: 8, color: t.gn, opacity: 0.85, marginTop: 1 }}>食い下がり</div>
+                        )}
                       </button>
                     );
                   })}
