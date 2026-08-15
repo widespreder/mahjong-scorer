@@ -140,6 +140,7 @@ function MahjongScorer() {
   const [activeLeagueId, setActiveLeagueId] = useState(null); // 進行中の対局がひもづくリーグ
   const [lgDraft, setLgDraft] = useState(null);        // 作成・編集中のリーグ
   const [lgPick, setLgPick] = useState([]);            // その対局に出る4人
+  const [showUmaHelp, setShowUmaHelp] = useState(false); // ウマ・オカの説明を開く
 
   const curLeague = leagues.find(l => l.id === leagueId) || null;
 
@@ -4398,6 +4399,92 @@ input, select { padding: 10px 14px; }
               {(((d.rules.returnPoints || 0) - (d.rules.startPoints || 0)) * 4 / 1000)}pt
             </span> がトップへ
           </div>
+
+          {/* 解説 */}
+          <button onClick={() => setShowUmaHelp(v => !v)} style={{
+            width: "100%", marginTop: 10, padding: "10px 8px", borderRadius: 9, cursor: "pointer",
+            border: `1px solid ${t.bd}`, background: "transparent", color: t.ac, fontSize: 12, fontWeight: 700,
+          }}>{showUmaHelp ? "▲ 説明を閉じる" : "？ ウマ・オカとは（説明を見る）"}</button>
+
+          {showUmaHelp && (() => {
+            const sp = d.rules.startPoints || 25000;
+            const rp = d.rules.returnPoints || 30000;
+            const oka = (rp - sp) * 4 / 1000;
+            // 持ち点に合わせた例（合計が 持ち点×4 になるようにする）
+            const demo = [15000, 7000, -7000, -15000].map(o => sp + o);
+            const res = calcGamePts(demo, [0, 1, 2, 3], { rules: d.rules, uma: d.uma });
+            return (
+              <div style={{ marginTop: 10, padding: 14, borderRadius: 11, background: t.sf, border: `1px solid ${t.bd}` }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 6 }}>ウマとは</div>
+                <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.95, marginBottom: 12 }}>
+                  順位によってやりとりするポイントです。今の設定「
+                  <span style={{ color: t.ac, fontWeight: 700 }}>
+                    {UMA_PRESETS.find(u => u.key === d.umaKey)?.label}
+                  </span>
+                  」だと、1位が{d.uma[0] >= 0 ? "+" : ""}{d.uma[0]}、2位が{d.uma[1] >= 0 ? "+" : ""}{d.uma[1]}、
+                  3位が{d.uma[2]}、4位が{d.uma[3]}です。合計はゼロなので、場全体のポイントは増減しません。
+                  数字が大きいほど素点より順位の価値が高くなります。
+                </div>
+
+                <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 6 }}>オカとは</div>
+                <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.95, marginBottom: 12 }}>
+                  持ち点より高い点数を基準（返し点）にして精算し、その差額をトップが総取りする仕組みです。
+                  {sp === rp ? (
+                    <> 今は持ち点と返し点が同じ{sp.toLocaleString()}点なので、
+                    <span style={{ color: t.gd, fontWeight: 700 }}>オカは発生しません</span>。
+                    トップの取り分を増やしたい場合は、持ち点を返し点より低くしてください
+                    （例: 持ち点25,000 / 返し点30,000 なら20ptがトップへ）。</>
+                  ) : (
+                    <> 今は1人あたり{((rp - sp) / 1000)}ptぶんを供出し、
+                    合計<span style={{ color: t.gd, fontWeight: 700 }}>{oka}pt</span>がトップに乗ります。
+                    その結果、全員のポイントを足すとちょうどゼロになります。</>
+                  )}
+                </div>
+
+                <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 6 }}>計算の順番</div>
+                <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.95, marginBottom: 12 }}>
+                  ① 素点から返し点を引く<br />
+                  ② 1,000点単位にして五捨六入（500点以下は切り捨て、600点以上は切り上げ）<br />
+                  ③ トップにオカを加える<br />
+                  ④ 順位ごとのウマを加える
+                </div>
+
+                <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 7 }}>
+                  今の設定での例
+                </div>
+                <div style={{ fontSize: 10, color: t.dm, marginBottom: 7 }}>
+                  終局時の素点が {demo.map(x => x.toLocaleString()).join(" / ")} だった場合
+                  （合計 {(sp * 4).toLocaleString()}点）
+                </div>
+                {demo.map((s, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", gap: 8, padding: "6px 0",
+                    borderBottom: `1px solid ${t.bd}44`,
+                  }}>
+                    <span style={{ width: 26, fontSize: 11, fontWeight: 800, color: res[i].rank === 1 ? t.gd : t.dm }}>
+                      {res[i].rank}位
+                    </span>
+                    <span style={{ flex: 1, fontSize: 12, color: t.dm, fontVariantNumeric: "tabular-nums" }}>
+                      {s.toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: 10, color: t.dm }}>
+                      {(s - rp) / 1000 >= 0 ? "+" : ""}{(s - rp) / 1000}
+                      {res[i].rank === 1 && oka !== 0 ? ` +${oka}` : ""}
+                      {" "}{d.uma[res[i].rank - 1] >= 0 ? "+" : ""}{d.uma[res[i].rank - 1]}
+                    </span>
+                    <span style={{
+                      width: 48, textAlign: "right", fontSize: 14, fontWeight: 900, fontVariantNumeric: "tabular-nums",
+                      color: res[i].pt > 0 ? t.gn : res[i].pt < 0 ? t.rd : t.tx,
+                    }}>{res[i].pt > 0 ? "+" : ""}{res[i].pt}</span>
+                  </div>
+                ))}
+                <div style={{ fontSize: 10, color: t.dm, marginTop: 8, lineHeight: 1.7 }}>
+                  合計 {res.reduce((a2, r) => a2 + r.pt, 0)}pt。設定を変えるとこの例も変わります。
+                  同点のときは起家に近い席を上位として扱います。
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* 対局ルール */}
