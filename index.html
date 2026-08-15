@@ -2634,6 +2634,7 @@ input, select { padding: 10px 14px; }
       if (fu === 20 && !tableTsumo) return "—";   // 20符は平和ツモのみ（ロンは30符）
       if (fu === 20 && han === 1) return "—";     // 平和1翻+ツモ1翻=最低2翻
       if (fu === 25 && han === 1) return "—";     // 七対子は2翻から
+      if (fu === 25 && han === 2 && tableTsumo) return "—"; // 七対子2翻+門前ツモ1翻=最低3翻
       const r = calcScore(fu, han, tableParent, tableTsumo, tableKiriage);
       if (tableTsumo) {
         if (tableParent) return `${r.each.toLocaleString()}∀`;
@@ -2747,7 +2748,7 @@ input, select { padding: 10px 14px; }
             <div>・<span style={{ color: t.gd }}>金色のセル</span> = 満貫扱い（切り上げ満貫ON時）</div>
             <div>・「—」= その組み合わせが存在しない</div>
             <div>・20符 = 平和ツモのみ（ロンは30符、最低2翻）</div>
-            <div>・25符 = 七対子のみ（2翻から）</div>
+            <div>・25符 = 七対子のみ（ロンは2翻から、ツモは3翻から）</div>
             <div>・切り上げ満貫ONで4翻30符・3翻60符が満貫に</div>
           </div>
         </div>
