@@ -83,7 +83,7 @@ function MahjongScorer() {
   const [matchType, setMatchType] = useState(null); // "tonpu" | "hanchan"
   const [players, setPlayers] = useState(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
   const [playerMode, setPlayerMode] = useState([false, false, false, false]); // false=text display, true=editing
-  const [rules, setRules] = useState({
+  const FACTORY_RULES = {
     tenpaiRenchan: false,   // テンパイ連荘
     agariRenchan: true,     // あがり連荘のみ
     kuitan: true,           // 食いタン
@@ -91,7 +91,19 @@ function MahjongScorer() {
     kiriage: false,         // 切り上げ満貫（4翻30符・3翻60符を満貫扱い）
     startPoints: 30000,     // 持ち点
     returnPoints: 30000,    // 返し点
-  });
+  };
+  const loadDefaultRules = () => {
+    try {
+      const v = JSON.parse(localStorage.getItem("mj_default_rules") || "null");
+      return v ? { ...FACTORY_RULES, ...v } : { ...FACTORY_RULES };
+    } catch { return { ...FACTORY_RULES }; }
+  };
+  const [defaultRules, setDefaultRules] = useState(loadDefaultRules);
+  const saveDefaultRules = (r) => {
+    setDefaultRules(r);
+    try { localStorage.setItem("mj_default_rules", JSON.stringify(r)); } catch {}
+  };
+  const [rules, setRules] = useState(loadDefaultRules);
 
   // ── Game state ──
   const [gameConfig, setGameConfig] = useState(null); // saved config after setup
@@ -3135,6 +3147,62 @@ input, select { padding: 10px 14px; }
             {menuItem("🎴", "麻雀の始め方", "席決め・配牌を図解で解説", () => {
               setView("startguide"); setGuideStep(0);
             })}
+
+            {/* ルールのデフォルト */}
+            <div style={{ ...card, padding: 16, marginTop: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <span style={{
+                  fontSize: 20, width: 40, height: 40, borderRadius: 11, background: t.acS,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>📏</span>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: t.tx }}>ルールの初期値</div>
+                  <div style={{ fontSize: 11, color: t.dm }}>新しい対局を始める時の初期設定</div>
+                </div>
+              </div>
+
+              {[
+                ["tenpaiRenchan", "テンパイ連荘"],
+                ["agariRenchan", "あがり連荘のみ"],
+                ["kuitan", "食いタンあり"],
+                ["atozuke", "後付けあり"],
+                ["kiriage", "切り上げ満貫"],
+              ].map(([key, label]) => (
+                <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
+                  <span style={{ fontSize: 14, color: t.tx }}>{label}</span>
+                  <button onClick={() => saveDefaultRules({ ...defaultRules, [key]: !defaultRules[key] })} style={{
+                    width: 48, height: 28, borderRadius: 14, border: "none", padding: 0, cursor: "pointer",
+                    background: defaultRules[key] ? t.ac : t.bd, position: "relative", transition: "background 0.15s",
+                  }}>
+                    <span style={{
+                      position: "absolute", top: 3, left: defaultRules[key] ? 23 : 3,
+                      width: 22, height: 22, borderRadius: "50%", background: "#fff",
+                      transition: "left 0.15s",
+                    }} />
+                  </button>
+                </div>
+              ))}
+
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
+                  <select value={defaultRules.startPoints} style={selectStyle}
+                    onChange={e => saveDefaultRules({ ...defaultRules, startPoints: parseInt(e.target.value, 10) })}>
+                    {[20000, 25000, 27000, 30000, 35000].map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
+                  <select value={defaultRules.returnPoints} style={selectStyle}
+                    onChange={e => saveDefaultRules({ ...defaultRules, returnPoints: parseInt(e.target.value, 10) })}>
+                    {[20000, 25000, 27000, 30000, 35000].map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <button style={{ ...actionBtn(), marginTop: 14, fontSize: 12, color: t.dm }}
+                onClick={() => saveDefaultRules({ ...FACTORY_RULES })}>初期状態に戻す</button>
+            </div>
 
             {/* サイコロ設定 */}
             <div style={{ ...card, padding: 16, marginTop: 4 }}>
