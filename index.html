@@ -1812,7 +1812,7 @@ input, select { padding: 10px 14px; }
         <div style={body}>
           <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>🎯</div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>役の翻数テスト</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>飜数・役名テスト</h2>
             <p style={{ fontSize: 13, color: t.dm }}>間違えた役から優先的に出題されます</p>
           </div>
 
@@ -1861,7 +1861,7 @@ input, select { padding: 10px 14px; }
                 <button style={{ ...actionBtn(), marginBottom: 10 }} onClick={() => startQuiz("both")}>ランダム（門前 or 鳴き）</button>
                 <div style={{ height: 1, background: t.bd, margin: "12px 0" }} />
                 <button style={{ ...actionBtn("p"), marginBottom: 10, background: t.gd, color: "#1a1a1a" }} onClick={() => startQuiz("reverse")}>
-                  🔄 逆引き（説明→役名を入力）
+                  ✍️ 役名テスト（説明→役名を入力）
                 </button>
               </>
             )}
@@ -1926,7 +1926,7 @@ input, select { padding: 10px 14px; }
           {isReverse() ? (
             <>
               <div style={{ fontSize: 12, color: t.gd, fontWeight: 700, textAlign: "center", marginBottom: 10 }}>
-                🔄 逆引き問題
+                ✍️ 役名テスト
               </div>
               <div style={{ background: t.sf, borderRadius: 10, padding: 16, marginBottom: 12 }}>
                 <div style={{ fontSize: 15, color: t.tx, lineHeight: 1.8, textAlign: "center" }}>{yaku.desc}</div>
@@ -3757,7 +3757,7 @@ input, select { padding: 10px 14px; }
 
         {homeCat === "practice" && (
           <>
-            {menuItem("🎯", "翻数テスト", "役の翻数クイズ・逆引き", () => {
+            {menuItem("🎯", "飜数・役名テスト", "役の飜数クイズ・役名テスト", () => {
               setView("quiz"); setQuizMode(null);
             })}
             {menuItem("🔢", "点数問題集", "4翻以下の点数を当てる（選択・入力）", () => {
