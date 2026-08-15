@@ -140,6 +140,16 @@ function MahjongScorer() {
     try { localStorage.setItem("mj_default_rules", JSON.stringify(r)); } catch {}
   };
   const [rules, setRules] = useState(loadDefaultRules);
+  // 設定画面の「ルールの初期値」は下書き → 確定ボタンで保存
+  const [draftRules, setDraftRules] = useState(loadDefaultRules);
+  const [rulesSaved, setRulesSaved] = useState(false);
+  const rulesDirty = JSON.stringify(draftRules) !== JSON.stringify(defaultRules);
+  const editDraft = (patch) => { setDraftRules(d => ({ ...d, ...patch })); setRulesSaved(false); };
+  const commitDraftRules = () => {
+    saveDefaultRules({ ...draftRules });
+    setRulesSaved(true);
+    setTimeout(() => setRulesSaved(false), 2500);
+  };
 
   // ── Game state ──
   const [gameConfig, setGameConfig] = useState(null); // saved config after setup
@@ -3268,7 +3278,9 @@ input, select { padding: 10px 14px; }
           {menuItem("🎴", "麻雀の始め方", "席決め・配牌を図解で解説", () => {
             setView("startguide"); setGuideStep(0);
           })}
-          {menuItem("⚙️", "設定", "プレイヤー名・ルールの初期値", () => setHomeCat("settings"))}
+          {menuItem("⚙️", "設定", "プレイヤー名・ルールの初期値", () => {
+            setDraftRules({ ...defaultRules }); setRulesSaved(false); setHomeCat("settings");
+          })}
         </div>
       );
     }
@@ -3341,11 +3353,10 @@ input, select { padding: 10px 14px; }
                 { key: "tenpai", label: "テンパイ連荘", desc: "親がテンパイなら続行" },
                 { key: "always", label: "無条件連荘",   desc: "流局しても親は続行" },
               ].map(o => {
-                const cur = defaultRules.agariRenchan ? "agari" : defaultRules.tenpaiRenchan ? "tenpai" : "always";
+                const cur = draftRules.agariRenchan ? "agari" : draftRules.tenpaiRenchan ? "tenpai" : "always";
                 const on = cur === o.key;
                 return (
-                  <button key={o.key} onClick={() => saveDefaultRules({
-                    ...defaultRules,
+                  <button key={o.key} onClick={() => editDraft({
                     agariRenchan: o.key === "agari",
                     tenpaiRenchan: o.key === "tenpai",
                   })} style={{
@@ -3378,12 +3389,12 @@ input, select { padding: 10px 14px; }
                 <div key={key} style={{ padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: 14, color: t.tx }}>{label}</span>
-                    <button onClick={() => saveDefaultRules({ ...defaultRules, [key]: !defaultRules[key] })} style={{
+                    <button onClick={() => editDraft({ [key]: !draftRules[key] })} style={{
                       width: 48, height: 28, borderRadius: 14, border: "none", padding: 0, cursor: "pointer",
-                      background: defaultRules[key] ? t.ac : t.bd, position: "relative", transition: "background 0.15s", flexShrink: 0,
+                      background: draftRules[key] ? t.ac : t.bd, position: "relative", transition: "background 0.15s", flexShrink: 0,
                     }}>
                       <span style={{
-                        position: "absolute", top: 3, left: defaultRules[key] ? 23 : 3,
+                        position: "absolute", top: 3, left: draftRules[key] ? 23 : 3,
                         width: 22, height: 22, borderRadius: "50%", background: "#fff",
                         transition: "left 0.15s",
                       }} />
@@ -3396,22 +3407,42 @@ input, select { padding: 10px 14px; }
               <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
-                  <select value={defaultRules.startPoints} style={selectStyle}
-                    onChange={e => saveDefaultRules({ ...defaultRules, startPoints: parseInt(e.target.value, 10) })}>
+                  <select value={draftRules.startPoints} style={selectStyle}
+                    onChange={e => editDraft({ startPoints: parseInt(e.target.value, 10) })}>
                     {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                   </select>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
-                  <select value={defaultRules.returnPoints} style={selectStyle}
-                    onChange={e => saveDefaultRules({ ...defaultRules, returnPoints: parseInt(e.target.value, 10) })}>
+                  <select value={draftRules.returnPoints} style={selectStyle}
+                    onChange={e => editDraft({ returnPoints: parseInt(e.target.value, 10) })}>
                     {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                   </select>
                 </div>
               </div>
 
-              <button style={{ ...actionBtn(), marginTop: 14, fontSize: 12, color: t.dm }}
-                onClick={() => saveDefaultRules({ ...FACTORY_RULES })}>初期状態に戻す</button>
+              {/* 確定 */}
+              <button
+                onClick={commitDraftRules}
+                disabled={!rulesDirty}
+                style={{
+                  width: "100%", marginTop: 16, padding: "14px 8px", borderRadius: 11, border: "none",
+                  background: rulesSaved ? t.gn : rulesDirty ? t.ac : t.bd,
+                  color: rulesDirty || rulesSaved ? "#fff" : t.dm,
+                  fontSize: 15, fontWeight: 800,
+                  cursor: rulesDirty ? "pointer" : "default",
+                  transition: "background 0.2s",
+                }}
+              >{rulesSaved ? "✓ 保存しました" : rulesDirty ? "確定して保存" : "変更はありません"}</button>
+              {rulesDirty && (
+                <button
+                  onClick={() => { setDraftRules({ ...defaultRules }); setRulesSaved(false); }}
+                  style={{ ...actionBtn(), marginTop: 8, fontSize: 12, color: t.dm }}
+                >変更を取り消す</button>
+              )}
+
+              <button style={{ ...actionBtn(), marginTop: 8, fontSize: 12, color: t.dm }}
+                onClick={() => { setDraftRules({ ...FACTORY_RULES }); setRulesSaved(false); }}>初期状態に戻す</button>
             </div>
 
             {/* サイコロ設定 */}
