@@ -4000,6 +4000,154 @@ input, select { padding: 10px 14px; }
   // ── 点数問題集（4翻以下） ──
   // ══════════════════════════════════
   const renderScoreQuiz = () => {
+    // ── 計算のしかた（先に読む解説） ──
+    if (sqMode === "lesson") {
+      const stepBox = (no, title, children) => (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+            <span style={{
+              width: 24, height: 24, borderRadius: "50%", background: t.ac, color: "#fff",
+              fontSize: 13, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>{no}</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: t.tx }}>{title}</span>
+          </div>
+          <div style={{ fontSize: 13, color: t.tx, lineHeight: 1.95, paddingLeft: 32 }}>{children}</div>
+        </div>
+      );
+      const formula = (txt, sub) => (
+        <div style={{
+          background: t.sf, border: `1px solid ${t.bd}`, borderRadius: 9,
+          padding: "10px 12px", margin: "7px 0", fontVariantNumeric: "tabular-nums",
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: t.gd }}>{txt}</div>
+          {sub && <div style={{ fontSize: 11, color: t.dm, marginTop: 4, lineHeight: 1.6 }}>{sub}</div>}
+        </div>
+      );
+
+      return (
+        <div style={body}>
+          <button style={backBtn} onClick={() => setSqMode(null)}>← 戻る</button>
+          <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>📘 点数計算のしかた</div>
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 16 }}>
+            4翻以下の点数は、次の3ステップで求められます
+          </div>
+
+          <div style={{ ...card, padding: 18 }}>
+            {stepBox(1, "基本点を出す", (
+              <>
+                符に、翻数で決まる倍率をかけます。翻が1つ増えるごとに2倍になります。
+                {formula("基本点 = 符 × 2 の (2+翻) 乗",
+                  "1翻なら8倍、2翻なら16倍、3翻なら32倍、4翻なら64倍")}
+                <div style={{ color: t.gd, fontWeight: 700 }}>
+                  ただし2,000を超えたら2,000で頭打ち（＝満貫）
+                </div>
+              </>
+            ))}
+
+            {stepBox(2, "誰が誰に払うかで倍率をかける", (
+              <>
+                <div style={{ display: "grid", gap: 6, marginTop: 4 }}>
+                  {[
+                    ["子がロン", "基本点 × 4", "放銃者が全額"],
+                    ["親がロン", "基本点 × 6", "放銃者が全額"],
+                    ["子がツモ", "子は ×1 / 親は ×2", "3人から集める"],
+                    ["親がツモ", "各家 ×2", "3人が同額"],
+                  ].map(([who, f, note]) => (
+                    <div key={who} style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
+                      background: t.sf, border: `1px solid ${t.bd}`, borderRadius: 9, padding: "9px 11px",
+                    }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.tx, flexShrink: 0 }}>{who}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: t.ac, textAlign: "right" }}>
+                        {f}
+                        <span style={{ display: "block", fontSize: 10, color: t.dm, fontWeight: 400 }}>{note}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, color: t.dm }}>
+                  親は子の1.5倍、ツモは親から2倍もらう、と覚えると早いです。
+                </div>
+              </>
+            ))}
+
+            {stepBox(3, "100点単位で切り上げる", (
+              <>
+                端数が出たら100点単位に切り上げます。
+                <div style={{ color: t.rd, fontWeight: 700, marginTop: 4 }}>
+                  ここが要注意 — ツモは「1人ぶんずつ」切り上げます
+                </div>
+                <div style={{ fontSize: 12, color: t.dm, marginTop: 4, lineHeight: 1.8 }}>
+                  合計してから切り上げるのではありません。子ツモなら、子の払いと親の払いを別々に切り上げてから合計します。
+                </div>
+              </>
+            ))}
+          </div>
+
+          {/* 例題 */}
+          <div style={{ ...card, padding: 18, marginTop: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>例1: 子・ロン・3翻30符</div>
+            <div style={{ fontSize: 13, lineHeight: 2, color: t.tx }}>
+              ① 30 × 2<sup>(2+3)</sup> = 30 × 32 = <b style={{ color: t.gd }}>960</b><br />
+              ② 子のロンなので 960 × 4 = 3,840<br />
+              ③ 100点単位に切り上げて <b style={{ color: t.gn }}>3,900点</b>
+            </div>
+
+            <div style={{ height: 1, background: t.bd, margin: "16px 0" }} />
+
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>例2: 子・ツモ・1翻100符</div>
+            <div style={{ fontSize: 13, lineHeight: 2, color: t.tx }}>
+              ① 100 × 2<sup>(2+1)</sup> = 100 × 8 = <b style={{ color: t.gd }}>800</b><br />
+              ② 子は 800 × 1 = 800 ／ 親は 800 × 2 = 1,600<br />
+              ③ どちらも端数なし → <b style={{ color: t.gn }}>800 / 1,600</b><br />
+              <span style={{ fontSize: 12, color: t.dm }}>合計は 800×2 + 1,600 = 3,200点</span>
+            </div>
+
+            <div style={{ height: 1, background: t.bd, margin: "16px 0" }} />
+
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>例3: 満貫で頭打ちになる形</div>
+            <div style={{ fontSize: 13, lineHeight: 2, color: t.tx }}>
+              子・ロン・4翻40符<br />
+              ① 40 × 2<sup>(2+4)</sup> = 40 × 64 = 2,560<br />
+              　→ 2,000を超えるので <b style={{ color: t.gd }}>2,000で頭打ち</b><br />
+              ② 2,000 × 4 = <b style={{ color: t.gn }}>8,000点（満貫）</b>
+            </div>
+          </div>
+
+          {/* 覚えておくと速い早見 */}
+          <div style={{ ...card, padding: 18, marginTop: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>まず覚えたい4つ</div>
+            <div style={{ fontSize: 11, color: t.dm, marginBottom: 10 }}>
+              この4つを軸に、翻が1つ増えたら2倍、と考えると多くの場面に対応できます
+            </div>
+            {[
+              ["子 30符1翻 ロン", "1,000点"],
+              ["子 30符2翻 ロン", "2,000点"],
+              ["子 30符3翻 ロン", "3,900点"],
+              ["子 30符4翻 ロン", "7,700点"],
+            ].map(([k, v]) => (
+              <div key={k} style={{
+                display: "flex", justifyContent: "space-between",
+                padding: "9px 0", borderBottom: `1px solid ${t.bd}33`,
+              }}>
+                <span style={{ fontSize: 13, color: t.tx }}>{k}</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: t.gd, fontVariantNumeric: "tabular-nums" }}>{v}</span>
+              </div>
+            ))}
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 10, lineHeight: 1.8 }}>
+              親はこの1.5倍（1,500 / 2,900 / 5,800 / 11,600）です。3,900と7,700だけは、切り上げの都合でちょうど2倍になりません。
+            </div>
+          </div>
+
+          <button style={{ ...actionBtn("p"), marginTop: 16 }}
+            onClick={() => { setSqMode("choice"); setSqScore({ ok: 0, total: 0 }); makeScoreQuestion(); }}>
+            選択式で練習する
+          </button>
+          <button style={actionBtn()} onClick={() => setSqMode(null)}>出題方式を選ぶ</button>
+        </div>
+      );
+    }
+
     // モード選択
     if (!sqMode) {
       return (
@@ -4009,6 +4157,18 @@ input, select { padding: 10px 14px; }
           <div style={{ fontSize: 12, color: t.dm, marginBottom: 18 }}>
             4翻以下の点数を、親子・ロンツモの組み合わせで出題します
           </div>
+
+          <button onClick={() => setSqMode("lesson")} style={{
+            width: "100%", padding: "18px", marginBottom: 12, borderRadius: 13, cursor: "pointer",
+            border: `2px solid ${t.gn}`, background: t.gnS, textAlign: "left",
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: t.gn }}>📘 まず計算のしかたを読む</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 3, lineHeight: 1.6 }}>
+              基本点・倍率・切り上げの3ステップを例題つきで解説
+            </div>
+          </button>
+
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, margin: "16px 0 8px" }}>問題を解く</div>
 
           <button onClick={() => { setSqMode("choice"); setSqScore({ ok: 0, total: 0 }); makeScoreQuestion(); }} style={{
             width: "100%", padding: "18px", marginBottom: 12, borderRadius: 13, cursor: "pointer",
@@ -4191,7 +4351,8 @@ input, select { padding: 10px 14px; }
           )}
         </div>
 
-        <button style={{ ...actionBtn(), marginTop: 12 }} onClick={() => setView("home")}>メニューに戻る</button>
+        <button style={{ ...actionBtn(), marginTop: 12 }} onClick={() => setSqMode("lesson")}>📘 計算のしかたを見る</button>
+        <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
       </div>
     );
   };
