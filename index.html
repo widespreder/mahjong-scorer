@@ -116,6 +116,121 @@ function MahjongScorer() {
     }
   };
 
+  // ══════════════════════════════════
+  // ── リーグ戦 ──
+  // ══════════════════════════════════
+  const UMA_PRESETS = [
+    { key: "5-10",  label: "5-10",  uma: [10, 5, -5, -10],   note: "小さめ" },
+    { key: "10-20", label: "10-20", uma: [20, 10, -10, -20], note: "標準" },
+    { key: "10-30", label: "10-30", uma: [30, 10, -10, -30], note: "順位重視" },
+    { key: "20-30", label: "20-30", uma: [30, 20, -20, -30], note: "大きめ" },
+    { key: "none",  label: "なし",  uma: [0, 0, 0, 0],       note: "素点のみ" },
+  ];
+
+  const [leagues, setLeagues] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("mj_leagues") || "[]"); } catch { return []; }
+  });
+  const saveLeagues = (arr) => {
+    setLeagues(arr);
+    try { localStorage.setItem("mj_leagues", JSON.stringify(arr)); } catch {}
+  };
+  const [leagueId, setLeagueId] = useState(null);      // 開いているリーグ
+  const [leagueTab, setLeagueTab] = useState("stand"); // stand | games | info
+  const [activeLeagueId, setActiveLeagueId] = useState(null); // 進行中の対局がひもづくリーグ
+  const [lgDraft, setLgDraft] = useState(null);        // 作成・編集中のリーグ
+  const [lgPick, setLgPick] = useState([]);            // その対局に出る4人
+
+  const curLeague = leagues.find(l => l.id === leagueId) || null;
+
+  // 五捨六入（0.5は切り捨て、0.6から切り上げ）
+  const goshaRokunyu = (v) => {
+    const s = v < 0 ? -1 : 1;
+    const a = Math.abs(v);
+    const f = Math.floor(a);
+    return s * (a - f > 0.5 ? f + 1 : f);
+  };
+
+  // 1半荘ぶんの精算（素点 → pt）
+  const calcGamePts = (scores4, seatOrder, lg) => {
+    const startPt = lg.rules?.startPoints ?? 25000;
+    const returnPt = lg.rules?.returnPoints ?? 30000;
+    const uma = lg.uma || [20, 10, -10, -20];
+    // 同点は起家に近い席（配列の先頭に近い）を上位とする
+    const ranked = scores4
+      .map((s, i) => ({ i, s, seat: seatOrder ? seatOrder[i] : i }))
+      .sort((a, b) => (b.s - a.s) || (a.seat - b.seat));
+    const okaPool = (returnPt - startPt) * 4;
+    const out = new Array(4);
+    ranked.forEach((r, rank) => {
+      const raw = r.s - returnPt + (rank === 0 ? okaPool : 0);
+      out[r.i] = { rank: rank + 1, pt: goshaRokunyu(raw / 1000) + uma[rank] };
+    });
+    return out;
+  };
+
+  // 通算成績
+  const leagueStandings = (lg) => {
+    if (!lg) return [];
+    const rows = lg.members.map(name => ({
+      name, games: 0, pt: 0, rankSum: 0, ranks: [0, 0, 0, 0],
+      best: null, worst: null, tobi: 0,
+    }));
+    const byName = Object.fromEntries(rows.map(r => [r.name, r]));
+    (lg.games || []).forEach(g => {
+      g.players.forEach((nm, i) => {
+        const r = byName[nm];
+        if (!r) return;
+        r.games++;
+        r.pt += g.pts[i];
+        r.rankSum += g.ranks[i];
+        r.ranks[g.ranks[i] - 1]++;
+        if (r.best === null || g.pts[i] > r.best) r.best = g.pts[i];
+        if (r.worst === null || g.pts[i] < r.worst) r.worst = g.pts[i];
+        if (g.scores[i] < 0) r.tobi++;
+      });
+    });
+    rows.forEach(r => {
+      r.avgRank = r.games ? r.rankSum / r.games : 0;
+      r.topRate = r.games ? r.ranks[0] / r.games : 0;
+      r.lastRate = r.games ? r.ranks[3] / r.games : 0;
+    });
+    return rows.sort((a, b) => b.pt - a.pt || a.avgRank - b.avgRank);
+  };
+
+  // リーグの進捗
+  const leagueProgress = (lg) => {
+    const played = (lg.games || []).length;
+    if (lg.mode === "count") {
+      return { played, target: lg.targetCount, pct: Math.min(1, played / (lg.targetCount || 1)) };
+    }
+    if (lg.mode === "period" && lg.endDate) {
+      const today = new Date().toISOString().slice(0, 10);
+      return { played, target: null, endDate: lg.endDate, over: today > lg.endDate };
+    }
+    return { played, target: null };
+  };
+
+  const newLeagueDraft = () => {
+    const d = new Date();
+    const iso = (dt) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+    const end = new Date(d.getTime() + 1000 * 60 * 60 * 24 * 30);
+    return {
+      id: "lg_" + Date.now(),
+      name: "",
+      members: [...presetNames].slice(0, 4),
+      mode: "count",
+      targetCount: 10,
+      startDate: iso(d),
+      endDate: iso(end),
+      rules: { ...defaultRules },
+      umaKey: "10-20",
+      uma: [20, 10, -10, -20],
+      status: "active",
+      games: [],
+      createdAt: Date.now(),
+    };
+  };
+
   const FACTORY_RULES = {
     tenpaiRenchan: false,   // テンパイ連荘
     agariRenchan: true,     // あがり連荘のみ
@@ -3738,8 +3853,10 @@ input, select { padding: 10px 14px; }
 
         {homeCat === "play" && (
           <>
+            {menuItem("🏆", "リーグ戦", "通算成績で競う", () => { setView("league"); })}
             {menuItem("▶", "新しい対局を始める", "卓上モードで開始します", () => {
               setView("game"); setGameStarted(false); setGameFinished(false); setSetupStep(0);
+              setActiveLeagueId(null);
               // 対局日は自動で今日にする
               {
                 const d = new Date();
@@ -3998,6 +4115,480 @@ input, select { padding: 10px 14px; }
     );
   };
 
+
+  // ══════════════════════════════════
+  // ── リーグ戦 画面 ──
+  // ══════════════════════════════════
+
+  // 一覧
+  const renderLeagueList = () => {
+    const active = leagues.filter(l => l.status === "active");
+    const done = leagues.filter(l => l.status !== "active");
+    const cardFor = (lg) => {
+      const pr = leagueProgress(lg);
+      const st = leagueStandings(lg);
+      const leader = st.find(r => r.games > 0);
+      return (
+        <button key={lg.id} onClick={() => { setLeagueId(lg.id); setLeagueTab("stand"); setView("leaguedetail"); }}
+          style={{
+            width: "100%", textAlign: "left", padding: 16, marginBottom: 10, borderRadius: 13,
+            border: `1px solid ${lg.status === "active" ? t.ac + "77" : t.bd}`,
+            background: lg.status === "active" ? t.acS : t.card, cursor: "pointer",
+          }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16, fontWeight: 800, color: t.tx }}>{lg.name}</span>
+            <span style={{
+              fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 6, flexShrink: 0,
+              background: lg.status === "active" ? t.gnS : t.sf,
+              color: lg.status === "active" ? t.gn : t.dm,
+              border: `1px solid ${lg.status === "active" ? t.gn : t.bd}55`,
+            }}>{lg.status === "active" ? "開催中" : "終了"}</span>
+          </div>
+          <div style={{ fontSize: 11, color: t.dm, marginTop: 5 }}>
+            {lg.members.length}人 ・ {pr.played}半荘
+            {lg.mode === "count" ? ` / 全${lg.targetCount}半荘` : ` ・ 〜${lg.endDate}`}
+          </div>
+          {leader && (
+            <div style={{ fontSize: 12, color: t.gd, marginTop: 6, fontWeight: 700 }}>
+              首位 {leader.name}　{leader.pt > 0 ? "+" : ""}{leader.pt}pt
+            </div>
+          )}
+        </button>
+      );
+    };
+    return (
+      <div style={body}>
+        <button style={backBtn} onClick={() => setView("home")}>← 戻る</button>
+        <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>🏆 リーグ戦</div>
+        <div style={{ fontSize: 12, color: t.dm, marginBottom: 16 }}>
+          同じメンバーで複数の半荘を戦い、通算成績を記録します
+        </div>
+
+        <button onClick={() => { setLgDraft(newLeagueDraft()); setView("leagueform"); }} style={{
+          width: "100%", padding: "16px", marginBottom: 18, borderRadius: 13, cursor: "pointer",
+          border: `2px solid ${t.ac}`, background: t.acS,
+          fontSize: 16, fontWeight: 800, color: t.ac,
+        }}>＋ 新しいリーグ戦を作る</button>
+
+        {active.length > 0 && (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8 }}>開催中</div>
+            {active.map(cardFor)}
+          </>
+        )}
+        {done.length > 0 && (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, margin: "16px 0 8px" }}>終了したリーグ</div>
+            {done.map(cardFor)}
+          </>
+        )}
+        {leagues.length === 0 && (
+          <div style={{ ...card, padding: 20, textAlign: "center" }}>
+            <div style={{ fontSize: 13, color: t.dm, lineHeight: 1.9 }}>
+              まだリーグ戦がありません。<br />
+              名前・メンバー・回数・ウマを決めて始めましょう。
+            </div>
+          </div>
+        )}
+
+        <button style={{ ...actionBtn(), marginTop: 16 }} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
+
+  // 作成 / 編集
+  const renderLeagueForm = () => {
+    if (!lgDraft) return <div style={body} />;
+    const d = lgDraft;
+    const set = (patch) => setLgDraft({ ...d, ...patch });
+    const toggleMember = (nm) => {
+      const has = d.members.includes(nm);
+      if (has) set({ members: d.members.filter(x => x !== nm) });
+      else set({ members: [...d.members, nm] });
+    };
+    const canSave = d.name.trim() && d.members.length >= 4;
+
+    return (
+      <div style={body}>
+        <button style={backBtn} onClick={() => setView("league")}>← 戻る</button>
+        <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>
+          {leagues.some(l => l.id === d.id) ? "リーグ戦の設定" : "新しいリーグ戦"}
+        </div>
+
+        {/* 名前 */}
+        <div style={{ ...card, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>1. リーグ名</div>
+          <input type="text" value={d.name} onChange={e => set({ name: e.target.value })}
+            placeholder="例: 2026年夏リーグ"
+            style={{ ...inputStyle, fontSize: 16, padding: "13px 12px" }} />
+        </div>
+
+        {/* メンバー */}
+        <div style={{ ...card, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>2. メンバー</div>
+          <div style={{ fontSize: 11, color: t.dm, marginBottom: 10 }}>
+            4人以上。5人以上なら毎回そこから4人を選んで打ちます（{d.members.length}人選択中）
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+            {presetNames.map(nm => {
+              const on = d.members.includes(nm);
+              return (
+                <button key={nm} onClick={() => toggleMember(nm)} style={{
+                  padding: "11px 8px", borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${on ? t.ac : t.bd}`,
+                  background: on ? t.acS : "transparent",
+                  color: on ? t.ac : t.tx, fontSize: 14, fontWeight: 700,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>{on ? "✓ " : ""}{nm}</button>
+              );
+            })}
+          </div>
+          <button onClick={() => { setView("names"); setNewNameInput(""); setEditNameIdx(null); }} style={{
+            background: "none", border: "none", color: t.ac, fontSize: 11,
+            cursor: "pointer", textDecoration: "underline", marginTop: 10,
+          }}>👤 名前を追加・編集する</button>
+        </div>
+
+        {/* 期間 or 回数 */}
+        <div style={{ ...card, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>3. 終わり方</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            {[["count", "回数で決める"], ["period", "期間で決める"]].map(([k, lb]) => (
+              <button key={k} onClick={() => set({ mode: k })} style={{
+                flex: 1, padding: "12px 6px", borderRadius: 10, cursor: "pointer",
+                border: `2px solid ${d.mode === k ? t.ac : t.bd}`,
+                background: d.mode === k ? t.acS : "transparent",
+                color: d.mode === k ? t.ac : t.tx, fontSize: 13, fontWeight: 700,
+              }}>{lb}</button>
+            ))}
+          </div>
+          {d.mode === "count" ? (
+            <div>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 6 }}>何半荘で終わりにしますか</div>
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                {[5, 10, 20, 30, 50].map(n => (
+                  <button key={n} onClick={() => set({ targetCount: n })} style={{
+                    flex: "1 1 60px", padding: "11px 4px", borderRadius: 9, cursor: "pointer",
+                    border: `2px solid ${d.targetCount === n ? t.ac : t.bd}`,
+                    background: d.targetCount === n ? t.acS : "transparent",
+                    color: d.targetCount === n ? t.ac : t.tx, fontSize: 14, fontWeight: 800,
+                  }}>{n}</button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>開始</div>
+                <input type="date" value={d.startDate} onChange={e => set({ startDate: e.target.value })}
+                  style={{ ...inputStyle, colorScheme: "dark", fontSize: 13 }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>終了</div>
+                <input type="date" value={d.endDate} onChange={e => set({ endDate: e.target.value })}
+                  style={{ ...inputStyle, colorScheme: "dark", fontSize: 13 }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ウマ・オカ */}
+        <div style={{ ...card, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>4. ウマ・オカ</div>
+          <div style={{ fontSize: 11, color: t.dm, marginBottom: 10 }}>順位によってやりとりするポイント</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 12 }}>
+            {UMA_PRESETS.map(u => {
+              const on = d.umaKey === u.key;
+              return (
+                <button key={u.key} onClick={() => set({ umaKey: u.key, uma: u.uma })} style={{
+                  padding: "11px 8px", borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${on ? t.ac : t.bd}`,
+                  background: on ? t.acS : "transparent",
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: on ? t.ac : t.tx }}>{u.label}</div>
+                  <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>{u.note}</div>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
+              <select value={d.rules.startPoints} style={selectStyle}
+                onChange={e => set({ rules: { ...d.rules, startPoints: parseInt(e.target.value, 10) } })}>
+                {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
+              <select value={d.rules.returnPoints} style={selectStyle}
+                onChange={e => set({ rules: { ...d.rules, returnPoints: parseInt(e.target.value, 10) } })}>
+                {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: t.dm, marginTop: 8, lineHeight: 1.8 }}>
+            オカ = (返し点 − 持ち点) × 4 = <span style={{ color: t.gd, fontWeight: 700 }}>
+              {(((d.rules.returnPoints || 0) - (d.rules.startPoints || 0)) * 4 / 1000)}pt
+            </span> がトップへ
+          </div>
+        </div>
+
+        {/* 対局ルール */}
+        <div style={{ ...card, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>5. 対局ルール</div>
+          <div style={{ fontSize: 11, color: t.dm, marginBottom: 10 }}>リーグ中の全対局に適用されます</div>
+          {[
+            ["kuitan", "食いタンあり"],
+            ["atozuke", "後付けあり"],
+            ["kiriage", "切り上げ満貫"],
+            ["orasYame", "オーラスは親トップで終了"],
+          ].map(([k, lb]) => (
+            <div key={k} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 0", borderBottom: `1px solid ${t.bd}33` }}>
+              <span style={{ fontSize: 13, color: t.tx }}>{lb}</span>
+              <button onClick={() => set({ rules: { ...d.rules, [k]: !d.rules[k] } })} style={{
+                width: 46, height: 26, borderRadius: 13, border: "none", padding: 0, cursor: "pointer",
+                background: d.rules[k] ? t.ac : t.bd, position: "relative", flexShrink: 0,
+              }}>
+                <span style={{
+                  position: "absolute", top: 3, left: d.rules[k] ? 23 : 3,
+                  width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.15s",
+                }} />
+              </button>
+            </div>
+          ))}
+          <div style={{ fontSize: 11, color: t.dm, marginTop: 8 }}>
+            流局時の親・複数ロンの扱いは、設定の初期値がそのまま使われます
+          </div>
+        </div>
+
+        <button
+          style={{ ...actionBtn("p"), opacity: canSave ? 1 : 0.4 }}
+          disabled={!canSave}
+          onClick={() => {
+            const exists = leagues.some(l => l.id === d.id);
+            saveLeagues(exists ? leagues.map(l => l.id === d.id ? d : l) : [d, ...leagues]);
+            setLeagueId(d.id); setLeagueTab("stand"); setView("leaguedetail");
+          }}>{leagues.some(l => l.id === d.id) ? "保存する" : "リーグ戦を作る"}</button>
+        <button style={actionBtn()} onClick={() => setView("league")}>キャンセル</button>
+      </div>
+    );
+  };
+
+  // 詳細（成績表・対局一覧・設定）
+  const renderLeagueDetail = () => {
+    const lg = curLeague;
+    if (!lg) return <div style={body}><button style={backBtn} onClick={() => setView("league")}>← 戻る</button></div>;
+    const st = leagueStandings(lg);
+    const pr = leagueProgress(lg);
+
+    return (
+      <div style={body}>
+        <button style={backBtn} onClick={() => setView("league")}>← リーグ一覧</button>
+
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>{lg.name}</div>
+          <div style={{ fontSize: 11, color: t.dm, marginTop: 4 }}>
+            {lg.members.length}人 ・ {pr.played}半荘消化
+            {lg.mode === "count" ? ` / 全${lg.targetCount}半荘` : ` ・ ${lg.startDate}〜${lg.endDate}`}
+            {" ・ ウマ "}{UMA_PRESETS.find(u => u.key === lg.umaKey)?.label || "10-20"}
+          </div>
+        </div>
+
+        {lg.mode === "count" && (
+          <div style={{ height: 6, borderRadius: 3, background: t.sf, overflow: "hidden", margin: "10px 0 16px" }}>
+            <div style={{ height: "100%", width: `${Math.round((pr.pct || 0) * 100)}%`, background: t.ac }} />
+          </div>
+        )}
+
+        {/* 対局開始 */}
+        {lg.status === "active" && (
+          <button onClick={() => { setLgPick([]); setView("leaguestart"); }} style={{
+            width: "100%", padding: "16px", marginBottom: 16, borderRadius: 13, cursor: "pointer",
+            border: "none", background: t.ac, color: "#fff", fontSize: 16, fontWeight: 800,
+          }}>▶ このリーグで対局を始める</button>
+        )}
+
+        {/* タブ */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+          {[["stand", "成績表"], ["games", "対局一覧"], ["info", "設定"]].map(([k, lb]) => (
+            <button key={k} onClick={() => setLeagueTab(k)} style={{
+              flex: 1, padding: "10px 4px", borderRadius: 9, cursor: "pointer",
+              border: `1px solid ${leagueTab === k ? t.ac : t.bd}`,
+              background: leagueTab === k ? t.acS : "transparent",
+              color: leagueTab === k ? t.ac : t.dm, fontSize: 13, fontWeight: 700,
+            }}>{lb}</button>
+          ))}
+        </div>
+
+        {/* 成績表 */}
+        {leagueTab === "stand" && (
+          <div style={{ ...card, padding: 14 }}>
+            {pr.played === 0 ? (
+              <div style={{ fontSize: 13, color: t.dm, textAlign: "center", padding: "20px 0" }}>
+                まだ対局がありません
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ color: t.dm }}>
+                      <th style={{ textAlign: "left", padding: "6px 4px", fontWeight: 600 }}>順</th>
+                      <th style={{ textAlign: "left", padding: "6px 4px", fontWeight: 600 }}>名前</th>
+                      <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: 600 }}>pt</th>
+                      <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: 600 }}>半荘</th>
+                      <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: 600 }}>平均</th>
+                      <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: 600 }}>1-2-3-4</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {st.map((r, i) => (
+                      <tr key={r.name} style={{ borderTop: `1px solid ${t.bd}55` }}>
+                        <td style={{ padding: "9px 4px", color: i === 0 ? t.gd : t.dm, fontWeight: 800 }}>{i + 1}</td>
+                        <td style={{ padding: "9px 4px", color: t.tx, fontWeight: 700, maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</td>
+                        <td style={{ padding: "9px 4px", textAlign: "right", fontWeight: 900, fontVariantNumeric: "tabular-nums", color: r.pt > 0 ? t.gn : r.pt < 0 ? t.rd : t.tx }}>
+                          {r.pt > 0 ? "+" : ""}{r.pt}
+                        </td>
+                        <td style={{ padding: "9px 4px", textAlign: "right", color: t.dm }}>{r.games}</td>
+                        <td style={{ padding: "9px 4px", textAlign: "right", color: t.dm }}>{r.games ? r.avgRank.toFixed(2) : "—"}</td>
+                        <td style={{ padding: "9px 4px", textAlign: "right", color: t.dm, fontVariantNumeric: "tabular-nums" }}>{r.ranks.join("-")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ fontSize: 10, color: t.dm, marginTop: 10, lineHeight: 1.8 }}>
+                  平均 = 平均順位。1-2-3-4 = 各順位の回数。同点は平均順位が良いほうを上位にしています。
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 対局一覧 */}
+        {leagueTab === "games" && (
+          <div>
+            {(lg.games || []).length === 0 ? (
+              <div style={{ ...card, padding: 20, textAlign: "center", fontSize: 13, color: t.dm }}>
+                まだ対局がありません
+              </div>
+            ) : [...lg.games].reverse().map((g, gi) => (
+              <div key={gi} style={{ ...card, padding: 13, marginBottom: 9 }}>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 7 }}>
+                  第{lg.games.length - gi}戦 ・ {g.date}
+                </div>
+                {g.players.map((nm, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                    <span style={{
+                      width: 20, fontSize: 12, fontWeight: 800,
+                      color: g.ranks[i] === 1 ? t.gd : t.dm,
+                    }}>{g.ranks[i]}位</span>
+                    <span style={{ flex: 1, fontSize: 13, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nm}</span>
+                    <span style={{ fontSize: 12, color: t.dm, fontVariantNumeric: "tabular-nums" }}>{g.scores[i].toLocaleString()}</span>
+                    <span style={{
+                      width: 52, textAlign: "right", fontSize: 13, fontWeight: 800, fontVariantNumeric: "tabular-nums",
+                      color: g.pts[i] > 0 ? t.gn : g.pts[i] < 0 ? t.rd : t.tx,
+                    }}>{g.pts[i] > 0 ? "+" : ""}{g.pts[i]}</span>
+                  </div>
+                ))}
+                <button onClick={() => {
+                  if (!window.confirm("この対局の記録を削除しますか？")) return;
+                  const idx = lg.games.length - 1 - gi;
+                  saveLeagues(leagues.map(l => l.id === lg.id
+                    ? { ...l, games: l.games.filter((_, k) => k !== idx) } : l));
+                }} style={{
+                  background: "none", border: "none", color: t.dm, fontSize: 10,
+                  cursor: "pointer", textDecoration: "underline", marginTop: 6,
+                }}>この記録を削除</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 設定 */}
+        {leagueTab === "info" && (
+          <div style={{ ...card, padding: 16 }}>
+            <div style={{ fontSize: 13, lineHeight: 2.1, color: t.tx }}>
+              <div><span style={{ color: t.dm }}>メンバー: </span>{lg.members.join("、")}</div>
+              <div><span style={{ color: t.dm }}>終わり方: </span>
+                {lg.mode === "count" ? `${lg.targetCount}半荘で終了` : `${lg.startDate} 〜 ${lg.endDate}`}</div>
+              <div><span style={{ color: t.dm }}>ウマ: </span>{lg.uma.map(u => (u > 0 ? "+" : "") + u).join(" / ")}</div>
+              <div><span style={{ color: t.dm }}>持ち点 / 返し点: </span>
+                {lg.rules.startPoints.toLocaleString()} / {lg.rules.returnPoints.toLocaleString()}</div>
+              <div><span style={{ color: t.dm }}>オカ: </span>
+                {((lg.rules.returnPoints - lg.rules.startPoints) * 4 / 1000)}pt がトップへ</div>
+            </div>
+
+            <button style={{ ...actionBtn(), marginTop: 16 }}
+              onClick={() => { setLgDraft({ ...lg }); setView("leagueform"); }}>設定を変更する</button>
+
+            <button style={{ ...actionBtn(), color: lg.status === "active" ? t.gd : t.gn }}
+              onClick={() => saveLeagues(leagues.map(l => l.id === lg.id
+                ? { ...l, status: l.status === "active" ? "done" : "active" } : l))}>
+              {lg.status === "active" ? "このリーグを終了する" : "開催中に戻す"}
+            </button>
+
+            <button style={{ ...actionBtn(), color: t.rd }}
+              onClick={() => {
+                if (!window.confirm(`「${lg.name}」を削除しますか？対局記録もすべて消えます。`)) return;
+                saveLeagues(leagues.filter(l => l.id !== lg.id));
+                setView("league");
+              }}>リーグを削除</button>
+          </div>
+        )}
+
+        <button style={{ ...actionBtn(), marginTop: 14 }} onClick={() => setView("league")}>リーグ一覧に戻る</button>
+      </div>
+    );
+  };
+
+  // 対局に出る4人を選ぶ → 席決めへ
+  const renderLeagueStart = () => {
+    const lg = curLeague;
+    if (!lg) return <div style={body} />;
+    const ready = lgPick.length === 4;
+    return (
+      <div style={body}>
+        <button style={backBtn} onClick={() => setView("leaguedetail")}>← 戻る</button>
+        <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{lg.name}</div>
+        <div style={{ fontSize: 12, color: t.dm, marginBottom: 16 }}>
+          この対局に出る4人を選んでください（{lgPick.length}/4）
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 18 }}>
+          {lg.members.map(nm => {
+            const on = lgPick.includes(nm);
+            const full = lgPick.length >= 4 && !on;
+            return (
+              <button key={nm} onClick={() => setLgPick(on ? lgPick.filter(x => x !== nm) : (full ? lgPick : [...lgPick, nm]))}
+                style={{
+                  padding: "14px 8px", borderRadius: 11, cursor: full ? "default" : "pointer",
+                  border: `2px solid ${on ? t.ac : t.bd}`,
+                  background: on ? t.acS : "transparent",
+                  color: on ? t.ac : t.tx, fontSize: 14, fontWeight: 700, opacity: full ? 0.4 : 1,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>{on ? "✓ " : ""}{nm}</button>
+            );
+          })}
+        </div>
+
+        <button
+          style={{ ...actionBtn("p"), opacity: ready ? 1 : 0.4 }}
+          disabled={!ready}
+          onClick={() => {
+            const d = new Date();
+            setGameDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);
+            setPlayers([...lgPick]);
+            setRules({ ...defaultRules, ...lg.rules });
+            setMatchType("hanchan");
+            setActiveLeagueId(lg.id);
+            resetSeatDraw();
+            setGameStarted(false); setGameFinished(false);
+            setSetupStep(1);           // 席決めから始める
+            setView("game");
+          }}>席決めへ進む</button>
+      </div>
+    );
+  };
 
   // ══════════════════════════════════
   // ── 点数問題集（4翻以下） ──
@@ -6205,6 +6796,37 @@ input, select { padding: 10px 14px; }
           ))}
         </div>
 
+        {/* リーグ戦の結果 */}
+        {(() => {
+          const lg = leagues.find(l => l.id === activeLeagueId);
+          if (!lg) return null;
+          const res = calcGamePts(scores, [0, 1, 2, 3], lg);
+          return (
+            <div style={{ ...card, border: `1px solid ${t.gd}55`, background: t.gdS }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.gd, marginBottom: 8, letterSpacing: "0.05em" }}>
+                🏆 {lg.name} の成績
+              </div>
+              {players.map((nm, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
+                  <span style={{ width: 24, fontSize: 12, fontWeight: 800, color: res[i].rank === 1 ? t.gd : t.dm }}>
+                    {res[i].rank}位
+                  </span>
+                  <span style={{ flex: 1, fontSize: 13, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nm}</span>
+                  <span style={{ fontSize: 12, color: t.dm, fontVariantNumeric: "tabular-nums" }}>{scores[i].toLocaleString()}</span>
+                  <span style={{
+                    width: 54, textAlign: "right", fontSize: 15, fontWeight: 900, fontVariantNumeric: "tabular-nums",
+                    color: res[i].pt > 0 ? t.gn : res[i].pt < 0 ? t.rd : t.tx,
+                  }}>{res[i].pt > 0 ? "+" : ""}{res[i].pt}</span>
+                </div>
+              ))}
+              <div style={{ fontSize: 10, color: t.dm, marginTop: 8, lineHeight: 1.7 }}>
+                返し点 {(lg.rules.returnPoints).toLocaleString()} との差を五捨六入し、ウマ
+                {" "}{lg.uma.map(u => (u > 0 ? "+" : "") + u).join("/")} を加算。オカはトップへ。
+              </div>
+            </div>
+          );
+        })()}
+
         <button style={actionBtn("p")} onClick={() => {
           if (rounds.length > 0) {
             setGameHistory(prev => [...prev, {
@@ -6216,12 +6838,32 @@ input, select { padding: 10px 14px; }
               okaResults: sorted.map(s => ({ name: s.name, finalPt: s.finalPt })),
               rounds: [...rounds],
               rules: gameConfig?.rules || {},
+              leagueId: activeLeagueId || null,
             }]);
           }
+          // リーグ戦なら成績表にも記録する
+          const lg = leagues.find(l => l.id === activeLeagueId);
+          if (lg && rounds.length > 0) {
+            const res = calcGamePts(scores, [0, 1, 2, 3], lg);
+            const entry = {
+              date: gameConfig?.date || "",
+              players: [...players],
+              scores: [...scores],
+              pts: res.map(r => r.pt),
+              ranks: res.map(r => r.rank),
+            };
+            const nextGames = [...(lg.games || []), entry];
+            const reached = lg.mode === "count" && nextGames.length >= (lg.targetCount || 0);
+            saveLeagues(leagues.map(l => l.id === lg.id
+              ? { ...l, games: nextGames, status: reached ? "done" : l.status } : l));
+          }
+          const back = activeLeagueId;
+          setActiveLeagueId(null);
           setGameStarted(false);
           setGameFinished(false);
-          setView("home");
-        }}>履歴に保存してメニューへ</button>
+          if (back) { setLeagueId(back); setLeagueTab("stand"); setView("leaguedetail"); }
+          else setView("home");
+        }}>{activeLeagueId ? "リーグに記録して成績表へ" : "履歴に保存してメニューへ"}</button>
       </div>
     );
   };
@@ -6492,6 +7134,10 @@ input, select { padding: 10px 14px; }
         {view === "quiz" && renderQuiz()}
         {view === "termquiz" && renderTermQuiz()}
         {view === "scorequiz" && renderScoreQuiz()}
+        {view === "league" && renderLeagueList()}
+        {view === "leagueform" && renderLeagueForm()}
+        {view === "leaguedetail" && renderLeagueDetail()}
+        {view === "leaguestart" && renderLeagueStart()}
         {view === "dict" && renderDict()}
         {view === "fucourse" && renderFuCourse()}
         {view === "table" && renderTable()}
