@@ -83,6 +83,41 @@ function MahjongScorer() {
   const [matchType, setMatchType] = useState(null); // "tonpu" | "hanchan"
   const [players, setPlayers] = useState(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
   const [playerMode, setPlayerMode] = useState([false, false, false, false]); // false=text display, true=editing
+  const [seatDrawing, setSeatDrawing] = useState(false);
+  const [seatDrawn, setSeatDrawn] = useState(false);
+  const seatTimer = React.useRef(null);
+
+  // 席決め（掴み取り）: 4人をランダムに東南西北へ振り分ける
+  const drawSeats = () => {
+    if (seatDrawing) return;
+    if (!players.every(p => p.trim())) return;
+    if (seatTimer.current) clearInterval(seatTimer.current);
+    setSeatDrawing(true);
+    setSeatDrawn(false);
+    setPlayerMode([false, false, false, false]);
+    const base = [...players];
+    const shuffle = (arr) => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+    let ticks = 0;
+    seatTimer.current = setInterval(() => {
+      ticks++;
+      setPlayers(shuffle(base));
+      if (ticks >= 12) {
+        clearInterval(seatTimer.current);
+        seatTimer.current = null;
+        setPlayers(shuffle(base));
+        setSeatDrawing(false);
+        setSeatDrawn(true);
+      }
+    }, 80);
+  };
+
   const FACTORY_RULES = {
     tenpaiRenchan: false,   // テンパイ連荘
     agariRenchan: true,     // あがり連荘のみ
@@ -3566,6 +3601,27 @@ input, select { padding: 10px 14px; }
               background: "none", border: "none", color: t.ac, fontSize: 11, cursor: "pointer", textDecoration: "underline",
             }}>👤 リストの名前を編集</button>
           </div>
+
+          {/* 席決め */}
+          <div style={{ marginBottom: 14 }}>
+            <button
+              onClick={drawSeats}
+              disabled={seatDrawing || !players.every(p => p.trim())}
+              style={{
+                width: "100%", padding: "12px 8px", borderRadius: 10,
+                border: `2px solid ${t.gd}`,
+                background: seatDrawing ? t.gdS : "transparent",
+                color: t.gd, fontSize: 14, fontWeight: 800,
+                cursor: seatDrawing ? "default" : "pointer",
+                opacity: players.every(p => p.trim()) ? 1 : 0.4,
+              }}
+            >{seatDrawing ? "🀄 掴み取り中…" : "🀄 席決め（ランダム）"}</button>
+            <div style={{ fontSize: 10, color: seatDrawn ? t.gd : t.dm, marginTop: 6, textAlign: "center" }}>
+              {seatDrawn
+                ? `席が決まりました — 起家（最初の親）は「${players[0]}」さんです`
+                : "4人をランダムに東・南・西・北へ振り分けます"}
+            </div>
+          </div>
           {players.map((p, i) => {
             const isCustom = playerMode[i]; // true = 直接入力モード
             return (
@@ -3586,7 +3642,7 @@ input, select { padding: 10px 14px; }
                         style={{ ...inputStyle, flex: 1 }}
                         placeholder="名前を入力"
                         value={p}
-                        onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
+                        onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); setSeatDrawn(false); }}
                       />
                       <button
                         style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "8px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
@@ -3598,6 +3654,7 @@ input, select { padding: 10px 14px; }
                       value={presetNames.includes(p) ? p : "__current__"}
                       onChange={e => {
                         const v = e.target.value;
+                        setSeatDrawn(false);
                         if (v === "__custom__") {
                           const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm);
                           const np = [...players]; np[i] = ""; setPlayers(np);
