@@ -88,6 +88,7 @@ function MahjongScorer() {
   const [seatTiles, setSeatTiles] = useState([]);   // [{wind, by}] by=引いた人のindex(元の並び順)
   const [seatTurn, setSeatTurn] = useState(0);      // 今引く人（元の並び順のindex）
   const [seatDone, setSeatDone] = useState(false);
+  const [showRuleCheck, setShowRuleCheck] = useState(false); // 対局中のルール確認
 
   const WIND_ORDER = ["東", "南", "西", "北"];
   const resetSeatDraw = () => {
@@ -3687,6 +3688,71 @@ input, select { padding: 10px 14px; }
     return log;
   };
 
+  // 対局中のルール確認モーダル
+  const RuleCheckModal = () => {
+    if (!showRuleCheck) return null;
+    const rs = gameConfig?.rules || {};
+    const lg = leagues.find(l => l.id === activeLeagueId);
+    const row = (label, value, hint) => (
+      <div style={{ padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+          <span style={{ fontSize: 13, color: t.dm, flexShrink: 0 }}>{label}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: t.tx, textAlign: "right" }}>{value}</span>
+        </div>
+        {hint && <div style={{ fontSize: 10, color: t.dm, marginTop: 3, lineHeight: 1.6 }}>{hint}</div>}
+      </div>
+    );
+    const renchan = rs.agariRenchan ? "あがり連荘" : rs.tenpaiRenchan ? "テンパイ連荘" : "無条件連荘";
+    const renchanHint = rs.agariRenchan
+      ? "流局したら親は必ず流れる"
+      : rs.tenpaiRenchan ? "親がテンパイなら続行、ノーテンなら流れる" : "流局しても親は続行";
+    const mr = rs.multiRon === "triple" ? "トリプルロンあり"
+      : rs.multiRon === "double" ? "ダブロンあり" : "頭ハネ";
+
+    return (
+      <div style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 100,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "20px 16px",
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 20px)",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
+        overflowY: "auto",
+      }} onClick={() => setShowRuleCheck(false)}>
+        <div style={{ ...card, maxWidth: 400, width: "100%", margin: 0 }} onClick={e => e.stopPropagation()}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: t.tx }}>この対局のルール</div>
+              {lg && <div style={{ fontSize: 11, color: t.gd, marginTop: 3 }}>🏆 {lg.name}</div>}
+            </div>
+            <button style={{ background: "none", border: "none", color: t.dm, fontSize: 20, cursor: "pointer", lineHeight: 1 }}
+              onClick={() => setShowRuleCheck(false)}>✕</button>
+          </div>
+
+          {row("形式", gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦")}
+          {row("持ち点 / 返し点",
+            `${(rs.startPoints ?? 25000).toLocaleString()} / ${(rs.returnPoints ?? 30000).toLocaleString()}`,
+            `オカ ${(((rs.returnPoints ?? 0) - (rs.startPoints ?? 0)) * 4 / 1000)}pt がトップへ`)}
+          {row("流局したときの親", renchan, renchanHint)}
+          {row("オーラス", rs.orasYame !== false ? "親トップで終了" : "やめなし",
+            rs.orasYame !== false ? "アガリやめ・テンパイやめ" : "親がトップでも続行")}
+          {row("複数人が同時にロン", mr,
+            rs.multiRon === "atamahane" ? "アガれるのは1人だけ" : "本場と供託は放銃者に近い人へ")}
+          {row("食いタン", rs.kuitan ? "あり" : "なし")}
+          {row("後付け", rs.atozuke ? "あり" : "なし")}
+          {row("切り上げ満貫", rs.kiriage ? "あり" : "なし",
+            rs.kiriage ? "4翻30符・3翻60符を満貫扱い" : null)}
+          {lg && row("ウマ", lg.uma.map(u => (u > 0 ? "+" : "") + u).join(" / "))}
+
+          <div style={{ fontSize: 10, color: t.dm, marginTop: 10, lineHeight: 1.7 }}>
+            ノーテン罰符は場で3,000点、本場は1本につき300点です
+          </div>
+
+          <button style={{ ...actionBtn(), marginTop: 14 }} onClick={() => setShowRuleCheck(false)}>閉じる</button>
+        </div>
+      </div>
+    );
+  };
+
   const PlayerHistoryModal = () => {
     if (playerDetail === null) return null;
     const pi = playerDetail;
@@ -5976,7 +6042,8 @@ input, select { padding: 10px 14px; }
           <div style={{ display: "flex", gap: 8 }}>
             <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setRonPick([]); setMultiRon(null); setTmWinStep("winner"); }}>アガリ入力</button>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
-            <button style={{ ...smallBtn(), flex: "0 0 68px" }} onClick={() => setSeatRot(r => (r + 1) % 4)}>🔄 回転</button>
+            <button style={{ ...smallBtn(), flex: "0 0 60px" }} onClick={() => setShowRuleCheck(true)}>📋 ルール</button>
+            <button style={{ ...smallBtn(), flex: "0 0 60px" }} onClick={() => setSeatRot(r => (r + 1) % 4)}>🔄 回転</button>
           </div>
         )}
       </div>
@@ -6001,6 +6068,7 @@ input, select { padding: 10px 14px; }
             }}>⏸ 保留</button>
         </div>
 
+        <RuleCheckModal />
         {actionRow(true)}
 
         <div style={{
@@ -6268,11 +6336,13 @@ input, select { padding: 10px 14px; }
         点数を長押しすると変動履歴が見られます
       </div>
       <PlayerHistoryModal />
+      <RuleCheckModal />
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button style={{ ...actionBtn("p"), flex: 1 }} onClick={() => { resetGW(); setShowGW(true); setGStep(1); }}>アガリ入力</button>
         <button style={{ ...actionBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setShowDrawWiz(true); }}>流局</button>
+        <button style={{ ...actionBtn(), flex: "0 0 92px" }} onClick={() => setShowRuleCheck(true)}>📋 ルール</button>
       </div>
 
       <button style={{ ...actionBtn(), marginBottom: 14, fontSize: 13 }}
