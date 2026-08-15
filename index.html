@@ -4713,111 +4713,11 @@ input, select { padding: 10px 14px; }
         </div>
       )}
 
-      {/* Step 2: プレイヤー名 */}
+      {/* Step 2: ルール設定 */}
       {setupStep === 2 && (
         <div style={card}>
           <Back onClick={() => setSetupStep(1)} />
           <Dots total={4} cur={2} />
-          <div style={question}>プレイヤー名</div>
-          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 6 }}>名前の欄をタップして選択</div>
-          <div style={{ textAlign: "center", marginBottom: 14 }}>
-            <button onClick={() => { setView("names"); setNewNameInput(""); setEditNameIdx(null); }} style={{
-              background: "none", border: "none", color: t.ac, fontSize: 11, cursor: "pointer", textDecoration: "underline",
-            }}>👤 リストの名前を編集</button>
-          </div>
-
-          {/* 席決め */}
-          <div style={{ marginBottom: 14 }}>
-            <button
-              onClick={drawSeats}
-              disabled={seatDrawing || !players.every(p => p.trim())}
-              style={{
-                width: "100%", padding: "12px 8px", borderRadius: 10,
-                border: `2px solid ${t.gd}`,
-                background: seatDrawing ? t.gdS : "transparent",
-                color: t.gd, fontSize: 14, fontWeight: 800,
-                cursor: seatDrawing ? "default" : "pointer",
-                opacity: players.every(p => p.trim()) ? 1 : 0.4,
-              }}
-            >{seatDrawing ? "🀄 掴み取り中…" : "🀄 席決め（ランダム）"}</button>
-            <div style={{ fontSize: 10, color: seatDrawn ? t.gd : t.dm, marginTop: 6, textAlign: "center" }}>
-              {seatDrawn
-                ? `席が決まりました — 起家（最初の親）は「${players[0]}」さんです`
-                : "4人をランダムに東・南・西・北へ振り分けます"}
-            </div>
-          </div>
-          {players.map((p, i) => {
-            const isCustom = playerMode[i]; // true = 直接入力モード
-            return (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{
-                    fontSize: 18, fontWeight: 900, lineHeight: 1, flexShrink: 0,
-                    color: i === 0 ? "#1a1a1a" : t.tx,
-                    background: i === 0 ? t.gd : t.sf,
-                    border: `1px solid ${i === 0 ? t.gd : t.bd}`,
-                    borderRadius: 6, padding: "5px 8px",
-                  }}>{WINDS[i]}</span>
-
-                  {isCustom ? (
-                    <>
-                      <input
-                        autoFocus
-                        style={{ ...inputStyle, flex: 1 }}
-                        placeholder="名前を入力"
-                        value={p}
-                        onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); setSeatDrawn(false); }}
-                      />
-                      <button
-                        style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "8px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
-                        onClick={() => { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); }}
-                      >リスト</button>
-                    </>
-                  ) : (
-                    <select
-                      value={presetNames.includes(p) ? p : "__current__"}
-                      onChange={e => {
-                        const v = e.target.value;
-                        setSeatDrawn(false);
-                        if (v === "__custom__") {
-                          const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm);
-                          const np = [...players]; np[i] = ""; setPlayers(np);
-                        } else {
-                          const np = [...players]; np[i] = v; setPlayers(np);
-                        }
-                      }}
-                      style={{ ...selectStyle, flex: 1, fontSize: 15 }}
-                    >
-                      {!presetNames.includes(p) && <option value="__current__">{p}</option>}
-                      {presetNames.map(n => {
-                        const usedByOther = players.includes(n) && players[i] !== n;
-                        return <option key={n} value={n}>{usedByOther ? `${n}（使用中）` : n}</option>;
-                      })}
-                      <option value="__custom__">✏️ 直接入力…</option>
-                    </select>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          <div style={{ marginTop: 8 }}>
-            <button
-              style={{
-                ...actionBtn("p"),
-                opacity: players.every(p => p.trim()) ? 1 : 0.4,
-              }}
-              disabled={!players.every(p => p.trim())}
-              onClick={() => setSetupStep(3)}
-            >次へ</button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: ルール設定 */}
-      {setupStep === 3 && (
-        <div style={card}>
-          <Back onClick={() => setSetupStep(2)} />
-          <Dots total={4} cur={3} />
           <div style={question}>ルール設定</div>
 
           <div style={{ marginBottom: 8 }}>
@@ -4946,7 +4846,107 @@ input, select { padding: 10px 14px; }
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <button style={actionBtn("p")} onClick={() => setSetupStep(4)}>確認へ</button>
+            <button style={actionBtn("p")} onClick={() => setSetupStep(3)}>次へ</button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: プレイヤー名 */}
+      {setupStep === 3 && (
+        <div style={card}>
+          <Back onClick={() => setSetupStep(2)} />
+          <Dots total={4} cur={3} />
+          <div style={question}>プレイヤー名</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 6 }}>名前の欄をタップして選択</div>
+          <div style={{ textAlign: "center", marginBottom: 14 }}>
+            <button onClick={() => { setView("names"); setNewNameInput(""); setEditNameIdx(null); }} style={{
+              background: "none", border: "none", color: t.ac, fontSize: 11, cursor: "pointer", textDecoration: "underline",
+            }}>👤 リストの名前を編集</button>
+          </div>
+
+          {/* 席決め */}
+          <div style={{ marginBottom: 14 }}>
+            <button
+              onClick={drawSeats}
+              disabled={seatDrawing || !players.every(p => p.trim())}
+              style={{
+                width: "100%", padding: "12px 8px", borderRadius: 10,
+                border: `2px solid ${t.gd}`,
+                background: seatDrawing ? t.gdS : "transparent",
+                color: t.gd, fontSize: 14, fontWeight: 800,
+                cursor: seatDrawing ? "default" : "pointer",
+                opacity: players.every(p => p.trim()) ? 1 : 0.4,
+              }}
+            >{seatDrawing ? "🀄 掴み取り中…" : "🀄 席決め（ランダム）"}</button>
+            <div style={{ fontSize: 10, color: seatDrawn ? t.gd : t.dm, marginTop: 6, textAlign: "center" }}>
+              {seatDrawn
+                ? `席が決まりました — 起家（最初の親）は「${players[0]}」さんです`
+                : "4人をランダムに東・南・西・北へ振り分けます"}
+            </div>
+          </div>
+          {players.map((p, i) => {
+            const isCustom = playerMode[i]; // true = 直接入力モード
+            return (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    fontSize: 18, fontWeight: 900, lineHeight: 1, flexShrink: 0,
+                    color: i === 0 ? "#1a1a1a" : t.tx,
+                    background: i === 0 ? t.gd : t.sf,
+                    border: `1px solid ${i === 0 ? t.gd : t.bd}`,
+                    borderRadius: 6, padding: "5px 8px",
+                  }}>{WINDS[i]}</span>
+
+                  {isCustom ? (
+                    <>
+                      <input
+                        autoFocus
+                        style={{ ...inputStyle, flex: 1 }}
+                        placeholder="名前を入力"
+                        value={p}
+                        onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); setSeatDrawn(false); }}
+                      />
+                      <button
+                        style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "8px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
+                        onClick={() => { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); }}
+                      >リスト</button>
+                    </>
+                  ) : (
+                    <select
+                      value={presetNames.includes(p) ? p : "__current__"}
+                      onChange={e => {
+                        const v = e.target.value;
+                        setSeatDrawn(false);
+                        if (v === "__custom__") {
+                          const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm);
+                          const np = [...players]; np[i] = ""; setPlayers(np);
+                        } else {
+                          const np = [...players]; np[i] = v; setPlayers(np);
+                        }
+                      }}
+                      style={{ ...selectStyle, flex: 1, fontSize: 15 }}
+                    >
+                      {!presetNames.includes(p) && <option value="__current__">{p}</option>}
+                      {presetNames.map(n => {
+                        const usedByOther = players.includes(n) && players[i] !== n;
+                        return <option key={n} value={n}>{usedByOther ? `${n}（使用中）` : n}</option>;
+                      })}
+                      <option value="__custom__">✏️ 直接入力…</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ marginTop: 8 }}>
+            <button
+              style={{
+                ...actionBtn("p"),
+                opacity: players.every(p => p.trim()) ? 1 : 0.4,
+              }}
+              disabled={!players.every(p => p.trim())}
+              onClick={() => setSetupStep(4)}
+            >確認へ</button>
           </div>
         </div>
       )}
@@ -5017,7 +5017,7 @@ input, select { padding: 10px 14px; }
           </div>
 
           <button style={actionBtn("p")} onClick={startGame}>対局開始！</button>
-          <button style={actionBtn()} onClick={() => setSetupStep(3)}>設定を修正する</button>
+          <button style={actionBtn()} onClick={() => setSetupStep(2)}>設定を修正する</button>
         </div>
       )}
     </div>
