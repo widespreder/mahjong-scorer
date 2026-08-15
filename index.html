@@ -1427,6 +1427,98 @@ input, select { padding: 10px 14px; }
   // ══════════════════════════════════
   // ── YAKU DATA ──
   // ══════════════════════════════════
+  // ── 麻雀用語データ（役以外の言葉） ──
+  const TERM_DATA = [
+    { kanji: "副露", yomi: "フーロ", cat: "鳴き", desc: "他家の捨て牌を使って面子を作ること。チー・ポン・カンの総称。「鳴く」ともいう" },
+    { kanji: "明槓", yomi: "ミンカン", cat: "鳴き", desc: "他家の牌を使って作るカン。大明槓と加槓の2種類がある" },
+    { kanji: "加槓", yomi: "カカン", cat: "鳴き", desc: "すでにポンしている刻子に、自分でツモった4枚目を加えてカンすること。小明槓ともいう" },
+    { kanji: "大明槓", yomi: "ダイミンカン", cat: "鳴き", desc: "手の内に暗刻がある状態で、他家が捨てた4枚目をカンすること" },
+    { kanji: "暗槓", yomi: "アンカン", cat: "鳴き", desc: "同じ牌4枚を自分だけで揃えてカンすること。門前は崩れない" },
+    { kanji: "喰い替え", yomi: "クイカエ", cat: "鳴き", desc: "鳴いた直後に、鳴いた牌と同じ牌や筋の牌を捨てること。多くのルールで禁止" },
+    { kanji: "後付け", yomi: "アトヅケ", cat: "鳴き", desc: "役が未確定のまま鳴き、あとから役を確定させること" },
+    { kanji: "喰いタン", yomi: "クイタン", cat: "鳴き", desc: "鳴いた状態のタンヤオ。ルールによって認めない場合がある" },
+    { kanji: "門前", yomi: "メンゼン", cat: "手牌", desc: "一度も鳴いていない状態。リーチや門前清自摸和の条件になる" },
+    { kanji: "聴牌", yomi: "テンパイ", cat: "手牌", desc: "あと1枚でアガリになる状態" },
+    { kanji: "不聴", yomi: "ノーテン", cat: "手牌", desc: "テンパイしていない状態。流局時に罰符を払う" },
+    { kanji: "向聴", yomi: "シャンテン", cat: "手牌", desc: "テンパイまであと何枚必要かを表す数。1向聴ならあと1枚でテンパイ" },
+    { kanji: "面子", yomi: "メンツ", cat: "手牌", desc: "3枚1組の組み合わせ。順子と刻子がある" },
+    { kanji: "雀頭", yomi: "ジャントウ", cat: "手牌", desc: "同じ牌2枚の対子。アガリの形に必ず1組必要。「アタマ」ともいう" },
+    { kanji: "順子", yomi: "シュンツ", cat: "手牌", desc: "同じ種類の数牌が3枚連続した面子。例：2萬3萬4萬" },
+    { kanji: "刻子", yomi: "コーツ", cat: "手牌", desc: "同じ牌3枚の面子" },
+    { kanji: "槓子", yomi: "カンツ", cat: "手牌", desc: "同じ牌4枚の面子。カンして成立する" },
+    { kanji: "対子", yomi: "トイツ", cat: "手牌", desc: "同じ牌2枚の組み合わせ" },
+    { kanji: "搭子", yomi: "ターツ", cat: "手牌", desc: "あと1枚で順子になる2枚の組み合わせ。例：3萬4萬" },
+    { kanji: "孤立牌", yomi: "コリツハイ", cat: "手牌", desc: "周りとつながらず、面子になりにくい単独の牌" },
+    { kanji: "両面", yomi: "リャンメン", cat: "待ち", desc: "順子の両端どちらでもアガれる待ち。例：3萬4萬で2萬と5萬の待ち。受け入れが最も広い" },
+    { kanji: "嵌張", yomi: "カンチャン", cat: "待ち", desc: "順子の真ん中が抜けた待ち。例：3萬5萬で4萬待ち。符が2符つく" },
+    { kanji: "辺張", yomi: "ペンチャン", cat: "待ち", desc: "端でしか受けられない待ち。例：1萬2萬で3萬待ち。符が2符つく" },
+    { kanji: "単騎", yomi: "タンキ", cat: "待ち", desc: "雀頭になる1枚を待つ形。符が2符つく" },
+    { kanji: "双碰", yomi: "シャンポン", cat: "待ち", desc: "対子2組のどちらかが刻子になるのを待つ形。シャボともいう" },
+    { kanji: "多面張", yomi: "タメンチャン", cat: "待ち", desc: "3種類以上の牌でアガれる待ちの形" },
+    { kanji: "和了", yomi: "ホーラ", cat: "アガリ", desc: "手牌を完成させて点数を得ること。このアプリでは「アガリ」と表記" },
+    { kanji: "自摸", yomi: "ツモ", cat: "アガリ", desc: "山から牌を1枚取ること。また、自分で引いた牌でアガること" },
+    { kanji: "栄和", yomi: "ロン", cat: "アガリ", desc: "他家の捨て牌でアガること" },
+    { kanji: "放銃", yomi: "ホウジュウ", cat: "アガリ", desc: "自分の捨て牌で他家にロンされること。「振り込む」ともいう" },
+    { kanji: "頭跳ね", yomi: "アタマハネ", cat: "アガリ", desc: "複数人が同時にロンしたとき、放銃者に近い1人だけがアガリになるルール" },
+    { kanji: "振聴", yomi: "フリテン", cat: "アガリ", desc: "自分の待ち牌を自分で捨てている状態。ロンできずツモのみになる" },
+    { kanji: "流局", yomi: "リュウキョク", cat: "アガリ", desc: "誰もアガれずに山が尽きて局が終わること" },
+    { kanji: "連荘", yomi: "レンチャン", cat: "アガリ", desc: "親がアガる、またはテンパイして続けて親を務めること" },
+    { kanji: "親流れ", yomi: "オヤナガレ", cat: "アガリ", desc: "親が交代して次の人に移ること" },
+    { kanji: "本場", yomi: "ホンバ", cat: "アガリ", desc: "連荘や流局が続いた回数。1本場につき300点が加算される" },
+    { kanji: "ダブロン", yomi: "ダブロン", cat: "アガリ", desc: "1つの捨て牌に2人が同時にロンすること。認めるかはルール次第" },
+    { kanji: "符", yomi: "フ", cat: "点数", desc: "手牌の構成から計算する点数の基礎値。20符を土台に加算していく" },
+    { kanji: "翻", yomi: "ハン", cat: "点数", desc: "役の大きさを表す単位。翻が1つ増えると点数が約2倍になる" },
+    { kanji: "満貫", yomi: "マンガン", cat: "点数", desc: "5翻以上（または基本点2000点）の区切り。子8000点・親12000点" },
+    { kanji: "跳満", yomi: "ハネマン", cat: "点数", desc: "6〜7翻。子12000点・親18000点" },
+    { kanji: "倍満", yomi: "バイマン", cat: "点数", desc: "8〜10翻。子16000点・親24000点" },
+    { kanji: "三倍満", yomi: "サンバイマン", cat: "点数", desc: "11〜12翻。子24000点・親36000点" },
+    { kanji: "数え役満", yomi: "カゾエヤクマン", cat: "点数", desc: "13翻以上で役満と同じ点数になること" },
+    { kanji: "供託", yomi: "キョウタク", cat: "点数", desc: "場に出されたリーチ棒。次にアガった人がまとめて受け取る" },
+    { kanji: "罰符", yomi: "バップ", cat: "点数", desc: "流局時にノーテンの人が払う点数。場で合計3000点をやりとりする" },
+    { kanji: "持ち点", yomi: "モチテン", cat: "点数", desc: "対局開始時に各自が持つ点数。25000点や30000点が一般的" },
+    { kanji: "返し点", yomi: "カエシテン", cat: "点数", desc: "精算の基準となる点数。持ち点との差がオカになる" },
+    { kanji: "オカ", yomi: "オカ", cat: "点数", desc: "持ち点と返し点の差を集めたもの。トップが総取りする" },
+    { kanji: "ウマ", yomi: "ウマ", cat: "点数", desc: "順位によってやりとりする点数。10-20や5-10などがある" },
+    { kanji: "箱下", yomi: "ハコシタ", cat: "点数", desc: "持ち点がマイナスになること。トビ・ハコテンともいい、多くは終局になる" },
+    { kanji: "切り上げ満貫", yomi: "キリアゲマンガン", cat: "点数", desc: "4翻30符・3翻60符を満貫として扱うルール" },
+    { kanji: "起家", yomi: "チーチャ", cat: "場", desc: "最初の親のこと。東1局の親" },
+    { kanji: "東風戦", yomi: "トンプウセン", cat: "場", desc: "東場だけで終わる短い対局形式" },
+    { kanji: "半荘", yomi: "ハンチャン", cat: "場", desc: "東場と南場を行う標準的な対局形式" },
+    { kanji: "オーラス", yomi: "オーラス", cat: "場", desc: "その対局の最終局。東風戦なら東4局、半荘なら南4局" },
+    { kanji: "上家", yomi: "カミチャ", cat: "場", desc: "自分の左隣の人。チーができる相手" },
+    { kanji: "下家", yomi: "シモチャ", cat: "場", desc: "自分の右隣の人" },
+    { kanji: "対面", yomi: "トイメン", cat: "場", desc: "自分の正面の人" },
+    { kanji: "他家", yomi: "ターチャ", cat: "場", desc: "自分以外の3人" },
+    { kanji: "王牌", yomi: "ワンパイ", cat: "場", desc: "山の最後に残す14枚。ドラ表示牌や嶺上牌が含まれ、ここからはツモらない" },
+    { kanji: "嶺上牌", yomi: "リンシャンパイ", cat: "場", desc: "カンしたときに引く牌。王牌から取る" },
+    { kanji: "海底", yomi: "ハイテイ", cat: "場", desc: "山の最後の1枚。ここでツモアガると海底摸月がつく" },
+    { kanji: "河底", yomi: "ホウテイ", cat: "場", desc: "最後の捨て牌。ここでロンすると河底撈魚がつく" },
+    { kanji: "河", yomi: "ホー", cat: "場", desc: "捨て牌が並べられる場所。捨て牌の総称としても使う" },
+    { kanji: "配牌", yomi: "ハイパイ", cat: "場", desc: "各自に最初に配られる13枚の牌" },
+    { kanji: "席決め", yomi: "セキギメ", cat: "場", desc: "対局前に座る位置を決めること。サイコロや牌を使う" },
+    { kanji: "萬子", yomi: "マンズ", cat: "牌", desc: "漢数字と「萬」が書かれた数牌。1萬から9萬まで" },
+    { kanji: "筒子", yomi: "ピンズ", cat: "牌", desc: "丸い模様の数牌。1筒から9筒まで" },
+    { kanji: "索子", yomi: "ソーズ", cat: "牌", desc: "竹の棒が描かれた数牌。1索は鳥の絵柄" },
+    { kanji: "字牌", yomi: "ジハイ", cat: "牌", desc: "風牌と三元牌の総称。数字のない牌" },
+    { kanji: "風牌", yomi: "フォンパイ", cat: "牌", desc: "東・南・西・北の4種類" },
+    { kanji: "三元牌", yomi: "サンゲンパイ", cat: "牌", desc: "白・發・中の3種類。刻子にすると役がつく" },
+    { kanji: "么九牌", yomi: "ヤオチューハイ", cat: "牌", desc: "1と9の数牌、および字牌の総称" },
+    { kanji: "老頭牌", yomi: "ロウトウハイ", cat: "牌", desc: "1と9の数牌のみ。字牌は含まない" },
+    { kanji: "中張牌", yomi: "チュンチャンパイ", cat: "牌", desc: "2から8までの数牌。タンヤオで使える牌" },
+    { kanji: "客風牌", yomi: "オタカゼハイ", cat: "牌", desc: "自風でも場風でもない風牌。刻子にしても役にならない" },
+    { kanji: "赤ドラ", yomi: "アカドラ", cat: "牌", desc: "赤く塗られた5の牌。1枚につき1翻加算される" },
+    { kanji: "裏ドラ", yomi: "ウラドラ", cat: "牌", desc: "リーチしてアガったときだけ見られるドラ" },
+    { kanji: "槓ドラ", yomi: "カンドラ", cat: "牌", desc: "カンをすると増えるドラ" },
+    { kanji: "立直", yomi: "リーチ", cat: "戦術", desc: "門前テンパイ時に1000点を場に出して宣言する役" },
+    { kanji: "ダマテン", yomi: "ダマテン", cat: "戦術", desc: "テンパイしてもリーチせずに黙っていること。ヤミテンともいう" },
+    { kanji: "降りる", yomi: "オリル", cat: "戦術", desc: "アガリをあきらめ、放銃しないことに徹すること" },
+    { kanji: "回し打ち", yomi: "マワシウチ", cat: "戦術", desc: "危険牌を避けながら、アガリも狙って打つこと" },
+    { kanji: "現物", yomi: "ゲンブツ", cat: "戦術", desc: "相手がすでに捨てている牌。その相手にはロンされない安全牌" },
+    { kanji: "筋", yomi: "スジ", cat: "戦術", desc: "3が捨ててあれば6は比較的安全、といった数の関係を使った読み" },
+    { kanji: "壁", yomi: "カベ", cat: "戦術", desc: "同じ牌が4枚見えていることを利用した安全度の読み。ノーチャンスともいう" },
+    { kanji: "追っかけリーチ", yomi: "オッカケリーチ", cat: "戦術", desc: "他家のリーチに対して、あとからリーチをかけること" },
+  ];
+  const TERM_CATS = ["鳴き", "手牌", "待ち", "アガリ", "点数", "場", "牌", "戦術"];
   const YAKU_DATA = [
     { name: "リーチ（立直）", yomi: ["りーち", "りいち"], han: 1, naki: null, desc: "テンパイ時に宣言。門前（メンゼン）限定。宣言後は手牌を変えられない", cat: "1翻" },
     { name: "一発（イッパツ）", yomi: ["いっぱつ"], han: 1, naki: null, desc: "リーチ後、次の自分のツモまでにアガること。途中で鳴きが入ると無効", cat: "1翻" },
@@ -1492,6 +1584,57 @@ input, select { padding: 10px 14px; }
   });
   const saveMastered = (arr) => { setMasteredYaku(arr); try { localStorage.setItem("mj_mastered", JSON.stringify(arr)); } catch {} };
   const saveWrong = (obj) => { setWrongYaku(obj); try { localStorage.setItem("mj_wrong", JSON.stringify(obj)); } catch {} };
+
+  // ── 用語問題集 ──
+  const [termCat, setTermCat] = useState(null);      // null=カテゴリ選択中
+  const [termOrder, setTermOrder] = useState([]);
+  const [termIdx, setTermIdx] = useState(0);
+  const [termRevealed, setTermRevealed] = useState(false);
+  const [termScore, setTermScore] = useState({ known: 0, total: 0 });
+  const [termFinished, setTermFinished] = useState(false);
+  const [masteredTerms, setMasteredTerms] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("mj_term_mastered") || "[]"); } catch { return []; }
+  });
+  const [wrongTerms, setWrongTerms] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("mj_term_wrong") || "{}"); } catch { return {}; }
+  });
+  const saveTermMastered = (arr) => { setMasteredTerms(arr); try { localStorage.setItem("mj_term_mastered", JSON.stringify(arr)); } catch {} };
+  const saveTermWrong = (obj) => { setWrongTerms(obj); try { localStorage.setItem("mj_term_wrong", JSON.stringify(obj)); } catch {} };
+
+  const startTermQuiz = (cat) => {
+    const base = cat === "all" ? TERM_DATA : TERM_DATA.filter(t => t.cat === cat);
+    const pool = base.filter(t => !masteredTerms.includes(t.kanji));
+    // 間違えた回数が多いものを優先しつつ、同点はランダムに
+    const order = pool
+      .map(t => ({ t, w: wrongTerms[t.kanji] || 0, r: Math.random() }))
+      .sort((a, b) => (b.w - a.w) || (a.r - b.r))
+      .map(x => x.t);
+    setTermCat(cat);
+    setTermOrder(order);
+    setTermIdx(0);
+    setTermRevealed(false);
+    setTermScore({ known: 0, total: 0 });
+    setTermFinished(false);
+  };
+
+  const answerTerm = (known) => {
+    const cur = termOrder[termIdx];
+    if (!cur) return;
+    if (known) {
+      const w = { ...wrongTerms };
+      if (w[cur.kanji]) { w[cur.kanji] = Math.max(0, w[cur.kanji] - 1); saveTermWrong(w); }
+    } else {
+      saveTermWrong({ ...wrongTerms, [cur.kanji]: (wrongTerms[cur.kanji] || 0) + 1 });
+    }
+    setTermScore(s => ({ known: s.known + (known ? 1 : 0), total: s.total + 1 }));
+    setTermRevealed(true);
+  };
+
+  const nextTerm = () => {
+    if (termIdx + 1 >= termOrder.length) { setTermFinished(true); return; }
+    setTermIdx(i => i + 1);
+    setTermRevealed(false);
+  };
 
   const getQuizPool = () => {
     const base = quizMode === "naki" ? YAKU_DATA.filter(y => y.naki !== null) : YAKU_DATA;
@@ -3507,6 +3650,9 @@ input, select { padding: 10px 14px; }
             {menuItem("🎯", "翻数テスト", "役の翻数クイズ・逆引き", () => {
               setView("quiz"); setQuizMode(null);
             })}
+            {menuItem("📚", "用語問題集", "麻雀用語を漢字と読みで覚える", () => {
+              setView("termquiz"); setTermCat(null); setTermFinished(false);
+            })}
             {menuItem("📐", "符計算講座", "レベル別に符を学ぶ", () => {
               setView("fucourse"); setFuLessonPhase("menu");
             })}
@@ -3736,6 +3882,183 @@ input, select { padding: 10px 14px; }
     );
   };
 
+
+  // ══════════════════════════════════
+  // ── 用語問題集 ──
+  // ══════════════════════════════════
+  const renderTermQuiz = () => {
+    const bigChoice = (label, sub, color, colorS, onClick) => (
+      <button onClick={onClick} style={{
+        flex: 1, padding: "18px 8px", borderRadius: 14, cursor: "pointer",
+        border: `2px solid ${color}`, background: colorS,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+      }}>
+        <span style={{ fontSize: 17, fontWeight: 900, color }}>{label}</span>
+        <span style={{ fontSize: 10, color: t.dm }}>{sub}</span>
+      </button>
+    );
+
+    // ── カテゴリ選択 ──
+    if (!termCat) {
+      const remaining = (cat) => {
+        const base = cat === "all" ? TERM_DATA : TERM_DATA.filter(x => x.cat === cat);
+        return base.filter(x => !masteredTerms.includes(x.kanji)).length;
+      };
+      return (
+        <div style={body}>
+          <button style={backBtn} onClick={() => setView("home")}>← 戻る</button>
+          <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>📚 用語問題集</div>
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 16 }}>
+            役以外の麻雀用語を、漢字と読みのセットで覚えます
+          </div>
+
+          <button onClick={() => startTermQuiz("all")} style={{
+            width: "100%", padding: "16px 18px", marginBottom: 10, borderRadius: 12, cursor: "pointer",
+            border: `2px solid ${t.ac}`, background: t.acS, textAlign: "left",
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: t.ac }}>すべての用語</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 2 }}>
+              残り {remaining("all")} 語 / 全 {TERM_DATA.length} 語
+            </div>
+          </button>
+
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, margin: "14px 0 8px" }}>分野を選ぶ</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {TERM_CATS.map(cat => {
+              const rem = remaining(cat);
+              return (
+                <button key={cat} onClick={() => rem > 0 && startTermQuiz(cat)} style={{
+                  padding: "13px 8px", borderRadius: 11, cursor: rem > 0 ? "pointer" : "default",
+                  border: `1px solid ${t.bd}`, background: t.card, opacity: rem > 0 ? 1 : 0.45,
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: t.tx }}>{cat}</div>
+                  <div style={{ fontSize: 10, color: rem > 0 ? t.dm : t.gn, marginTop: 2 }}>
+                    {rem > 0 ? `残り ${rem} 語` : "✓ 全て覚えた"}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {masteredTerms.length > 0 && (
+            <div style={{ marginTop: 18, padding: 14, borderRadius: 12, background: t.card, border: `1px solid ${t.bd}` }}>
+              <div style={{ fontSize: 13, color: t.tx, marginBottom: 8 }}>
+                覚えた用語: <span style={{ color: t.gn, fontWeight: 800 }}>{masteredTerms.length}</span> / {TERM_DATA.length}
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: t.sf, overflow: "hidden", marginBottom: 10 }}>
+                <div style={{ height: "100%", width: `${Math.round(masteredTerms.length / TERM_DATA.length * 100)}%`, background: t.gn }} />
+              </div>
+              <button onClick={() => { saveTermMastered([]); saveTermWrong({}); }} style={{
+                ...actionBtn(), fontSize: 12, color: t.dm, marginTop: 0,
+              }}>学習状況をリセット</button>
+            </div>
+          )}
+
+          <button style={{ ...actionBtn(), marginTop: 16 }} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+
+    // ── 終了画面 ──
+    if (termFinished || termOrder.length === 0) {
+      const pct = termScore.total ? Math.round(termScore.known / termScore.total * 100) : 0;
+      return (
+        <div style={body}>
+          <div style={card}>
+            <div style={{ fontSize: 20, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>おつかれさまでした</div>
+            {termOrder.length === 0 ? (
+              <div style={{ fontSize: 13, color: t.dm, textAlign: "center", marginBottom: 16 }}>
+                この分野は全て「覚えた」になっています
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 40, fontWeight: 900, textAlign: "center", color: pct >= 70 ? t.gn : t.gd }}>{pct}%</div>
+                <div style={{ fontSize: 13, color: t.dm, textAlign: "center", marginBottom: 16 }}>
+                  {termScore.total}語中 {termScore.known}語 わかりました
+                </div>
+              </>
+            )}
+            <button style={actionBtn("p")} onClick={() => startTermQuiz(termCat)}>もう一度</button>
+            <button style={actionBtn()} onClick={() => setTermCat(null)}>分野を選び直す</button>
+            <button style={actionBtn()} onClick={() => setView("home")}>メニューに戻る</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ── 出題画面 ──
+    const cur = termOrder[termIdx];
+    const isMastered = masteredTerms.includes(cur.kanji);
+    return (
+      <div style={body}>
+        <button style={backBtn} onClick={() => setTermCat(null)}>← 分野を選び直す</button>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <span style={{ fontSize: 12, color: t.dm }}>{termIdx + 1} / {termOrder.length}</span>
+          <span style={{ fontSize: 12, color: t.dm }}>
+            わかる {termScore.known} / {termScore.total}
+          </span>
+        </div>
+        <div style={{ height: 6, borderRadius: 3, background: t.sf, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ height: "100%", width: `${Math.round((termIdx) / termOrder.length * 100)}%`, background: t.ac, transition: "width 0.3s" }} />
+        </div>
+
+        <div style={card}>
+          <div style={{ textAlign: "center", padding: "10px 0 4px" }}>
+            <span style={{
+              fontSize: 11, color: t.dm, border: `1px solid ${t.bd}`,
+              borderRadius: 6, padding: "3px 10px",
+            }}>{cur.cat}</span>
+          </div>
+
+          {/* 漢字と読みをセットで表示 */}
+          <div style={{ textAlign: "center", padding: "18px 0 22px" }}>
+            <div style={{ fontSize: 13, color: t.dm, letterSpacing: "0.15em", marginBottom: 6 }}>{cur.yomi}</div>
+            <div style={{ fontSize: 40, fontWeight: 900, color: t.tx, letterSpacing: "0.06em", lineHeight: 1.2 }}>
+              {cur.kanji}
+            </div>
+            <div style={{ fontSize: 12, color: t.dm, marginTop: 12 }}>
+              {termRevealed ? "" : "意味がわかりますか？"}
+            </div>
+          </div>
+
+          {!termRevealed ? (
+            <div style={{ display: "flex", gap: 10 }}>
+              {bigChoice("わかる", "意味を言える", t.gn, t.gnS, () => answerTerm(true))}
+              {bigChoice("わからない", "あとで復習", t.rd, t.rdS, () => answerTerm(false))}
+            </div>
+          ) : (
+            <>
+              <div style={{
+                padding: 14, borderRadius: 11, background: t.sf,
+                border: `1px solid ${t.bd}`, marginBottom: 12,
+              }}>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>意味</div>
+                <div style={{ fontSize: 14, color: t.tx, lineHeight: 1.75 }}>{cur.desc}</div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (isMastered) saveTermMastered(masteredTerms.filter(k => k !== cur.kanji));
+                  else saveTermMastered([...masteredTerms, cur.kanji]);
+                }}
+                style={{
+                  width: "100%", padding: "11px 8px", borderRadius: 10, marginBottom: 10, cursor: "pointer",
+                  border: `1px solid ${isMastered ? t.gn : t.bd}`,
+                  background: isMastered ? t.gnS : "transparent",
+                  color: isMastered ? t.gn : t.dm, fontSize: 13, fontWeight: 700,
+                }}
+              >{isMastered ? "✓ 覚えた（出題しない）" : "この用語を「覚えた」にする"}</button>
+
+              <button style={actionBtn("p")} onClick={nextTerm}>
+                {termIdx + 1 >= termOrder.length ? "結果を見る" : "次の用語へ →"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // ══════════════════════════════════
   // ── CALCULATOR WIZARD ──
@@ -5593,6 +5916,7 @@ input, select { padding: 10px 14px; }
         {view === "game" && renderGame()}
         {view === "history" && renderHistory()}
         {view === "quiz" && renderQuiz()}
+        {view === "termquiz" && renderTermQuiz()}
         {view === "dict" && renderDict()}
         {view === "fucourse" && renderFuCourse()}
         {view === "table" && renderTable()}
