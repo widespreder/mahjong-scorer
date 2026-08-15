@@ -794,8 +794,8 @@ function MahjongScorer() {
               <span style={{ width: 4 }} />
               <Tile label="9" sub="筒" size={17} /><Tile label="9" sub="筒" size={17} />
             </div>
-            <div style={{ fontSize: 9, color: t.dm, marginTop: 5 }}>対子7組 = 14枚</div>
-            <div style={{ fontSize: 10, color: t.dm, marginTop: 3 }}>25符固定</div>
+            <div style={{ fontSize: 12, color: t.dm, marginTop: 8, fontWeight: 600 }}>対子7組 = 14枚</div>
+            <div style={{ fontSize: 15, color: t.gd, marginTop: 5, fontWeight: 800 }}>25符固定</div>
           </button>
           {bigChoice("どちらでもない", "通常の符計算に進む", !g.pinfu && !g.chiitoi, () => { setFuGuide(gg => ({ ...gg, pinfu: false, chiitoi: false })); setFuGuideStep(2); })}
         </div>
