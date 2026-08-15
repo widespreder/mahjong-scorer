@@ -89,6 +89,8 @@ function MahjongScorer() {
   const [seatTurn, setSeatTurn] = useState(0);      // 今引く人（元の並び順のindex）
   const [seatDone, setSeatDone] = useState(false);
   const [showRuleCheck, setShowRuleCheck] = useState(false); // 対局中のルール確認
+  const [reviewing, setReviewing] = useState(false);         // 結果画面から修正に戻っている状態
+  const [showScoreFix, setShowScoreFix] = useState(false);   // 点数の直接修正
 
   const WIND_ORDER = ["東", "南", "西", "北"];
   const resetSeatDraw = () => {
@@ -3926,7 +3928,7 @@ input, select { padding: 10px 14px; }
             {menuItem("🏆", "リーグ戦", "通算成績で競う", () => { setView("league"); })}
             {menuItem("▶", "新しい対局を始める", "卓上モードで開始します", () => {
               setView("game"); setGameStarted(false); setGameFinished(false); setSetupStep(0);
-              setActiveLeagueId(null);
+              setActiveLeagueId(null); setReviewing(false); setShowScoreFix(false);
               // 対局日は自動で今日にする
               {
                 const d = new Date();
@@ -4746,6 +4748,7 @@ input, select { padding: 10px 14px; }
             setActiveLeagueId(lg.id);
             resetSeatDraw();
             setGameStarted(false); setGameFinished(false);
+            setReviewing(false); setShowScoreFix(false);
             setSetupStep(1);           // 席決めから始める
             setView("game");
           }}>席決めへ進む</button>
@@ -6157,6 +6160,12 @@ input, select { padding: 10px 14px; }
         minHeight: "100dvh",
         display: "flex", flexDirection: "column", justifyContent: "center",
       }}>
+        {reviewing && (
+          <button onClick={() => { setReviewing(false); setGameFinished(true); }} style={{
+            width: "100%", marginBottom: 8, padding: "13px 8px", borderRadius: 11,
+            border: "none", background: t.gn, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer",
+          }}>✓ 修正を終えて結果に戻る</button>
+        )}
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 4, padding: "0 6px" }}>
           {rounds.length > 0 && (
             <button style={{ background: "none", border: "none", color: t.dm, fontSize: 11, cursor: "pointer", fontWeight: 600 }}
@@ -7008,6 +7017,14 @@ input, select { padding: 10px 14px; }
         })()}
 
         <button style={actionBtn("p")} onClick={() => {
+          const lgName = leagues.find(l => l.id === activeLeagueId)?.name;
+          if (!window.confirm(
+            lgName
+              ? `この結果を「${lgName}」に記録して対局を終了します。\n記録後は変更できません。よろしいですか？`
+              : "この結果を履歴に記録して対局を終了します。\n記録後は変更できません。よろしいですか？"
+          )) return;
+          setReviewing(false);
+          setShowScoreFix(false);
           if (rounds.length > 0) {
             setGameHistory(prev => [...prev, {
               id: Date.now(),
@@ -7043,7 +7060,75 @@ input, select { padding: 10px 14px; }
           setGameFinished(false);
           if (back) { setLeagueId(back); setLeagueTab("stand"); setView("leaguedetail"); }
           else setView("home");
-        }}>{activeLeagueId ? "リーグに記録して成績表へ" : "履歴に保存してメニューへ"}</button>
+        }}>{activeLeagueId ? "✓ 対局終了・リーグに記録する" : "✓ 対局終了・履歴に記録する"}</button>
+
+        {/* 修正 */}
+        <div style={{ ...card, padding: 14, marginTop: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 4, letterSpacing: "0.05em" }}>
+            内容に誤りがある場合
+          </div>
+          <div style={{ fontSize: 11, color: t.dm, marginBottom: 11, lineHeight: 1.7 }}>
+            記録する前に修正できます。記録したあとは変更できません。
+          </div>
+
+          <button style={{ ...actionBtn(), marginTop: 0 }}
+            onClick={() => { setGameFinished(false); setReviewing(true); setShowRoundEdit(true); }}>
+            ✏️ 局の内容を修正する
+          </button>
+
+          <button style={{ ...actionBtn() }}
+            onClick={() => setShowScoreFix(v => !v)}>
+            {showScoreFix ? "▲ 点数の直接修正を閉じる" : "🔧 点数を直接修正する"}
+          </button>
+
+          {showScoreFix && (
+            <div style={{ marginTop: 10, padding: 12, borderRadius: 10, background: t.sf, border: `1px solid ${t.bd}` }}>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 10, lineHeight: 1.7 }}>
+                チョンボや点棒の受け渡しミスなど、局の記録では直せない分を調整します
+              </div>
+              {players.map((nm, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{
+                    flex: 1, fontSize: 13, fontWeight: 700, color: t.tx,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>{nm}</span>
+                  <button onClick={() => setScores(s => s.map((v, k) => k === i ? v - 1000 : v))} style={{
+                    width: 38, height: 34, borderRadius: 8, cursor: "pointer",
+                    border: `1px solid ${t.bd}`, background: t.card, color: t.tx, fontSize: 16, fontWeight: 800,
+                  }}>−</button>
+                  <span style={{
+                    width: 74, textAlign: "center", fontSize: 15, fontWeight: 800,
+                    fontVariantNumeric: "tabular-nums", color: scores[i] < 0 ? t.rd : t.tx,
+                  }}>{scores[i].toLocaleString()}</span>
+                  <button onClick={() => setScores(s => s.map((v, k) => k === i ? v + 1000 : v))} style={{
+                    width: 38, height: 34, borderRadius: 8, cursor: "pointer",
+                    border: `1px solid ${t.bd}`, background: t.card, color: t.tx, fontSize: 16, fontWeight: 800,
+                  }}>＋</button>
+                </div>
+              ))}
+              <div style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bd}`,
+              }}>
+                <span style={{ fontSize: 11, color: t.dm }}>4人の合計</span>
+                <span style={{
+                  fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums",
+                  color: scores.reduce((a2, b2) => a2 + b2, 0) === (ruleSet.startPoints ?? 25000) * 4 ? t.gn : t.rd,
+                }}>
+                  {scores.reduce((a2, b2) => a2 + b2, 0).toLocaleString()}
+                  <span style={{ fontSize: 10, color: t.dm, fontWeight: 400 }}>
+                    {" / "}{((ruleSet.startPoints ?? 25000) * 4).toLocaleString()}
+                  </span>
+                </span>
+              </div>
+              {scores.reduce((a2, b2) => a2 + b2, 0) !== (ruleSet.startPoints ?? 25000) * 4 && (
+                <div style={{ fontSize: 10, color: t.rd, marginTop: 6, lineHeight: 1.7 }}>
+                  合計が持ち点×4と一致していません。誰かの点数を調整してください。
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
