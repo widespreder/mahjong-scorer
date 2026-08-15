@@ -1703,6 +1703,80 @@ input, select { padding: 10px 14px; }
   // ══════════════════════════════════
   // ══════════════════════════════════
   // ── SCORE PROBLEMS VIEW ──
+  // ══════════════════════════════════
+  // ── 役の手牌例（イラスト用） ──
+  // 表記: "234m"=2萬3萬4萬 / "EEE"=東東東 / E東 S南 W西 N北 H白 G發 C中
+  // ══════════════════════════════════
+  const YAKU_EXAMPLES = {
+    "リーチ（立直）": "234m 567p 345s 678s 99m",
+    "一発（イッパツ）": "234m 567p 345s 678s 99m",
+    "門前清自摸和（メンゼンツモ）": "234m 567p 345s 678s 99m",
+    "平和（ピンフ）": "234m 567p 345s 678s 99m",
+    "断么九（タンヤオ）": "234m 567p 345s 678s 55m",
+    "一盃口（イーペーコー）": "234m 234m 567p 678s 99p",
+    "役牌 白（ハク）": "HHH 234m 567p 345s 99s",
+    "役牌 發（ハツ）": "GGG 234m 567p 345s 99s",
+    "役牌 中（チュン）": "CCC 234m 567p 345s 99s",
+    "場風牌（バカゼハイ）": "EEE 234m 567p 345s 99s",
+    "自風牌（ジカゼハイ）": "SSS 234m 567p 345s 99s",
+    "嶺上開花（リンシャンカイホウ）": "5555s 234m 567p 345s 99m",
+    "搶槓（チャンカン）": "234m 567p 345s 678s 99m",
+    "海底摸月（ハイテイ）": "234m 567p 345s 678s 99m",
+    "河底撈魚（ホウテイ）": "234m 567p 345s 678s 99m",
+    "ダブル立直（ダブルリーチ）": "234m 567p 345s 678s 99m",
+    "三色同順（サンショクドウジュン）": "234m 234p 234s 678m 99s",
+    "一気通貫（イッキツウカン）": "123m 456m 789m 234p 99s",
+    "混全帯么九（チャンタ）": "123m 789p 123s EEE 99s",
+    "七対子（チートイツ）": "11m 44p 77s EE HH 33m 99p",
+    "対々和（トイトイ）": "111m 555p 999s EEE 33m",
+    "三暗刻（サンアンコー）": "111m 555p 999s 234m 33p",
+    "三色同刻（サンショクドウコー）": "222m 222p 222s 456m 99s",
+    "三槓子（サンカンツ）": "1111m 5555p 9999s 234m 33p",
+    "小三元（ショウサンゲン）": "HHH GGG CC 234m 567p",
+    "混老頭（ホンロウトウ）": "111m 999p EEE CCC 99s",
+    "二盃口（リャンペーコー）": "234m 234m 678p 678p 99s",
+    "純全帯么九（ジュンチャン）": "123m 789p 123s 789s 99m",
+    "混一色（ホンイツ）": "123m 456m 789m EEE 99m",
+    "清一色（チンイツ）": "123m 456m 789m 234m 99m",
+    "国士無双（コクシムソウ）": "19m 19p 19s ESWNHGC 1m",
+    "四暗刻（スーアンコー）": "111m 555p 999s EEE 33m",
+    "大三元（ダイサンゲン）": "HHH GGG CCC 234m 99s",
+    "字一色（ツーイーソー）": "EEE SSS WWW CCC HH",
+    "小四喜（ショウスーシー）": "EEE SSS WWW NN 234m",
+    "大四喜（ダイスーシー）": "EEE SSS WWW NNN 99s",
+    "緑一色（リューイーソー）": "234s 234s 666s 888s GG",
+    "清老頭（チンロウトウ）": "111m 999m 111p 999s 99p",
+    "九蓮宝燈（チューレンポウトウ）": "111m 234m 567m 89m 999m",
+    "四槓子（スーカンツ）": "1111m 5555p 9999s 3333s 99p",
+    "天和（テンホウ）": "234m 567p 345s 678s 99m",
+    "地和（チーホウ）": "234m 567p 345s 678s 99m",
+  };
+
+  const HONOR_MAP = { E: "東", S: "南", W: "西", N: "北", H: "白", G: "發", C: "中" };
+  const SUIT_MAP = { m: "萬", p: "筒", s: "索" };
+
+  // "234m" や "EEE" を牌の配列に変換
+  const parseTileGroup = (g) => {
+    const m = g.match(/^([0-9]+)([mps])$/);
+    if (m) return m[1].split("").map(n => [n, SUIT_MAP[m[2]]]);
+    return g.split("").map(ch => [HONOR_MAP[ch] || ch, ""]);
+  };
+
+  const YakuHand = ({ name, size = 19 }) => {
+    const src = YAKU_EXAMPLES[name];
+    if (!src) return null;
+    const groups = src.split(" ").map(parseTileGroup);
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, alignItems: "flex-end", justifyContent: "center", padding: "10px 0" }}>
+        {groups.map((g, gi) => (
+          <div key={gi} style={{ display: "flex", gap: 1.5 }}>
+            {g.map(([l, s], ti) => <Tile key={ti} label={l} sub={s} size={size} />)}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderDict = () => (
     <div style={body}>
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>役一覧</div>
@@ -1733,6 +1807,12 @@ input, select { padding: 10px 14px; }
           {dictExpanded === y.name && (
             <div style={{ padding: "0 16px 14px", fontSize: 13, color: t.dm, lineHeight: 1.7, borderTop: `1px solid ${t.bd}33` }}>
               <div style={{ paddingTop: 10 }}>{y.desc}</div>
+              {YAKU_EXAMPLES[y.name] && (
+                <div style={{ marginTop: 10, background: t.sf, borderRadius: 10, padding: "6px 8px" }}>
+                  <div style={{ fontSize: 10, color: t.dm, textAlign: "center" }}>例</div>
+                  <YakuHand name={y.name} />
+                </div>
+              )}
             </div>
           )}
         </div>
