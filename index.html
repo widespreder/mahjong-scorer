@@ -1840,12 +1840,14 @@ input, select { padding: 10px 14px; }
   const TableDiagram = ({ highlight, dice1, dice2, breakPos, labels }) => {
     const seatStyle = (pos, on) => {
       const base = {
-        position: "absolute", width: 54, height: 30, borderRadius: 8,
+        position: "absolute", minWidth: 54, height: 30, padding: "0 9px", borderRadius: 8,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 13, fontWeight: 800,
+        fontSize: 13, fontWeight: 800, whiteSpace: "nowrap", lineHeight: 1,
         border: `2px solid ${on ? t.gd : t.bd}`,
-        background: on ? t.gdS : t.sf,
-        color: on ? t.gd : t.dm,
+        background: on ? "#12181f" : t.sf,
+        color: on ? t.gd : t.tx,
+        boxShadow: "0 2px 6px rgba(0,0,0,0.45)",
+        zIndex: 2,
       };
       if (pos === "S") return { ...base, bottom: 6, left: "50%", transform: "translateX(-50%)" };
       if (pos === "E") return { ...base, right: 6, top: "50%", transform: "translateY(-50%)" };
