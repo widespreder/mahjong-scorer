@@ -247,7 +247,10 @@ function MahjongScorer() {
   const loadDefaultRules = () => {
     try {
       const v = JSON.parse(localStorage.getItem("mj_default_rules") || "null");
-      return v ? { ...FACTORY_RULES, ...v } : { ...FACTORY_RULES };
+      const r = v ? { ...FACTORY_RULES, ...v } : { ...FACTORY_RULES };
+      // 返し点は必ず持ち点以上
+      if (r.returnPoints < r.startPoints) r.returnPoints = r.startPoints;
+      return r;
     } catch { return { ...FACTORY_RULES }; }
   };
   const [defaultRules, setDefaultRules] = useState(loadDefaultRules);
@@ -4071,7 +4074,11 @@ input, select { padding: 10px 14px; }
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
                   <select value={draftRules.startPoints} style={selectStyle}
-                    onChange={e => editDraft({ startPoints: parseInt(e.target.value, 10) })}>
+                    onChange={e => {
+                      const v = parseInt(e.target.value, 10);
+                      // 返し点は必ず持ち点以上にする
+                      editDraft({ startPoints: v, returnPoints: Math.max(v, draftRules.returnPoints || v) });
+                    }}>
                     {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                   </select>
                 </div>
@@ -4079,7 +4086,7 @@ input, select { padding: 10px 14px; }
                   <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
                   <select value={draftRules.returnPoints} style={selectStyle}
                     onChange={e => editDraft({ returnPoints: parseInt(e.target.value, 10) })}>
-                    {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                    {Array.from({length:16},(_,i)=>20000+i*1000).filter(v => v >= (draftRules.startPoints || 0)).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                   </select>
                 </div>
               </div>
@@ -4382,7 +4389,10 @@ input, select { padding: 10px 14px; }
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
               <select value={d.rules.startPoints} style={selectStyle}
-                onChange={e => set({ rules: { ...d.rules, startPoints: parseInt(e.target.value, 10) } })}>
+                onChange={e => {
+                  const v = parseInt(e.target.value, 10);
+                  set({ rules: { ...d.rules, startPoints: v, returnPoints: Math.max(v, d.rules.returnPoints || v) } });
+                }}>
                 {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
               </select>
             </div>
@@ -4390,7 +4400,7 @@ input, select { padding: 10px 14px; }
               <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
               <select value={d.rules.returnPoints} style={selectStyle}
                 onChange={e => set({ rules: { ...d.rules, returnPoints: parseInt(e.target.value, 10) } })}>
-                {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                {Array.from({length:16},(_,i)=>20000+i*1000).filter(v => v >= (d.rules.startPoints || 0)).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
               </select>
             </div>
           </div>
@@ -5671,7 +5681,11 @@ input, select { padding: 10px 14px; }
                 <div style={{ fontSize: 11, color: t.dm, marginBottom: 4 }}>持ち点</div>
                 <select
                   value={rules.startPoints}
-                  onChange={e => setRules(r => ({ ...r, startPoints: Number(e.target.value) }))}
+                  onChange={e => setRules(r => {
+                    const v = Number(e.target.value);
+                    // 返し点は必ず持ち点以上にする
+                    return { ...r, startPoints: v, returnPoints: Math.max(v, r.returnPoints || v) };
+                  })}
                   style={selectStyle}
                 >
                   {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
@@ -5684,7 +5698,7 @@ input, select { padding: 10px 14px; }
                   onChange={e => setRules(r => ({ ...r, returnPoints: Number(e.target.value) }))}
                   style={selectStyle}
                 >
-                  {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                  {Array.from({length:16},(_,i)=>20000+i*1000).filter(v => v >= (rules.startPoints || 0)).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                 </select>
               </div>
             </div>
