@@ -3720,6 +3720,18 @@ input, select { padding: 10px 14px; }
             </div>
           </>
         )}
+
+        {/* カテゴリ内の一番下にも戻り口を置く（長い画面で上まで戻らなくて済むように） */}
+        {homeCat && (
+          <button
+            onClick={() => { setHomeCat(null); try { window.scrollTo(0, 0); } catch {} }}
+            style={{
+              width: "100%", marginTop: 18, padding: "15px 8px", borderRadius: 12,
+              border: `1px solid ${t.bd}`, background: t.card, color: t.tx,
+              fontSize: 15, fontWeight: 700, cursor: "pointer",
+            }}
+          >← メニューに戻る</button>
+        )}
       </div>
     );
   };
