@@ -124,6 +124,7 @@ function MahjongScorer() {
     kuitan: true,           // 食いタン
     atozuke: true,          // 後付け
     kiriage: false,         // 切り上げ満貫（4翻30符・3翻60符を満貫扱い）
+    orasYame: true,         // オーラスで親がトップなら終了（アガリやめ・テンパイやめ）
     startPoints: 30000,     // 持ち点
     returnPoints: 30000,    // 返し点
   };
@@ -375,7 +376,7 @@ function MahjongScorer() {
       if (isOrlast) {
         const parentScore = ns[dealerIdx];
         const isTop = ns.every((s, i) => i === dealerIdx || parentScore > s);
-        if (isTop) {
+        if (isTop && (cfg.rules || {}).orasYame !== false) {
           if (cfg.matchType === "tonpu") setShowExtendConfirm(true);
           else setGameFinished(true);
         } else {
@@ -439,7 +440,7 @@ function MahjongScorer() {
     } else if (isOrlast) {
       const parentScore = ns[dealerIdx];
       const isTop = ns.every((s, i) => i === dealerIdx || parentScore > s);
-      if (isTop) {
+      if (isTop && ruleSet.orasYame !== false) {
         if (cfg.matchType === "tonpu") setShowExtendConfirm(true);
         else setGameFinished(true);
       }
@@ -3334,25 +3335,61 @@ input, select { padding: 10px 14px; }
                 </div>
               </div>
 
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.dm, marginBottom: 6 }}>流局したときの親</div>
               {[
-                ["tenpaiRenchan", "テンパイ連荘"],
-                ["agariRenchan", "あがり連荘のみ"],
-                ["kuitan", "食いタンあり"],
-                ["atozuke", "後付けあり"],
-                ["kiriage", "切り上げ満貫"],
-              ].map(([key, label]) => (
-                <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
-                  <span style={{ fontSize: 14, color: t.tx }}>{label}</span>
-                  <button onClick={() => saveDefaultRules({ ...defaultRules, [key]: !defaultRules[key] })} style={{
-                    width: 48, height: 28, borderRadius: 14, border: "none", padding: 0, cursor: "pointer",
-                    background: defaultRules[key] ? t.ac : t.bd, position: "relative", transition: "background 0.15s",
+                { key: "agari",  label: "あがり連荘",   desc: "流局したら親は必ず流れる" },
+                { key: "tenpai", label: "テンパイ連荘", desc: "親がテンパイなら続行" },
+                { key: "always", label: "無条件連荘",   desc: "流局しても親は続行" },
+              ].map(o => {
+                const cur = defaultRules.agariRenchan ? "agari" : defaultRules.tenpaiRenchan ? "tenpai" : "always";
+                const on = cur === o.key;
+                return (
+                  <button key={o.key} onClick={() => saveDefaultRules({
+                    ...defaultRules,
+                    agariRenchan: o.key === "agari",
+                    tenpaiRenchan: o.key === "tenpai",
+                  })} style={{
+                    width: "100%", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 9,
+                    padding: "10px 11px", marginBottom: 6, borderRadius: 10, cursor: "pointer",
+                    border: `2px solid ${on ? t.ac : t.bd}`,
+                    background: on ? t.acS : "transparent",
                   }}>
                     <span style={{
-                      position: "absolute", top: 3, left: defaultRules[key] ? 23 : 3,
-                      width: 22, height: 22, borderRadius: "50%", background: "#fff",
-                      transition: "left 0.15s",
-                    }} />
+                      width: 16, height: 16, borderRadius: "50%", flexShrink: 0, marginTop: 1,
+                      border: `2px solid ${on ? t.ac : t.bd}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {on && <span style={{ width: 7, height: 7, borderRadius: "50%", background: t.ac }} />}
+                    </span>
+                    <span>
+                      <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: on ? t.ac : t.tx }}>{o.label}</span>
+                      <span style={{ display: "block", fontSize: 10, color: t.dm, marginTop: 2 }}>{o.desc}</span>
+                    </span>
                   </button>
+                );
+              })}
+
+              {[
+                ["kuitan", "食いタンあり", null],
+                ["atozuke", "後付けあり", null],
+                ["kiriage", "切り上げ満貫", "4翻30符・3翻60符を満貫扱い"],
+                ["orasYame", "オーラスは親トップで終了", "アガリやめ・テンパイやめ"],
+              ].map(([key, label, hint]) => (
+                <div key={key} style={{ padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 14, color: t.tx }}>{label}</span>
+                    <button onClick={() => saveDefaultRules({ ...defaultRules, [key]: !defaultRules[key] })} style={{
+                      width: 48, height: 28, borderRadius: 14, border: "none", padding: 0, cursor: "pointer",
+                      background: defaultRules[key] ? t.ac : t.bd, position: "relative", transition: "background 0.15s", flexShrink: 0,
+                    }}>
+                      <span style={{
+                        position: "absolute", top: 3, left: defaultRules[key] ? 23 : 3,
+                        width: 22, height: 22, borderRadius: "50%", background: "#fff",
+                        transition: "left 0.15s",
+                      }} />
+                    </button>
+                  </div>
+                  {hint && <div style={{ fontSize: 10, color: t.dm, marginTop: 3 }}>{hint}</div>}
                 </div>
               ))}
 
@@ -3697,9 +3734,56 @@ input, select { padding: 10px 14px; }
           <div style={question}>ルール設定</div>
 
           <div style={{ marginBottom: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>連荘・流局</div>
-            {toggleRow("テンパイ連荘", rules.tenpaiRenchan, () => setRules(r => ({ ...r, tenpaiRenchan: !r.tenpaiRenchan, agariRenchan: !r.tenpaiRenchan ? false : r.agariRenchan })))}
-            {toggleRow("あがり連荘のみ", rules.agariRenchan, () => setRules(r => ({ ...r, agariRenchan: !r.agariRenchan, tenpaiRenchan: !r.agariRenchan ? false : r.tenpaiRenchan })))}
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 4, letterSpacing: "0.05em" }}>流局したときの親</div>
+            <div style={{ fontSize: 10, color: t.dm, marginBottom: 8 }}>誰もアガらずに流局した場合、親を続けるかどうか</div>
+            {[
+              { key: "agari",  label: "あがり連荘",   desc: "流局したら親は必ず流れる（一般的）" },
+              { key: "tenpai", label: "テンパイ連荘", desc: "親がテンパイなら続行、ノーテンなら流れる" },
+              { key: "always", label: "無条件連荘",   desc: "流局したら親は必ず続行（ノーテンでも）" },
+            ].map(o => {
+              const cur = rules.agariRenchan ? "agari" : rules.tenpaiRenchan ? "tenpai" : "always";
+              const on = cur === o.key;
+              return (
+                <button key={o.key} onClick={() => setRules(r => ({
+                  ...r,
+                  agariRenchan: o.key === "agari",
+                  tenpaiRenchan: o.key === "tenpai",
+                }))} style={{
+                  width: "100%", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 10,
+                  padding: "11px 12px", marginBottom: 6, borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${on ? t.ac : t.bd}`,
+                  background: on ? t.acS : "transparent",
+                }}>
+                  <span style={{
+                    width: 18, height: 18, borderRadius: "50%", flexShrink: 0, marginTop: 1,
+                    border: `2px solid ${on ? t.ac : t.bd}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {on && <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.ac }} />}
+                  </span>
+                  <span>
+                    <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: on ? t.ac : t.tx }}>{o.label}</span>
+                    <span style={{ display: "block", fontSize: 11, color: t.dm, marginTop: 2, lineHeight: 1.5 }}>{o.desc}</span>
+                  </span>
+                </button>
+              );
+            })}
+            <div style={{ fontSize: 10, color: t.dm, lineHeight: 1.7, marginTop: 2 }}>
+              ※ どのルールでも、ノーテン罰符3,000点のやりとりと本場の加算は行われます
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 8, marginTop: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 4, letterSpacing: "0.05em" }}>オーラス（最終局）</div>
+            <div style={{ fontSize: 10, color: t.dm, marginBottom: 8 }}>
+              {matchType === "tonpu" ? "東4局" : "南4局"}で親がアガった、または流局で親が続く場合の扱い
+            </div>
+            {toggleRow("親がトップなら終了", rules.orasYame !== false, () => setRules(r => ({ ...r, orasYame: r.orasYame === false })))}
+            <div style={{ fontSize: 10, color: t.dm, lineHeight: 1.7, marginTop: 6 }}>
+              {rules.orasYame !== false
+                ? "ON：親がトップの状態でアガる／テンパイで流局すると、そこで対局終了（アガリやめ・テンパイやめ）。トップでなければ連荘して続行します。"
+                : "OFF：親がトップでも連荘して続行します。子がアガるか、親が流れるまで終わりません。"}
+            </div>
           </div>
 
           <div style={{ marginBottom: 8, marginTop: 16 }}>
@@ -3782,10 +3866,19 @@ input, select { padding: 10px 14px; }
               <div style={{ padding: "6px 0" }}>
                 <span style={{ color: t.dm }}>ルール</span>
                 <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
-                  {rules.tenpaiRenchan && <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>テンパイ連荘</span>}
-                  {rules.agariRenchan && <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>あがり連荘</span>}
-                  {rules.kuitan && <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>食いタン</span>}
-                  {rules.atozuke && <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>後付け</span>}
+                  {(() => {
+                    const chip = (label) => (
+                      <span key={label} style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, background: t.sf, border: `1px solid ${t.bd}` }}>{label}</span>
+                    );
+                    const renchan = rules.agariRenchan ? "あがり連荘" : rules.tenpaiRenchan ? "テンパイ連荘" : "無条件連荘";
+                    return [
+                      chip(renchan),
+                      rules.kuitan && chip("食いタン"),
+                      rules.atozuke && chip("後付け"),
+                      rules.kiriage && chip("切り上げ満貫"),
+                      chip(rules.orasYame !== false ? "オーラス親トップで終了" : "オーラスやめなし"),
+                    ].filter(Boolean);
+                  })()}
                 </div>
               </div>
             </div>
@@ -3995,15 +4088,24 @@ input, select { padding: 10px 14px; }
       }}>
         {tmDrawMode ? (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.gn, textAlign: "center", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.gn, textAlign: "center", marginBottom: 4 }}>
               流局 — テンパイの人をタップして「確定」
+            </div>
+            <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 6 }}>
+              {(() => {
+                const rs = (gameConfig || {}).rules || {};
+                const dealerTenpai = drawTenpai[dealerIdx];
+                const stays = rs.agariRenchan ? false : rs.tenpaiRenchan ? dealerTenpai : true;
+                const label = rs.agariRenchan ? "あがり連荘" : rs.tenpaiRenchan ? "テンパイ連荘" : "無条件連荘";
+                return `${label}：この内容だと親（${players[dealerIdx]}）は${stays ? "続行（連荘）" : "流れます"}`;
+              })()}
             </div>
             <button style={smallBtn()} onClick={() => { setTmDrawMode(false); setDrawTenpai([false,false,false,false]); }}>キャンセル</button>
           </>
         ) : tmWinStep ? (
           <>
             <div style={{ fontSize: 12, fontWeight: 700, color: t.ac, textAlign: "center", marginBottom: 6 }}>
-              {tmWinStep === "winner" ? "① 和了者（アガった人）をタップ" : "② ツモ or 放銃者をタップ"}
+              {tmWinStep === "winner" ? "① あがった人をタップ" : "② ツモ or ホウジュウした人をタップ"}
             </div>
             <button style={smallBtn()} onClick={() => { setTmWinStep(null); setGWinner(null); }}>キャンセル</button>
           </>
