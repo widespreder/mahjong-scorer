@@ -1057,8 +1057,18 @@ function MahjongScorer() {
             const list = YAKU_DATA.filter(y => catOf(y) === cat && (!pickerNaki || y.naki !== null));
             if (!list.length) return null;
             return (
-              <div key={cat} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: cat === "役満" ? t.gd : t.dm, marginBottom: 6 }}>{cat}</div>
+              <div key={cat} style={{ marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0 10px" }}>
+                  <div style={{ flex: 1, height: 1, background: cat === "役満" ? t.gd + "66" : t.bd }} />
+                  <span style={{
+                    fontSize: 13, fontWeight: 900, letterSpacing: "0.08em",
+                    color: cat === "役満" ? t.gd : t.ac, whiteSpace: "nowrap",
+                    padding: "3px 12px", borderRadius: 20,
+                    background: cat === "役満" ? t.gdS : t.acS,
+                    border: `1px solid ${cat === "役満" ? t.gd + "55" : t.ac + "44"}`,
+                  }}>{cat}</span>
+                  <div style={{ flex: 1, height: 1, background: cat === "役満" ? t.gd + "66" : t.bd }} />
+                </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                   {list.map(y => {
                     const on = pickedYaku.includes(y.name);
