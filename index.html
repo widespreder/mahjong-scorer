@@ -1601,6 +1601,86 @@ input, select { padding: 10px 14px; }
   const saveTermMastered = (arr) => { setMasteredTerms(arr); try { localStorage.setItem("mj_term_mastered", JSON.stringify(arr)); } catch {} };
   const saveTermWrong = (obj) => { setWrongTerms(obj); try { localStorage.setItem("mj_term_wrong", JSON.stringify(obj)); } catch {} };
 
+  // ── 点数問題集（4翻以下） ──
+  const SQ_FU = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+  const SQ_HAN = [1, 2, 3, 4];
+  // 実戦でありえない組み合わせを除外
+  const sqValid = (fu, han, isTsumo) => {
+    if (fu === 20 && !isTsumo) return false;            // 20符は平和ツモのみ
+    if (fu === 20 && han === 1) return false;           // 平和+ツモで最低2翻
+    if (fu === 25 && han === 1) return false;           // 七対子は2翻から
+    if (fu === 25 && han === 2 && isTsumo) return false; // 七対子ツモは3翻から
+    return true;
+  };
+  // 出題1問ぶんの答えを作る
+  const sqAnswer = (fu, han, isParent, isTsumo) => {
+    const r = calcScore(fu, han, isParent, isTsumo, false);
+    if (!isTsumo) return { kind: "single", label: "放銃者から", value: r.total, text: r.total.toLocaleString() };
+    if (isParent) return { kind: "single", label: "各家から", value: r.each, text: r.each.toLocaleString() };
+    return {
+      kind: "pair", label: "子から / 親から",
+      child: r.fromChild, parent: r.fromParent,
+      text: `${r.fromChild.toLocaleString()} / ${r.fromParent.toLocaleString()}`,
+    };
+  };
+  const [sqMode, setSqMode] = useState(null);     // null | "choice" | "input"
+  const [sqQ, setSqQ] = useState(null);
+  const [sqPicked, setSqPicked] = useState(null); // 選択式で選んだ答え
+  const [sqIn1, setSqIn1] = useState("");
+  const [sqIn2, setSqIn2] = useState("");
+  const [sqJudged, setSqJudged] = useState(null); // null | true | false
+  const [sqScore, setSqScore] = useState({ ok: 0, total: 0 });
+
+  const makeScoreQuestion = () => {
+    // ありえる組み合わせの中からランダムに1問
+    const all = [];
+    for (const fu of SQ_FU) for (const han of SQ_HAN)
+      for (const isParent of [true, false]) for (const isTsumo of [true, false])
+        if (sqValid(fu, han, isTsumo)) all.push({ fu, han, isParent, isTsumo });
+    const q = all[Math.floor(Math.random() * all.length)];
+    const ans = sqAnswer(q.fu, q.han, q.isParent, q.isTsumo);
+
+    // 誤答は「近い符・翻の実在する点数」から作る（でたらめな数字にしない）
+    const pool = [];
+    for (const fu of SQ_FU) for (const han of SQ_HAN) {
+      if (!sqValid(fu, han, q.isTsumo)) continue;
+      if (fu === q.fu && han === q.han) continue;
+      const a = sqAnswer(fu, han, q.isParent, q.isTsumo);
+      if (a.text !== ans.text) pool.push(a.text);
+    }
+    const uniq = [...new Set(pool)];
+    // 近い値ほど紛らわしいので、答えに近い順に候補を並べてから上位から選ぶ
+    const num = (s) => parseInt(String(s).replace(/[^0-9]/g, ""), 10) || 0;
+    uniq.sort((a, b) => Math.abs(num(a) - num(ans.text)) - Math.abs(num(b) - num(ans.text)));
+    const near = uniq.slice(0, 8);
+    const picked = [];
+    while (picked.length < 3 && near.length) {
+      picked.push(near.splice(Math.floor(Math.random() * near.length), 1)[0]);
+    }
+    const choices = [ans.text, ...picked].sort(() => Math.random() - 0.5);
+
+    setSqQ({ ...q, ans, choices });
+    setSqPicked(null); setSqIn1(""); setSqIn2(""); setSqJudged(null);
+  };
+
+  const judgeScoreInput = () => {
+    if (!sqQ) return;
+    const n = (s) => parseInt(String(s).replace(/[^0-9]/g, ""), 10);
+    const a = sqQ.ans;
+    const ok = a.kind === "pair"
+      ? (n(sqIn1) === a.child && n(sqIn2) === a.parent)
+      : (n(sqIn1) === a.value);
+    setSqJudged(ok);
+    setSqScore(s => ({ ok: s.ok + (ok ? 1 : 0), total: s.total + 1 }));
+  };
+  const judgeScoreChoice = (choice) => {
+    if (sqJudged !== null) return;
+    const ok = choice === sqQ.ans.text;
+    setSqPicked(choice);
+    setSqJudged(ok);
+    setSqScore(s => ({ ok: s.ok + (ok ? 1 : 0), total: s.total + 1 }));
+  };
+
   const startTermQuiz = (cat) => {
     const base = cat === "all" ? TERM_DATA : TERM_DATA.filter(t => t.cat === cat);
     const pool = base.filter(t => !masteredTerms.includes(t.kanji));
@@ -3650,6 +3730,9 @@ input, select { padding: 10px 14px; }
             {menuItem("🎯", "翻数テスト", "役の翻数クイズ・逆引き", () => {
               setView("quiz"); setQuizMode(null);
             })}
+            {menuItem("🔢", "点数問題集", "4翻以下の点数を当てる（選択・入力）", () => {
+              setView("scorequiz"); setSqMode(null); setSqQ(null);
+            })}
             {menuItem("📚", "用語問題集", "麻雀用語を漢字と読みで覚える", () => {
               setView("termquiz"); setTermCat(null); setTermFinished(false);
             })}
@@ -3882,6 +3965,206 @@ input, select { padding: 10px 14px; }
     );
   };
 
+
+  // ══════════════════════════════════
+  // ── 点数問題集（4翻以下） ──
+  // ══════════════════════════════════
+  const renderScoreQuiz = () => {
+    // モード選択
+    if (!sqMode) {
+      return (
+        <div style={body}>
+          <button style={backBtn} onClick={() => setView("home")}>← 戻る</button>
+          <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>🔢 点数問題集</div>
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 18 }}>
+            4翻以下の点数を、親子・ロンツモの組み合わせで出題します
+          </div>
+
+          <button onClick={() => { setSqMode("choice"); setSqScore({ ok: 0, total: 0 }); makeScoreQuestion(); }} style={{
+            width: "100%", padding: "18px", marginBottom: 12, borderRadius: 13, cursor: "pointer",
+            border: `2px solid ${t.ac}`, background: t.acS, textAlign: "left",
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: t.ac }}>選択式</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 3, lineHeight: 1.6 }}>
+              4つの候補から選びます。まずはここから
+            </div>
+          </button>
+
+          <button onClick={() => { setSqMode("input"); setSqScore({ ok: 0, total: 0 }); makeScoreQuestion(); }} style={{
+            width: "100%", padding: "18px", marginBottom: 12, borderRadius: 13, cursor: "pointer",
+            border: `2px solid ${t.gd}`, background: t.gdS, textAlign: "left",
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: t.gd }}>入力式</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 3, lineHeight: 1.6 }}>
+              点数を自分で入力します。実戦に近い練習
+            </div>
+          </button>
+
+          <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: t.card, border: `1px solid ${t.bd}` }}>
+            <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.9 }}>
+              <div>・ロン → 放銃者が払う合計点</div>
+              <div>・親のツモ → 各家が払う点数</div>
+              <div>・子のツモ → 子から / 親から の2つ</div>
+            </div>
+          </div>
+
+          <button style={{ ...actionBtn(), marginTop: 16 }} onClick={() => setView("home")}>メニューに戻る</button>
+        </div>
+      );
+    }
+
+    if (!sqQ) return <div style={body} />;
+    const a = sqQ.ans;
+    const who = sqQ.isParent ? "親" : "子";
+    const how = sqQ.isTsumo ? "ツモ" : "ロン";
+
+    return (
+      <div style={body}>
+        <button style={backBtn} onClick={() => { setSqMode(null); setSqQ(null); }}>← 出題方式を変える</button>
+
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+          <span style={{ fontSize: 12, color: t.dm }}>
+            {sqMode === "choice" ? "選択式" : "入力式"}
+          </span>
+          <span style={{ fontSize: 12, color: t.dm }}>
+            正解 {sqScore.ok} / {sqScore.total}
+            {sqScore.total > 0 && `（${Math.round(sqScore.ok / sqScore.total * 100)}%）`}
+          </span>
+        </div>
+
+        <div style={card}>
+          {/* 問題 */}
+          <div style={{ textAlign: "center", padding: "8px 0 20px" }}>
+            <div style={{
+              display: "inline-flex", gap: 6, marginBottom: 14, flexWrap: "wrap", justifyContent: "center",
+            }}>
+              <span style={{
+                fontSize: 15, fontWeight: 900, padding: "5px 14px", borderRadius: 8,
+                background: sqQ.isParent ? t.gd : t.sf,
+                color: sqQ.isParent ? "#1a1a1a" : t.tx,
+                border: `1px solid ${sqQ.isParent ? t.gd : t.bd}`,
+              }}>{who}</span>
+              <span style={{
+                fontSize: 15, fontWeight: 900, padding: "5px 14px", borderRadius: 8,
+                background: sqQ.isTsumo ? t.gnS : t.rdS,
+                color: sqQ.isTsumo ? t.gn : t.rd,
+                border: `1px solid ${sqQ.isTsumo ? t.gn : t.rd}55`,
+              }}>{how}</span>
+            </div>
+            <div style={{ fontSize: 38, fontWeight: 900, color: t.tx, letterSpacing: "0.02em", lineHeight: 1.25 }}>
+              {sqQ.han}翻 {sqQ.fu}符
+            </div>
+            <div style={{ fontSize: 13, color: t.dm, marginTop: 10 }}>
+              {a.label} 何点？
+            </div>
+          </div>
+
+          {/* 回答欄 */}
+          {sqMode === "choice" ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
+              {sqQ.choices.map((ch, i) => {
+                const isAns = ch === a.text;
+                const isPicked = sqPicked === ch;
+                let bd = t.bd, bg = "transparent", col = t.tx;
+                if (sqJudged !== null) {
+                  if (isAns) { bd = t.gn; bg = t.gnS; col = t.gn; }
+                  else if (isPicked) { bd = t.rd; bg = t.rdS; col = t.rd; }
+                }
+                return (
+                  <button key={i} onClick={() => judgeScoreChoice(ch)} disabled={sqJudged !== null} style={{
+                    padding: "16px 6px", borderRadius: 11,
+                    border: `2px solid ${bd}`, background: bg, color: col,
+                    fontSize: ch.length > 8 ? 15 : 19, fontWeight: 800,
+                    cursor: sqJudged === null ? "pointer" : "default",
+                    fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+                  }}>{ch}</button>
+                );
+              })}
+            </div>
+          ) : (
+            <div>
+              {a.kind === "pair" ? (
+                <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>子から</div>
+                    <input type="text" inputMode="numeric" value={sqIn1} disabled={sqJudged !== null}
+                      onChange={e => setSqIn1(e.target.value)} placeholder="0"
+                      style={{ ...inputStyle, fontSize: 20, fontWeight: 800, textAlign: "center" }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>親から</div>
+                    <input type="text" inputMode="numeric" value={sqIn2} disabled={sqJudged !== null}
+                      onChange={e => setSqIn2(e.target.value)} placeholder="0"
+                      style={{ ...inputStyle, fontSize: 20, fontWeight: 800, textAlign: "center" }} />
+                  </div>
+                </div>
+              ) : (
+                <input type="text" inputMode="numeric" value={sqIn1} disabled={sqJudged !== null}
+                  onChange={e => setSqIn1(e.target.value)} placeholder="点数を入力"
+                  style={{ ...inputStyle, fontSize: 26, fontWeight: 900, textAlign: "center", marginBottom: 12, padding: "14px" }} />
+              )}
+              {sqJudged === null && (
+                <button style={actionBtn("p")} onClick={judgeScoreInput}
+                  disabled={!sqIn1 || (a.kind === "pair" && !sqIn2)}>答え合わせ</button>
+              )}
+            </div>
+          )}
+
+          {/* 判定と解説 */}
+          {sqJudged !== null && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{
+                padding: 14, borderRadius: 11, textAlign: "center", marginBottom: 12,
+                background: sqJudged ? t.gnS : t.rdS,
+                border: `1px solid ${(sqJudged ? t.gn : t.rd)}55`,
+              }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: sqJudged ? t.gn : t.rd }}>
+                  {sqJudged ? "◯ 正解" : "✕ 不正解"}
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: t.tx, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
+                  {a.text}
+                </div>
+                <div style={{ fontSize: 11, color: t.dm, marginTop: 3 }}>{a.label}</div>
+                {sqQ.isTsumo && (
+                  <div style={{ fontSize: 11, color: t.dm, marginTop: 6 }}>
+                    合計 {(sqQ.isParent ? a.value * 3 : a.child * 2 + a.parent).toLocaleString()}点
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: 13, borderRadius: 11, background: t.sf, border: `1px solid ${t.bd}`, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: t.dm, marginBottom: 6 }}>計算の手順</div>
+                <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.9 }}>
+                  {(() => {
+                    const raw = sqQ.fu * Math.pow(2, 2 + sqQ.han);
+                    const capped = Math.min(raw, 2000);
+                    const mul = sqQ.isTsumo ? (sqQ.isParent ? 2 : null) : (sqQ.isParent ? 6 : 4);
+                    return (
+                      <>
+                        <div>① 基本点 = {sqQ.fu}符 × 2<sup>(2+{sqQ.han})</sup> = {raw.toLocaleString()}
+                          {raw > 2000 && <span style={{ color: t.gd }}> → 満貫の上限2,000</span>}
+                        </div>
+                        {sqQ.isTsumo && !sqQ.isParent ? (
+                          <div>② 子は {capped.toLocaleString()}×1、親は {capped.toLocaleString()}×2 を、それぞれ100点単位で切り上げ</div>
+                        ) : (
+                          <div>② {capped.toLocaleString()} × {mul} を100点単位で切り上げ</div>
+                        )}
+                        <div>③ 答え = {a.text}</div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <button style={actionBtn("p")} onClick={makeScoreQuestion}>次の問題 →</button>
+            </div>
+          )}
+        </div>
+
+        <button style={{ ...actionBtn(), marginTop: 12 }} onClick={() => setView("home")}>メニューに戻る</button>
+      </div>
+    );
+  };
 
   // ══════════════════════════════════
   // ── 用語問題集 ──
@@ -5917,6 +6200,7 @@ input, select { padding: 10px 14px; }
         {view === "history" && renderHistory()}
         {view === "quiz" && renderQuiz()}
         {view === "termquiz" && renderTermQuiz()}
+        {view === "scorequiz" && renderScoreQuiz()}
         {view === "dict" && renderDict()}
         {view === "fucourse" && renderFuCourse()}
         {view === "table" && renderTable()}
