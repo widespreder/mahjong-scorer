@@ -4433,6 +4433,27 @@ input, select { padding: 10px 14px; }
                     ? `${ronPick.length}人でロン。放銃者に近い人から順に手を入力します`
                     : "")}
             </div>
+            {/* この対局だけ複数ロンを有効にする */}
+            {tmWinStep === "winner" && multiRonMax === 1 && (
+              <button
+                onClick={() => setGameConfig(g => ({ ...g, rules: { ...(g.rules || {}), multiRon: "double" } }))}
+                style={{
+                  display: "block", margin: "0 auto 8px", padding: "7px 14px", borderRadius: 9,
+                  border: `1px solid ${t.gd}66`, background: t.gdS, color: t.gd,
+                  fontSize: 11, fontWeight: 700, cursor: "pointer",
+                }}
+              >この対局でダブロンを有効にする</button>
+            )}
+            {tmWinStep === "winner" && multiRonMax === 2 && (
+              <button
+                onClick={() => setGameConfig(g => ({ ...g, rules: { ...(g.rules || {}), multiRon: "triple" } }))}
+                style={{
+                  display: "block", margin: "0 auto 8px", padding: "7px 14px", borderRadius: 9,
+                  border: `1px solid ${t.gd}66`, background: t.gdS, color: t.gd,
+                  fontSize: 11, fontWeight: 700, cursor: "pointer",
+                }}
+              >トリプルロンまで許可する</button>
+            )}
             <button style={smallBtn()} onClick={() => {
               setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null);
             }}>キャンセル</button>
@@ -4517,19 +4538,36 @@ input, select { padding: 10px 14px; }
               )
             )}
             {tmWinStep === "how" && (
-              <button onClick={(e) => {
-                e.stopPropagation();
-                setGTsumo(true); setGLoser(null); setTmWinStep(null);
-                setShowGW(true); setGStep(5);
-              }} style={{
-                width: "100%", height: "100%", borderRadius: 16, cursor: "pointer",
-                border: `2px solid ${t.gn}`, background: t.gnS,
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: 6, boxSizing: "border-box",
-              }}>
-                <div style={{ fontSize: 26 }}>🀄</div>
-                <div style={{ fontSize: 19, fontWeight: 900, color: t.gn, letterSpacing: "0.05em" }}>ツモ</div>
-              </button>
+              ronPick.length >= 2 ? (
+                /* 複数ロンではツモはありえない */
+                <div style={{
+                  width: "100%", height: "100%", borderRadius: 16,
+                  border: `2px dashed ${t.rd}77`, background: t.rdS,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+                  padding: 6, boxSizing: "border-box", textAlign: "center",
+                }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: t.rd }}>
+                    {ronPick.length === 3 ? "トリプルロン" : "ダブロン"}
+                  </div>
+                  <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.4 }}>
+                    ホウジュウ<br />した人を選択
+                  </div>
+                </div>
+              ) : (
+                <button onClick={(e) => {
+                  e.stopPropagation();
+                  setGTsumo(true); setGLoser(null); setTmWinStep(null);
+                  setShowGW(true); setGStep(5);
+                }} style={{
+                  width: "100%", height: "100%", borderRadius: 16, cursor: "pointer",
+                  border: `2px solid ${t.gn}`, background: t.gnS,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                  padding: 6, boxSizing: "border-box",
+                }}>
+                  <div style={{ fontSize: 26 }}>🀄</div>
+                  <div style={{ fontSize: 19, fontWeight: 900, color: t.gn, letterSpacing: "0.05em" }}>ツモ</div>
+                </button>
+              )
             )}
             {/* サイコロエリア */}
             <div>
