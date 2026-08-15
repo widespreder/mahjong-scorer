@@ -5364,9 +5364,18 @@ input, select { padding: 10px 14px; }
               <button style={actionBtn()} onClick={resetSeatDraw}>引き直す</button>
             </>
           ) : (
-            <div style={{ fontSize: 11, color: t.dm, textAlign: "center" }}>
-              好きな牌をタップしてください
-            </div>
+            <>
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 14 }}>
+                好きな牌をタップしてください
+              </div>
+              <button style={actionBtn()} onClick={() => setSetupStep(2)}>
+                席決めをスキップ（今の並びのまま）
+              </button>
+              <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 6, lineHeight: 1.7 }}>
+                前の画面で選んだ順に、東・南・西・北 になります<br />
+                （{players.map((nm, i) => `${WIND_ORDER[i]}${nm}`).join("　")}）
+              </div>
+            </>
           )}
         </div>
       )}
