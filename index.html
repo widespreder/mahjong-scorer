@@ -514,7 +514,7 @@ function MahjongScorer() {
   const Back = ({ onClick }) => <button style={backBtn} onClick={onClick}>← 戻る</button>;
 
   const FuHelpModal = () => (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 16, paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)', overflowY: "auto" }}>
       <div style={{ width: "100%", maxWidth: 400, paddingBottom: 40 }}>
         <div style={{ ...card, padding: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -3152,7 +3152,7 @@ input, select { padding: 10px 14px; }
     const relLabel = ["自分（親）の山", "下家（右）の山", "対面の山", "上家（左）の山"][(sum - 1) % 4];
 
     return (
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, paddingTop: 'calc(env(safe-area-inset-top, 0px) + 20px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' }}
         onClick={() => { if (!diceRolling) { setDiceOpen(false); setDiceSettled(false); } }}>
         <div style={{ width: "100%", maxWidth: 340 }} onClick={e => e.stopPropagation()}>
           <div style={{
@@ -3264,7 +3264,7 @@ input, select { padding: 10px 14px; }
     const startPt = gameConfig?.rules?.startPoints || 30000;
     const diff = scores[pi] - startPt;
     return (
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", zIndex: 150, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto" }}>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", zIndex: 150, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", paddingTop: 'calc(env(safe-area-inset-top, 0px) + 20px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)', overflowY: "auto" }}>
         <div style={{ width: "100%", maxWidth: 400 }}>
           <div style={card}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -4285,7 +4285,7 @@ input, select { padding: 10px 14px; }
 
     return (
       <div style={{
-        padding: "calc(env(safe-area-inset-top, 0px) + 10px) 8px 20px",
+        padding: "10px 8px 20px",
         boxSizing: "border-box",
         minHeight: "100dvh",
         display: "flex", flexDirection: "column", justifyContent: "center",
@@ -4429,7 +4429,7 @@ input, select { padding: 10px 14px; }
 
         {/* 局の修正モーダル */}
         {showRoundEdit && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", zIndex: 150, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto" }}>
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", zIndex: 150, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", paddingTop: 'calc(env(safe-area-inset-top, 0px) + 20px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)', overflowY: "auto" }}>
             <div style={{ width: "100%", maxWidth: 400 }}>
               <div style={card}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -4541,7 +4541,7 @@ input, select { padding: 10px 14px; }
 
       {/* ── Round Wizard Modal ── */}
       {showGW && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", paddingTop: 'calc(env(safe-area-inset-top, 0px) + 20px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)', overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
           <div style={{ width: "100%", maxWidth: 400 }}>
             {gStep === 1 && (
               <div style={card}>
@@ -4742,7 +4742,7 @@ input, select { padding: 10px 14px; }
 
       {/* ── Draw (Ryuukyoku) Wizard Modal ── */}
       {showDrawWiz && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", paddingTop: 'calc(env(safe-area-inset-top, 0px) + 20px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)', overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
           <div style={{ width: "100%", maxWidth: 400 }}>
             <div style={card}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -4897,7 +4897,7 @@ input, select { padding: 10px 14px; }
 
       {/* ── Extend to Hanchan Confirm ── */}
       {showExtendConfirm && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.88)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", paddingTop: 'calc(env(safe-area-inset-top, 0px) + 20px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)', overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
           <div style={{ width: "100%", maxWidth: 400 }}>
             <div style={card}>
               <div style={{ textAlign: "center", marginBottom: 16 }}>
@@ -5301,7 +5301,16 @@ input, select { padding: 10px 14px; }
   return (
     <>
       <style>{globalStyle}</style>
-      <div style={{ minHeight: "100vh", background: t.bg, color: t.tx, fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',system-ui,sans-serif", maxWidth: 440, margin: "0 auto", overflowX: "hidden", width: "100%" }}>
+      <div style={{
+        minHeight: "100vh", background: t.bg, color: t.tx,
+        fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',system-ui,sans-serif",
+        maxWidth: 440, margin: "0 auto", overflowX: "hidden", width: "100%",
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+        boxSizing: "border-box",
+      }}>
         {!(view === "game" && tableMode && gameStarted && !gameFinished) && !(view === "home" && homeCat === null) && (
         <div style={{ padding: "12px 14px 10px", borderBottom: `1px solid ${t.bd}`, display: "flex", alignItems: "center", gap: 8 }}>
           {view !== "home" ? (
