@@ -83,39 +83,37 @@ function MahjongScorer() {
   const [matchType, setMatchType] = useState(null); // "tonpu" | "hanchan"
   const [players, setPlayers] = useState(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
   const [playerMode, setPlayerMode] = useState([false, false, false, false]); // false=text display, true=editing
-  const [seatDrawing, setSeatDrawing] = useState(false);
-  const [seatDrawn, setSeatDrawn] = useState(false);
   const seatTimer = React.useRef(null);
+  // 席決め: 伏せた4枚の牌を1人ずつ引く
+  const [seatTiles, setSeatTiles] = useState([]);   // [{wind, by}] by=引いた人のindex(元の並び順)
+  const [seatTurn, setSeatTurn] = useState(0);      // 今引く人（元の並び順のindex）
+  const [seatDone, setSeatDone] = useState(false);
 
-  // 席決め（掴み取り）: 4人をランダムに東南西北へ振り分ける
-  const drawSeats = () => {
-    if (seatDrawing) return;
-    if (!players.every(p => p.trim())) return;
-    if (seatTimer.current) clearInterval(seatTimer.current);
-    setSeatDrawing(true);
-    setSeatDrawn(false);
-    setPlayerMode([false, false, false, false]);
-    const base = [...players];
-    const shuffle = (arr) => {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    };
-    let ticks = 0;
-    seatTimer.current = setInterval(() => {
-      ticks++;
-      setPlayers(shuffle(base));
-      if (ticks >= 12) {
-        clearInterval(seatTimer.current);
-        seatTimer.current = null;
-        setPlayers(shuffle(base));
-        setSeatDrawing(false);
-        setSeatDrawn(true);
-      }
-    }, 80);
+  const WIND_ORDER = ["東", "南", "西", "北"];
+  const resetSeatDraw = () => {
+    const winds = [...WIND_ORDER];
+    for (let i = winds.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [winds[i], winds[j]] = [winds[j], winds[i]];
+    }
+    setSeatTiles(winds.map(w => ({ wind: w, by: null })));
+    setSeatTurn(0);
+    setSeatDone(false);
+  };
+  const drawSeatTile = (pos) => {
+    if (seatDone || seatTiles[pos]?.by !== null) return;
+    const next = seatTiles.map((s, i) => i === pos ? { ...s, by: seatTurn } : s);
+    setSeatTiles(next);
+    try { if (navigator.vibrate) navigator.vibrate(10); } catch {}
+    if (seatTurn + 1 >= 4) {
+      // 全員引き終わり → 東南西北の順にプレイヤーを並べ替える
+      const byWind = {};
+      next.forEach(s => { byWind[s.wind] = s.by; });
+      setPlayers(prev => WIND_ORDER.map(w => prev[byWind[w]]));
+      setSeatDone(true);
+    } else {
+      setSeatTurn(seatTurn + 1);
+    }
   };
 
   const FACTORY_RULES = {
@@ -3742,6 +3740,11 @@ input, select { padding: 10px 14px; }
           <>
             {menuItem("▶", "新しい対局を始める", "卓上モードで開始します", () => {
               setView("game"); setGameStarted(false); setGameFinished(false); setSetupStep(0);
+              // 対局日は自動で今日にする
+              {
+                const d = new Date();
+                setGameDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);
+              }
               setPlayerMode([false, false, false, false]);
               setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
               setTableMode(true);
@@ -4667,44 +4670,133 @@ input, select { padding: 10px 14px; }
   const renderSetup = () => (
     <div style={body}>
       {/* Step 0: 対局日 */}
-      {setupStep === 0 && (
-        <div style={card}>
-          <Dots total={4} cur={0} />
-          <div style={question}>対局日は？</div>
-          <div style={{ padding: "0 4px" }}>
-            <input
-              type="date"
-              value={gameDate}
-              onChange={e => setGameDate(e.target.value)}
-              style={{ ...inputStyle, fontSize: 16, textAlign: "center", padding: "14px 12px", colorScheme: "dark", display: "block", width: "70%", margin: "0 auto" }}
-            />
-            <div style={{ marginTop: 16 }}>
-              <button
-                style={actionBtn("p")}
-                onClick={() => setSetupStep(1)}
-              >次へ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 1: 試合数 */}
+      {/* Step 1: 席決め */}
       {setupStep === 1 && (
         <div style={card}>
           <Back onClick={() => setSetupStep(0)} />
           <Dots total={4} cur={1} />
+          <div style={question}>席決め</div>
+          <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 16, lineHeight: 1.7 }}>
+            伏せた牌を1人ずつ引いて席を決めます
+          </div>
+
+          {/* 今引く人 */}
+          {!seatDone && (
+            <div style={{
+              textAlign: "center", padding: "12px 10px", marginBottom: 16,
+              background: t.acS, border: `1px solid ${t.ac}55`, borderRadius: 11,
+            }}>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 3 }}>{seatTurn + 1}人目</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: t.ac }}>
+                {players[seatTurn]} さんが引く
+              </div>
+            </div>
+          )}
+
+          {/* 伏せた4枚 */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 18 }}>
+            {seatTiles.map((s, i) => {
+              const open = s.by !== null;
+              return (
+                <button key={i} onClick={() => drawSeatTile(i)} disabled={open || seatDone}
+                  style={{
+                    width: 62, height: 84, borderRadius: 8, padding: 0,
+                    cursor: open || seatDone ? "default" : "pointer",
+                    border: open ? `2px solid ${t.gd}` : `2px solid ${t.bd}`,
+                    background: open
+                      ? "linear-gradient(160deg, #f8f6ef, #e6e1d0)"
+                      : "linear-gradient(160deg, #1f6f4a, #145234)",
+                    display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center", gap: 3,
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.45)",
+                    transition: "background 0.2s",
+                  }}>
+                  {open ? (
+                    <>
+                      <span style={{ fontSize: 30, fontWeight: 900, color: "#1a1a1a", fontFamily: "serif", lineHeight: 1 }}>
+                        {s.wind}
+                      </span>
+                      <span style={{
+                        fontSize: 9, color: "#5a5a5a", maxWidth: 56,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>{players[s.by]}</span>
+                    </>
+                  ) : (
+                    <span style={{
+                      width: 26, height: 26, borderRadius: 4,
+                      border: "2px solid rgba(255,255,255,0.35)",
+                      background: "rgba(255,255,255,0.12)",
+                    }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 結果 */}
+          {seatDone && (
+            <div style={{
+              padding: 14, borderRadius: 11, marginBottom: 14,
+              background: t.gdS, border: `1px solid ${t.gd}55`,
+            }}>
+              <div style={{ fontSize: 11, color: t.gd, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>
+                席順が決まりました
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+                {players.map((nm, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    padding: "9px 10px", borderRadius: 9,
+                    background: i === 0 ? t.gdS : t.sf,
+                    border: `1px solid ${i === 0 ? t.gd : t.bd}`,
+                  }}>
+                    <span style={{
+                      fontSize: 17, fontWeight: 900, fontFamily: "serif",
+                      color: i === 0 ? t.gd : t.tx, flexShrink: 0,
+                    }}>{WIND_ORDER[i]}</span>
+                    <span style={{
+                      fontSize: 13, fontWeight: 700, color: t.tx,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>{nm}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
+                東の {players[0]} さんが起家（最初の親）です
+              </div>
+            </div>
+          )}
+
+          {seatDone ? (
+            <>
+              <button style={actionBtn("p")} onClick={() => setSetupStep(2)}>次へ</button>
+              <button style={actionBtn()} onClick={resetSeatDraw}>引き直す</button>
+            </>
+          ) : (
+            <div style={{ fontSize: 11, color: t.dm, textAlign: "center" }}>
+              好きな牌をタップしてください
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Step 2: 試合形式 */}
+      {setupStep === 2 && (
+        <div style={card}>
+          <Back onClick={() => setSetupStep(1)} />
+          <Dots total={4} cur={2} />
           <div style={question}>試合形式は？</div>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <button
               style={bigBtn(matchType === "tonpu" ? t.ac : t.dm, matchType === "tonpu" ? t.acS : "transparent")}
-              onClick={() => { setMatchType("tonpu"); setSetupStep(2); }}
+              onClick={() => { setMatchType("tonpu"); setSetupStep(3); }}
             >
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>東風戦</div>
               <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場のみ</div>
             </button>
             <button
               style={bigBtn(matchType === "hanchan" ? t.ac : t.dm, matchType === "hanchan" ? t.acS : "transparent")}
-              onClick={() => { setMatchType("hanchan"); setSetupStep(2); }}
+              onClick={() => { setMatchType("hanchan"); setSetupStep(3); }}
             >
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>半荘戦</div>
               <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場＋南場</div>
@@ -4713,11 +4805,11 @@ input, select { padding: 10px 14px; }
         </div>
       )}
 
-      {/* Step 2: ルール設定 */}
-      {setupStep === 2 && (
+      {/* Step 3: ルール設定 */}
+      {setupStep === 3 && (
         <div style={card}>
-          <Back onClick={() => setSetupStep(1)} />
-          <Dots total={4} cur={2} />
+          <Back onClick={() => setSetupStep(2)} />
+          <Dots total={4} cur={3} />
           <div style={question}>ルール設定</div>
 
           <div style={{ marginBottom: 8 }}>
@@ -4846,17 +4938,16 @@ input, select { padding: 10px 14px; }
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <button style={actionBtn("p")} onClick={() => setSetupStep(3)}>次へ</button>
+            <button style={actionBtn("p")} onClick={() => setSetupStep(4)}>確認へ</button>
           </div>
         </div>
       )}
 
-      {/* Step 3: プレイヤー名 */}
-      {setupStep === 3 && (
+      {/* Step 0: 参加者 */}
+      {setupStep === 0 && (
         <div style={card}>
-          <Back onClick={() => setSetupStep(2)} />
-          <Dots total={4} cur={3} />
-          <div style={question}>プレイヤー名</div>
+          <Dots total={4} cur={0} />
+          <div style={question}>参加者は？</div>
           <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 6 }}>名前の欄をタップして選択</div>
           <div style={{ textAlign: "center", marginBottom: 14 }}>
             <button onClick={() => { setView("names"); setNewNameInput(""); setEditNameIdx(null); }} style={{
@@ -4864,26 +4955,6 @@ input, select { padding: 10px 14px; }
             }}>👤 リストの名前を編集</button>
           </div>
 
-          {/* 席決め */}
-          <div style={{ marginBottom: 14 }}>
-            <button
-              onClick={drawSeats}
-              disabled={seatDrawing || !players.every(p => p.trim())}
-              style={{
-                width: "100%", padding: "12px 8px", borderRadius: 10,
-                border: `2px solid ${t.gd}`,
-                background: seatDrawing ? t.gdS : "transparent",
-                color: t.gd, fontSize: 14, fontWeight: 800,
-                cursor: seatDrawing ? "default" : "pointer",
-                opacity: players.every(p => p.trim()) ? 1 : 0.4,
-              }}
-            >{seatDrawing ? "🀄 掴み取り中…" : "🀄 席決め（ランダム）"}</button>
-            <div style={{ fontSize: 10, color: seatDrawn ? t.gd : t.dm, marginTop: 6, textAlign: "center" }}>
-              {seatDrawn
-                ? `席が決まりました — 起家（最初の親）は「${players[0]}」さんです`
-                : "4人をランダムに東・南・西・北へ振り分けます"}
-            </div>
-          </div>
           {players.map((p, i) => {
             const isCustom = playerMode[i]; // true = 直接入力モード
             return (
@@ -4904,7 +4975,7 @@ input, select { padding: 10px 14px; }
                         style={{ ...inputStyle, flex: 1 }}
                         placeholder="名前を入力"
                         value={p}
-                        onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); setSeatDrawn(false); }}
+                        onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
                       />
                       <button
                         style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "8px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
@@ -4916,7 +4987,6 @@ input, select { padding: 10px 14px; }
                       value={presetNames.includes(p) ? p : "__current__"}
                       onChange={e => {
                         const v = e.target.value;
-                        setSeatDrawn(false);
                         if (v === "__custom__") {
                           const nm = [...playerMode]; nm[i] = true; setPlayerMode(nm);
                           const np = [...players]; np[i] = ""; setPlayers(np);
@@ -4945,8 +5015,8 @@ input, select { padding: 10px 14px; }
                 opacity: players.every(p => p.trim()) ? 1 : 0.4,
               }}
               disabled={!players.every(p => p.trim())}
-              onClick={() => setSetupStep(4)}
-            >確認へ</button>
+              onClick={() => { resetSeatDraw(); setSetupStep(1); }}
+            >席決めへ</button>
           </div>
         </div>
       )}
@@ -5017,7 +5087,7 @@ input, select { padding: 10px 14px; }
           </div>
 
           <button style={actionBtn("p")} onClick={startGame}>対局開始！</button>
-          <button style={actionBtn()} onClick={() => setSetupStep(2)}>設定を修正する</button>
+          <button style={actionBtn()} onClick={() => setSetupStep(3)}>設定を修正する</button>
         </div>
       )}
     </div>
