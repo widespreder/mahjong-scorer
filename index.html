@@ -3757,20 +3757,20 @@ input, select { padding: 10px 14px; }
 
         {homeCat === "practice" && (
           <>
-            {menuItem("🎯", "飜数・役名テスト", "役の飜数クイズ・役名テスト", () => {
-              setView("quiz"); setQuizMode(null);
-            })}
-            {menuItem("🔢", "点数問題集", "4翻以下の点数を当てる（選択・入力）", () => {
-              setView("scorequiz"); setSqMode(null); setSqQ(null);
-            })}
             {menuItem("📚", "用語問題集", "麻雀用語を漢字と読みで覚える", () => {
               setView("termquiz"); setTermCat(null); setTermFinished(false);
+            })}
+            {menuItem("📖", "役一覧", "全ての役の解説と翻数", () => {
+              setView("dict"); setDictCat("1翻"); setDictExpanded(null);
+            })}
+            {menuItem("🎯", "飜数・役名テスト", "役の飜数クイズ・役名テスト", () => {
+              setView("quiz"); setQuizMode(null);
             })}
             {menuItem("📐", "符計算講座", "レベル別に符を学ぶ", () => {
               setView("fucourse"); setFuLessonPhase("menu");
             })}
-            {menuItem("📖", "役一覧", "全ての役の解説と翻数", () => {
-              setView("dict"); setDictCat("1翻"); setDictExpanded(null);
+            {menuItem("🔢", "点数問題集", "4翻以下の点数を当てる（選択・入力）", () => {
+              setView("scorequiz"); setSqMode(null); setSqQ(null);
             })}
             {menuItem("📊", "点数早見表", "符×翻のマトリックス表", () => setView("table"))}
           </>
