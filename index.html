@@ -125,6 +125,7 @@ function MahjongScorer() {
     atozuke: true,          // 後付け
     kiriage: false,         // 切り上げ満貫（4翻30符・3翻60符を満貫扱い）
     orasYame: true,         // オーラスで親がトップなら終了（アガリやめ・テンパイやめ）
+    multiRon: "atamahane",  // 複数ロン: "atamahane"=頭ハネ / "double"=ダブロンまで / "triple"=トリプルロンまで
     startPoints: 30000,     // 持ち点
     returnPoints: 30000,    // 返し点
   };
@@ -192,6 +193,9 @@ function MahjongScorer() {
   // ── Game round wizard ──
   const [gStep, setGStep] = useState(0);
   const [gWinner, setGWinner] = useState(null);
+  // ダブロン／トリプルロン: 複数人の手を順番に入力するためのキュー
+  const [multiRon, setMultiRon] = useState(null); // { loser, queue:[idx], done:[{winner,han,fu,result,limitName}] }
+  const [ronPick, setRonPick] = useState([]);     // 和了者の複数選択
   const [gTsumo, setGTsumo] = useState(null);
   const [gLoser, setGLoser] = useState(null);
   const [gHan, setGHan] = useState(null);
@@ -303,6 +307,74 @@ function MahjongScorer() {
     return calcScore(gHan >= 5 ? 30 : (gFu || 30), gHan, gParent, gTsumo, gameConfig?.rules?.kiriage);
   }, [gHan, gFu, gParent, gTsumo]);
 
+  // 和了後の親の進行・終局判定（単独ロン/ツモとダブロンで共用）
+  const advanceAfterWin = useCallback((dealerWon, ns) => {
+    const cfg = gameConfig || {};
+    const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
+                     (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+    if (!dealerWon) {
+      const next = (dealerIdx + 1) % 4;
+      if (cfg.matchType === "tonpu" && next === 0) {
+        setShowExtendConfirm(true);
+      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+        setGameFinished(true);
+      } else {
+        setDealerIdx(next);
+        setHonba(0);
+        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+      }
+    } else {
+      if (isOrlast) {
+        const parentScore = ns[dealerIdx];
+        const isTop = ns.every((s, i) => i === dealerIdx || parentScore > s);
+        if (isTop && (cfg.rules || {}).orasYame !== false) {
+          if (cfg.matchType === "tonpu") setShowExtendConfirm(true);
+          else setGameFinished(true);
+        } else {
+          setHonba(h => h + 1);
+        }
+      } else {
+        setHonba(h => h + 1);
+      }
+    }
+    setRiichiBets(0);
+    setDeclaredRiichi([false, false, false, false]);
+  }, [gameConfig, dealerIdx, roundWind]);
+
+  // ダブロン／トリプルロンの確定処理
+  const finalizeMultiRon = useCallback((entries, loser) => {
+    const ns = [...scores], hb = honba * 300;
+    const riichiThisRound = gRiichi.filter(Boolean).length;
+    for (let i = 0; i < 4; i++) { if (gRiichi[i]) ns[i] -= 1000; }
+    const pool = (riichiBets + riichiThisRound) * 1000;
+    // 頭ハネ順（放銃者の下家から反時計回りに近い順）。本場と供託は頭の一人が総取り
+    const sorted = [...entries].sort(
+      (a, b) => ((a.winner - loser + 4) % 4) - ((b.winner - loser + 4) % 4)
+    );
+    sorted.forEach((e, k) => {
+      ns[e.winner] += e.result.total + (k === 0 ? hb + pool : 0);
+      ns[loser] -= e.result.total + (k === 0 ? hb : 0);
+    });
+    setScores(ns);
+
+    const newRounds = [...rounds];
+    sorted.forEach((e, k) => {
+      newRounds.push({
+        id: newRounds.length + 1, wind: roundWind, dealer: dealerIdx,
+        honba: k === 0 ? honba : 0,          // 本場は頭の一人ぶんだけ記録（再計算の二重加算を防ぐ）
+        winner: e.winner, loser, han: e.han, fu: e.fu,
+        score: e.result.total, tsumo: false, limitName: e.limitName,
+        riichi: k === 0 ? [...gRiichi] : [false, false, false, false],
+        multiRon: sorted.length, multiRonHead: k === 0,
+      });
+    });
+    setRounds(newRounds);
+    advanceAfterWin(sorted.some(e => e.winner === dealerIdx), ns);
+    setMultiRon(null);
+    setRonPick([]);
+    resetGW();
+  }, [scores, honba, gRiichi, riichiBets, rounds, roundWind, dealerIdx, advanceAfterWin, resetGW]);
+
   const applyRound = useCallback(() => {
     if (gWinner === null || !gResult) return;
 
@@ -341,6 +413,24 @@ function MahjongScorer() {
       return;
     }
 
+    // ── ダブロン／トリプルロン: 一人ぶん入力し終えたので次へ ──
+    if (multiRon && multiRon.queue.length > 0) {
+      const entry = { winner: gWinner, han: gHan, fu: gHan >= 5 ? null : gFu, result: gResult, limitName: gLimit };
+      const done = [...multiRon.done, entry];
+      const queue = multiRon.queue.slice(1);
+      if (queue.length > 0) {
+        setMultiRon({ ...multiRon, done, queue });
+        setGWinner(queue[0]);
+        setGTsumo(false);
+        setGLoser(multiRon.loser);
+        setGHan(null); setGFu(null); setFuGuide(null);
+        setGStep(5); setShowGW(true);
+        return;
+      }
+      finalizeMultiRon(done, multiRon.loser);
+      return;
+    }
+
     // NORMAL MODE
     const ns = [...scores], hb = honba * 300;
     // Riichi: deduct 1000 from each riichi declarer
@@ -365,41 +455,9 @@ function MahjongScorer() {
     setRounds(newRounds);
 
     // Advance dealer / check game end
-    const cfg = gameConfig || {};
-    const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
-                     (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
-
-    if (gWinner !== dealerIdx) {
-      // Dealer rotates (child won)
-      const next = (dealerIdx + 1) % 4;
-      if (cfg.matchType === "tonpu" && next === 0) {
-        setShowExtendConfirm(true);
-      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
-        setGameFinished(true);
-      } else {
-        setDealerIdx(next);
-        setHonba(0);
-        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
-      }
-    } else {
-      // Parent won (renchan candidate)
-      if (isOrlast) {
-        const parentScore = ns[dealerIdx];
-        const isTop = ns.every((s, i) => i === dealerIdx || parentScore > s);
-        if (isTop && (cfg.rules || {}).orasYame !== false) {
-          if (cfg.matchType === "tonpu") setShowExtendConfirm(true);
-          else setGameFinished(true);
-        } else {
-          setHonba(h => h + 1);
-        }
-      } else {
-        setHonba(h => h + 1);
-      }
-    }
-    setRiichiBets(0);
-    setDeclaredRiichi([false, false, false, false]);
+    advanceAfterWin(gWinner === dealerIdx, ns);
     resetGW();
-  }, [gWinner, gLoser, gResult, gTsumo, gParent, gHan, gFu, gLimit, gRiichi, scores, honba, riichiBets, dealerIdx, rounds, roundWind, resetGW, gameConfig, correctingIdx]);
+  }, [gWinner, gLoser, gResult, gTsumo, gParent, gHan, gFu, gLimit, gRiichi, scores, honba, riichiBets, dealerIdx, rounds, roundWind, resetGW, gameConfig, correctingIdx, multiRon, finalizeMultiRon, advanceAfterWin]);
 
   // Handle ryuukyoku (draw) - called after tenpai selection
   const applyDraw = useCallback(() => {
@@ -3504,6 +3562,35 @@ input, select { padding: 10px 14px; }
                 );
               })}
 
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.dm, margin: "10px 0 6px" }}>複数人が同時にロン</div>
+              {[
+                { key: "atamahane", label: "頭ハネ", desc: "アガれるのは1人だけ" },
+                { key: "double",    label: "ダブロンあり", desc: "2人まで同時にアガリ" },
+                { key: "triple",    label: "トリプルロンあり", desc: "3人同時も認める" },
+              ].map(o => {
+                const on = (draftRules.multiRon || "atamahane") === o.key;
+                return (
+                  <button key={o.key} onClick={() => editDraft({ multiRon: o.key })} style={{
+                    width: "100%", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 9,
+                    padding: "10px 11px", marginBottom: 6, borderRadius: 10, cursor: "pointer",
+                    border: `2px solid ${on ? t.ac : t.bd}`,
+                    background: on ? t.acS : "transparent",
+                  }}>
+                    <span style={{
+                      width: 16, height: 16, borderRadius: "50%", flexShrink: 0, marginTop: 1,
+                      border: `2px solid ${on ? t.ac : t.bd}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {on && <span style={{ width: 7, height: 7, borderRadius: "50%", background: t.ac }} />}
+                    </span>
+                    <span>
+                      <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: on ? t.ac : t.tx }}>{o.label}</span>
+                      <span style={{ display: "block", fontSize: 10, color: t.dm, marginTop: 2 }}>{o.desc}</span>
+                    </span>
+                  </button>
+                );
+              })}
+
               {[
                 ["kuitan", "食いタンあり", null],
                 ["atozuke", "後付けあり", null],
@@ -3929,6 +4016,41 @@ input, select { padding: 10px 14px; }
           </div>
 
           <div style={{ marginBottom: 8, marginTop: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 4, letterSpacing: "0.05em" }}>複数人が同時にロン</div>
+            <div style={{ fontSize: 10, color: t.dm, marginBottom: 8 }}>1つの捨て牌に2人以上がロンを宣言したときの扱い</div>
+            {[
+              { key: "atamahane", label: "頭ハネ（アタマハネ）", desc: "放銃者に近い1人だけがアガリ。他は無効" },
+              { key: "double",    label: "ダブロンあり",         desc: "2人まで同時にアガれる" },
+              { key: "triple",    label: "トリプルロンあり",     desc: "3人同時のアガリも認める" },
+            ].map(o => {
+              const on = (rules.multiRon || "atamahane") === o.key;
+              return (
+                <button key={o.key} onClick={() => setRules(r => ({ ...r, multiRon: o.key }))} style={{
+                  width: "100%", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 10,
+                  padding: "11px 12px", marginBottom: 6, borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${on ? t.ac : t.bd}`,
+                  background: on ? t.acS : "transparent",
+                }}>
+                  <span style={{
+                    width: 18, height: 18, borderRadius: "50%", flexShrink: 0, marginTop: 1,
+                    border: `2px solid ${on ? t.ac : t.bd}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {on && <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.ac }} />}
+                  </span>
+                  <span>
+                    <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: on ? t.ac : t.tx }}>{o.label}</span>
+                    <span style={{ display: "block", fontSize: 11, color: t.dm, marginTop: 2, lineHeight: 1.5 }}>{o.desc}</span>
+                  </span>
+                </button>
+              );
+            })}
+            <div style={{ fontSize: 10, color: t.dm, lineHeight: 1.7, marginTop: 2 }}>
+              ※ 本場と供託は、放銃者から反時計回りに最も近い人が受け取ります
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 8, marginTop: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 4, letterSpacing: "0.05em" }}>オーラス（最終局）</div>
             <div style={{ fontSize: 10, color: t.dm, marginBottom: 8 }}>
               {matchType === "tonpu" ? "東4局" : "南4局"}で親がアガった、または流局で親が続く場合の扱い
@@ -4041,6 +4163,7 @@ input, select { padding: 10px 14px; }
                       rules.atozuke && chip("後付け"),
                       rules.kiriage && chip("切り上げ満貫"),
                       chip(rules.orasYame !== false ? "オーラス親トップで終了" : "オーラスやめなし"),
+                      chip(rules.multiRon === "triple" ? "トリプルロンあり" : rules.multiRon === "double" ? "ダブロンあり" : "頭ハネ"),
                     ].filter(Boolean);
                   })()}
                 </div>
@@ -4063,6 +4186,9 @@ input, select { padding: 10px 14px; }
   // 卓の中央にスマホを置き、各プレイヤーが自分の点数を正面から読める向きに回転
   // ══════════════════════════════════
   const renderTableMode = () => {
+    // ルールで許される同時ロンの人数（1=頭ハネ）
+    const mrRule = (gameConfig || {}).rules?.multiRon || "atamahane";
+    const multiRonMax = mrRule === "triple" ? 3 : mrRule === "double" ? 2 : 1;
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
     const PW = 166;   // パネルの長辺
     const PH = 122;   // パネルの短辺
@@ -4112,26 +4238,40 @@ input, select { padding: 10px 14px; }
               {isRiichi && <div style={{ fontSize: 9, color: t.rd, fontWeight: 700 }}>🔴 リーチ済み</div>}
             </button>
           ) : tmWinStep === "winner" ? (
-            /* 和了者を選ぶ */
-            <button onClick={() => { setGWinner(i); setTmWinStep("how"); }} style={{
-              width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "8px 6px",
-              border: `2px solid ${t.ac}`, background: t.acS,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
-            }}>
-              <div style={{
-                fontSize: 20, fontWeight: 900, lineHeight: 1,
-                color: isDealer ? "#1a1a1a" : t.tx,
-                background: isDealer ? t.gd : t.sf,
-                border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                borderRadius: 6, padding: "4px 9px",
-              }}>{seatWind}</div>
-              <div style={{ fontSize: 19, fontWeight: 900, color: t.ac, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
-                {players[i]}
-              </div>
-              <div style={{ fontSize: 10, color: t.dm }}>タップで選択</div>
-            </button>
+            /* 和了者を選ぶ（ダブロン可のときは複数選択） */
+            (() => {
+              const picked = ronPick.includes(i);
+              const maxRon = multiRonMax;
+              return (
+                <button onClick={() => {
+                  if (maxRon === 1) { setGWinner(i); setRonPick([i]); setTmWinStep("how"); return; }
+                  setRonPick(prev => prev.includes(i)
+                    ? prev.filter(x => x !== i)
+                    : (prev.length >= maxRon ? prev : [...prev, i]));
+                }} style={{
+                  width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "8px 6px",
+                  border: `2px solid ${picked ? t.gd : t.ac}`,
+                  background: picked ? t.gdS : t.acS,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+                }}>
+                  <div style={{
+                    fontSize: 20, fontWeight: 900, lineHeight: 1,
+                    color: isDealer ? "#1a1a1a" : t.tx,
+                    background: isDealer ? t.gd : t.sf,
+                    border: `1px solid ${isDealer ? t.gd : t.bd}`,
+                    borderRadius: 6, padding: "4px 9px",
+                  }}>{seatWind}</div>
+                  <div style={{ fontSize: 19, fontWeight: 900, color: picked ? t.gd : t.ac, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                    {players[i]}
+                  </div>
+                  <div style={{ fontSize: 10, color: picked ? t.gd : t.dm }}>
+                    {maxRon === 1 ? "タップで選択" : picked ? "✓ アガリ" : "タップで選択"}
+                  </div>
+                </button>
+              );
+            })()
           ) : tmWinStep === "how" ? (
-            i === gWinner ? (
+            ronPick.includes(i) ? (
               /* 和了者本人 */
               <div style={{
                 width: "100%", height: "100%", borderRadius: 10, padding: "8px 6px",
@@ -4147,7 +4287,17 @@ input, select { padding: 10px 14px; }
             ) : (
               /* 放銃者候補 */
               <button onClick={() => {
-                setGTsumo(false); setGLoser(i); setTmWinStep(null);
+                setTmWinStep(null);
+                setGTsumo(false); setGLoser(i);
+                if (ronPick.length >= 2) {
+                  // 放銃者から反時計回りに近い順（頭ハネ順）で入力
+                  const order = [...ronPick].sort((x, y) => ((x - i + 4) % 4) - ((y - i + 4) % 4));
+                  setMultiRon({ loser: i, queue: order, done: [] });
+                  setGWinner(order[0]);
+                } else {
+                  setMultiRon(null);
+                }
+                setGHan(null); setGFu(null); setFuGuide(null);
                 setShowGW(true); setGStep(5);
               }} style={{
                 width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "8px 6px",
@@ -4268,14 +4418,27 @@ input, select { padding: 10px 14px; }
           </>
         ) : tmWinStep ? (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.ac, textAlign: "center", marginBottom: 6 }}>
-              {tmWinStep === "winner" ? "① あがった人をタップ" : "② ツモ or ホウジュウした人をタップ"}
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.ac, textAlign: "center", marginBottom: 2 }}>
+              {tmWinStep === "winner"
+                ? (multiRonMax > 1 ? "① あがった人をタップ（複数可）" : "① あがった人をタップ")
+                : (ronPick.length >= 2 ? "② ホウジュウした人をタップ" : "② ツモ or ホウジュウした人をタップ")}
             </div>
-            <button style={smallBtn()} onClick={() => { setTmWinStep(null); setGWinner(null); }}>キャンセル</button>
+            <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 6 }}>
+              {tmWinStep === "winner"
+                ? (multiRonMax > 1
+                    ? `${multiRonMax === 3 ? "トリプルロン" : "ダブロン"}あり — 最大${multiRonMax}人まで選べます`
+                    : "頭ハネ — アガれるのは1人だけです")
+                : (ronPick.length >= 2
+                    ? `${ronPick.length}人でロン。放銃者に近い人から順に手を入力します`
+                    : "")}
+            </div>
+            <button style={smallBtn()} onClick={() => {
+              setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null);
+            }}>キャンセル</button>
           </>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
-            <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setTmWinStep("winner"); }}>アガリ入力</button>
+            <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setRonPick([]); setMultiRon(null); setTmWinStep("winner"); }}>アガリ入力</button>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
             <button style={{ ...smallBtn(), flex: "0 0 68px" }} onClick={() => setSeatRot(r => (r + 1) % 4)}>🔄 回転</button>
           </div>
@@ -4336,9 +4499,21 @@ input, select { padding: 10px 14px; }
               }}>確定</button>
             )}
             {tmWinStep === "winner" && (
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", lineHeight: 1.5, whiteSpace: "nowrap" }}>
-                あがった人<br />を<br />選択
-              </div>
+              multiRonMax > 1 && ronPick.length > 0 ? (
+                <button onClick={(e) => {
+                  e.stopPropagation();
+                  if (ronPick.length === 1) { setGWinner(ronPick[0]); }
+                  setTmWinStep("how");
+                }} style={{
+                  padding: "10px 14px", borderRadius: 12, cursor: "pointer",
+                  border: "none", background: t.ac, color: "#fff",
+                  fontSize: 14, fontWeight: 900, lineHeight: 1.4, whiteSpace: "nowrap",
+                }}>{ronPick.length}人<br />で確定</button>
+              ) : (
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", lineHeight: 1.5, whiteSpace: "nowrap" }}>
+                  あがった人<br />を<br />選択
+                </div>
+              )
             )}
             {tmWinStep === "how" && (
               <button onClick={(e) => {
@@ -4647,6 +4822,19 @@ input, select { padding: 10px 14px; }
                 ) : (
                   <>
                     <Back onClick={() => { setGStep(4); }} />
+                    {multiRon && (
+                      <div style={{
+                        padding: "9px 12px", borderRadius: 10, marginBottom: 10,
+                        background: t.gdS, border: `1px solid ${t.gd}55`, textAlign: "center",
+                      }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: t.gd }}>
+                          {multiRon.done.length + 1}人目 / 全{multiRon.done.length + multiRon.queue.length}人
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: t.tx, marginLeft: 8 }}>
+                          {players[gWinner]} さんの手
+                        </span>
+                      </div>
+                    )}
                     <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>翻数</div>
                     <div style={question}>翻数は？</div>
                     <button style={{ ...actionBtn("p"), marginBottom: 12, background: t.gd, color: "#1a1a1a" }}
