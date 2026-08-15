@@ -3170,7 +3170,10 @@ input, select { padding: 10px 14px; }
 
           {menuItem("▶", "対局", suspendedGame ? "※ 保留中の対局があります" : "対局の開始・履歴・1局計算", () => setHomeCat("play"))}
           {menuItem("🎓", "練習問題", "点数計算・役・符を学ぶ", () => setHomeCat("practice"))}
-          {menuItem("⚙️", "設定", "プレイヤー名・使い方ガイド", () => setHomeCat("settings"))}
+          {menuItem("🎴", "麻雀の始め方", "席決め・配牌を図解で解説", () => {
+            setView("startguide"); setGuideStep(0);
+          })}
+          {menuItem("⚙️", "設定", "プレイヤー名・ルールの初期値", () => setHomeCat("settings"))}
         </div>
       );
     }
@@ -3224,10 +3227,6 @@ input, select { padding: 10px 14px; }
             {menuItem("👤", "プレイヤー名の登録", `${presetNames.length}人を登録中`, () => {
               setView("names"); setNewNameInput(""); setEditNameIdx(null);
             })}
-            {menuItem("🎴", "麻雀の始め方", "席決め・配牌を図解で解説", () => {
-              setView("startguide"); setGuideStep(0);
-            })}
-
             {/* ルールのデフォルト */}
             <div style={{ ...card, padding: 16, marginTop: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -3268,14 +3267,14 @@ input, select { padding: 10px 14px; }
                   <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
                   <select value={defaultRules.startPoints} style={selectStyle}
                     onChange={e => saveDefaultRules({ ...defaultRules, startPoints: parseInt(e.target.value, 10) })}>
-                    {[20000, 25000, 27000, 30000, 35000].map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                    {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                   </select>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
                   <select value={defaultRules.returnPoints} style={selectStyle}
                     onChange={e => saveDefaultRules({ ...defaultRules, returnPoints: parseInt(e.target.value, 10) })}>
-                    {[20000, 25000, 27000, 30000, 35000].map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                    {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                   </select>
                 </div>
               </div>
@@ -3578,7 +3577,7 @@ input, select { padding: 10px 14px; }
                   onChange={e => setRules(r => ({ ...r, startPoints: Number(e.target.value) }))}
                   style={selectStyle}
                 >
-                  {[20000, 25000, 30000].map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                  {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                 </select>
               </div>
               <div style={{ flex: 1 }}>
@@ -3588,7 +3587,7 @@ input, select { padding: 10px 14px; }
                   onChange={e => setRules(r => ({ ...r, returnPoints: Number(e.target.value) }))}
                   style={selectStyle}
                 >
-                  {[25000, 30000, 35000].map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                  {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
                 </select>
               </div>
             </div>
@@ -4925,6 +4924,8 @@ input, select { padding: 10px 14px; }
     </>
   );
 }
+
+
 
 
 ReactDOM.render(<MahjongScorer />, document.getElementById("root"));
