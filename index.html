@@ -256,6 +256,8 @@ function MahjongScorer() {
     multiRon: "atamahane",  // 複数ロン: "atamahane"=頭ハネ / "double"=ダブロンまで / "triple"=トリプルロンまで
     startPoints: 30000,     // 持ち点
     returnPoints: 30000,    // 返し点
+    umaKey: "none",         // ウマ（順位点）
+    uma: [0, 0, 0, 0],
   };
   const loadDefaultRules = () => {
     try {
@@ -738,6 +740,143 @@ function MahjongScorer() {
   const numBtn = (on) => ({ height: 62, padding: "0 2px", border: `2px solid ${on ? t.ac : t.bd}`, borderRadius: 12, background: on ? t.acS : "transparent", color: on ? t.ac : t.tx, fontSize: 19, fontWeight: 800, cursor: "pointer", textAlign: "center", transition: "all 0.1s", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box", whiteSpace: "nowrap", letterSpacing: "-0.03em" });
   const actionBtn = (v) => ({ width: "100%", padding: "15px 12px", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, boxSizing: "border-box", lineHeight: 1.5, ...(v === "p" ? { background: t.ac, color: "#fff" } : v === "d" ? { background: t.rd, color: "#fff" } : { background: t.sf, color: t.tx, border: `1px solid ${t.bd}` }) });
   const pSelBtn = (on) => ({ padding: "14px 8px", border: `2px solid ${on ? t.ac : t.bd}`, borderRadius: 12, background: on ? t.acS : "transparent", color: on ? t.ac : t.tx, fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center", flex: 1, transition: "all 0.1s" });
+  // ウマ・オカの設定ブロック（設定画面と対局セットアップで共用）
+  const UmaOkaSettings = ({ rules: r, onChange, compact }) => {
+    const sp = r.startPoints ?? 25000;
+    const rp = r.returnPoints ?? 30000;
+    const uma = r.uma || [0, 0, 0, 0];
+    const oka = (rp - sp) * 4 / 1000;
+    const [open, setOpen] = React.useState(false);
+
+    // 説明用の例（持ち点に合わせて合計が合うようにする）
+    const demo = [15000, 7000, -7000, -15000].map(o => sp + o);
+    const gosha = (v) => { const s = v < 0 ? -1 : 1, a = Math.abs(v), f = Math.floor(a); return s * (a - f > 0.5 ? f + 1 : f); };
+    const ranked = demo.map((s, i) => ({ i, s })).sort((a, b) => (b.s - a.s) || (a.i - b.i));
+    const pts = new Array(4);
+    ranked.forEach((x, rank) => {
+      pts[x.i] = { rank: rank + 1, pt: gosha((x.s - rp + (rank === 0 ? (rp - sp) * 4 : 0)) / 1000) + uma[rank] };
+    });
+
+    return (
+      <div>
+        <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: t.dm, marginBottom: 4, letterSpacing: "0.05em" }}>
+          ウマ・オカ（順位点）
+        </div>
+        <div style={{ fontSize: 10, color: t.dm, marginBottom: 9 }}>
+          順位によってやりとりするポイント。対局結果の精算に使います
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
+          {UMA_PRESETS.map(u => {
+            const on = (r.umaKey || "none") === u.key;
+            return (
+              <button key={u.key} onClick={() => onChange({ umaKey: u.key, uma: u.uma })} style={{
+                padding: "11px 8px", borderRadius: 10, cursor: "pointer",
+                border: `2px solid ${on ? t.ac : t.bd}`,
+                background: on ? t.acS : "transparent",
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: on ? t.ac : t.tx }}>{u.label}</div>
+                <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>{u.note}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
+            <select value={sp} style={selectStyle}
+              onChange={e => {
+                const v = parseInt(e.target.value, 10);
+                onChange({ startPoints: v, returnPoints: Math.max(v, rp) });
+              }}>
+              {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
+            <select value={rp} style={selectStyle}
+              onChange={e => onChange({ returnPoints: parseInt(e.target.value, 10) })}>
+              {Array.from({length:16},(_,i)=>20000+i*1000).filter(v => v >= sp).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.8 }}>
+          オカ = (返し点 − 持ち点) × 4 = <span style={{ color: oka === 0 ? t.dm : t.gd, fontWeight: 700 }}>{oka}pt</span>
+          {oka === 0 ? " — 発生しません" : " がトップへ"}
+        </div>
+
+        <button onClick={() => setOpen(v => !v)} style={{
+          width: "100%", marginTop: 10, padding: "10px 8px", borderRadius: 9, cursor: "pointer",
+          border: `1px solid ${t.bd}`, background: "transparent", color: t.ac, fontSize: 12, fontWeight: 700,
+        }}>{open ? "▲ 説明を閉じる" : "？ ウマ・オカとは（説明を見る）"}</button>
+
+        {open && (
+          <div style={{ marginTop: 10, padding: 14, borderRadius: 11, background: t.sf, border: `1px solid ${t.bd}` }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 6 }}>ウマとは</div>
+            <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.95, marginBottom: 12 }}>
+              順位に応じてやりとりするポイントです。今の設定「
+              <span style={{ color: t.ac, fontWeight: 700 }}>{UMA_PRESETS.find(u => u.key === (r.umaKey || "none"))?.label}</span>
+              」だと、1位が{uma[0] >= 0 ? "+" : ""}{uma[0]}、2位が{uma[1] >= 0 ? "+" : ""}{uma[1]}、
+              3位が{uma[2]}、4位が{uma[3]}です。合計はゼロなので、場全体のポイントは増減しません。
+              数字が大きいほど、素点より順位の価値が高くなります。
+            </div>
+
+            <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 6 }}>オカとは</div>
+            <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.95, marginBottom: 12 }}>
+              持ち点より高い点数（返し点）を基準に精算し、その差額をトップが総取りする仕組みです。
+              {sp === rp ? (
+                <> 今は持ち点と返し点が同じ{sp.toLocaleString()}点なので
+                <span style={{ color: t.gd, fontWeight: 700 }}>オカは発生しません</span>。
+                トップの取り分を増やすなら、持ち点を返し点より低くしてください
+                （例: 持ち点25,000 / 返し点30,000 で20pt）。</>
+              ) : (
+                <> 1人あたり{((rp - sp) / 1000)}ptを供出し、合計
+                <span style={{ color: t.gd, fontWeight: 700 }}>{oka}pt</span>がトップに乗ります。
+                全員のポイントを足すとちょうどゼロになります。</>
+              )}
+            </div>
+
+            <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 6 }}>計算の順番</div>
+            <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.95, marginBottom: 12 }}>
+              ① 素点から返し点を引く<br />
+              ② 1,000点単位にして五捨六入（500点以下は切り捨て、600点以上は切り上げ）<br />
+              ③ トップにオカを加える<br />
+              ④ 順位ごとのウマを加える
+            </div>
+
+            <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 7 }}>今の設定での例</div>
+            <div style={{ fontSize: 10, color: t.dm, marginBottom: 7 }}>
+              終局時の素点が {demo.map(x => x.toLocaleString()).join(" / ")}（合計 {(sp * 4).toLocaleString()}点）だった場合
+            </div>
+            {demo.map((s, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 8, padding: "6px 0",
+                borderBottom: `1px solid ${t.bd}44`,
+              }}>
+                <span style={{ width: 26, fontSize: 11, fontWeight: 800, color: pts[i].rank === 1 ? t.gd : t.dm }}>{pts[i].rank}位</span>
+                <span style={{ flex: 1, fontSize: 12, color: t.dm, fontVariantNumeric: "tabular-nums" }}>{s.toLocaleString()}</span>
+                <span style={{ fontSize: 10, color: t.dm }}>
+                  {(s - rp) / 1000 >= 0 ? "+" : ""}{(s - rp) / 1000}
+                  {pts[i].rank === 1 && oka !== 0 ? ` +${oka}` : ""}
+                  {" "}{uma[pts[i].rank - 1] >= 0 ? "+" : ""}{uma[pts[i].rank - 1]}
+                </span>
+                <span style={{
+                  width: 46, textAlign: "right", fontSize: 14, fontWeight: 900, fontVariantNumeric: "tabular-nums",
+                  color: pts[i].pt > 0 ? t.gn : pts[i].pt < 0 ? t.rd : t.tx,
+                }}>{pts[i].pt > 0 ? "+" : ""}{pts[i].pt}</span>
+              </div>
+            ))}
+            <div style={{ fontSize: 10, color: t.dm, marginTop: 8, lineHeight: 1.7 }}>
+              合計 {pts.reduce((a2, x) => a2 + x.pt, 0)}pt。同点のときは起家に近い席を上位として扱います。
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // 「タップで訂正できる」ことを示す小さなタグ
   const editTag = {
     fontSize: 10, fontWeight: 700, color: t.ac,
@@ -4399,25 +4538,8 @@ input, select { padding: 10px 14px; }
                 </div>
               ))}
 
-              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
-                  <select value={draftRules.startPoints} style={selectStyle}
-                    onChange={e => {
-                      const v = parseInt(e.target.value, 10);
-                      // 返し点は必ず持ち点以上にする
-                      editDraft({ startPoints: v, returnPoints: Math.max(v, draftRules.returnPoints || v) });
-                    }}>
-                    {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
-                  <select value={draftRules.returnPoints} style={selectStyle}
-                    onChange={e => editDraft({ returnPoints: parseInt(e.target.value, 10) })}>
-                    {Array.from({length:16},(_,i)=>20000+i*1000).filter(v => v >= (draftRules.startPoints || 0)).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
-                  </select>
-                </div>
+              <div style={{ marginTop: 16 }}>
+                <UmaOkaSettings rules={draftRules} onChange={editDraft} compact />
               </div>
 
               {/* 確定 */}
@@ -6005,34 +6127,8 @@ input, select { padding: 10px 14px; }
 
           </div>
 
-          <div style={{ marginTop: 16, marginBottom: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 8, letterSpacing: "0.05em" }}>持ち点・返し</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: t.dm, marginBottom: 4 }}>持ち点</div>
-                <select
-                  value={rules.startPoints}
-                  onChange={e => setRules(r => {
-                    const v = Number(e.target.value);
-                    // 返し点は必ず持ち点以上にする
-                    return { ...r, startPoints: v, returnPoints: Math.max(v, r.returnPoints || v) };
-                  })}
-                  style={selectStyle}
-                >
-                  {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
-                </select>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: t.dm, marginBottom: 4 }}>返し点</div>
-                <select
-                  value={rules.returnPoints}
-                  onChange={e => setRules(r => ({ ...r, returnPoints: Number(e.target.value) }))}
-                  style={selectStyle}
-                >
-                  {Array.from({length:16},(_,i)=>20000+i*1000).filter(v => v >= (rules.startPoints || 0)).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
-                </select>
-              </div>
-            </div>
+          <div style={{ marginTop: 18, marginBottom: 8 }}>
+            <UmaOkaSettings rules={rules} onChange={(patch) => setRules(r => ({ ...r, ...patch }))} />
           </div>
 
           <div style={{ marginTop: 16 }}>
@@ -7493,6 +7589,7 @@ input, select { padding: 10px 14px; }
           <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6, letterSpacing: "0.05em" }}>精算（オカ計算）</div>
           <div style={{ fontSize: 11, color: t.dm, marginBottom: 12 }}>
             返し点 {returnPt.toLocaleString()} / オカ {okaPool > 0 ? `+${okaPool.toLocaleString()} (1位へ)` : "なし"}
+            {(ruleSet.uma || []).some(u => u !== 0) && ` / ウマ ${(ruleSet.uma || []).map(u => (u > 0 ? "+" : "") + u).join("/")}`}
           </div>
           {sorted.map((s, rank) => (
             <div key={s.idx} style={{
@@ -7516,6 +7613,45 @@ input, select { padding: 10px 14px; }
             </div>
           ))}
         </div>
+
+        {/* ウマ込みのポイント */}
+        {(ruleSet.uma || []).some(u => u !== 0) && (() => {
+          const uma = ruleSet.uma;
+          const gosha = (v) => { const s = v < 0 ? -1 : 1, a = Math.abs(v), f = Math.floor(a); return s * (a - f > 0.5 ? f + 1 : f); };
+          const rk = scores.map((s, i) => ({ i, s })).sort((a3, b3) => (b3.s - a3.s) || (a3.i - b3.i));
+          const res = new Array(4);
+          rk.forEach((x, rank) => {
+            res[x.i] = { rank: rank + 1, pt: gosha((x.s - returnPt + (rank === 0 ? okaPool : 0)) / 1000) + uma[rank] };
+          });
+          const order = [...res.map((r, i) => ({ ...r, i }))].sort((a3, b3) => a3.rank - b3.rank);
+          return (
+            <div style={card}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6, letterSpacing: "0.05em" }}>
+                ポイント（ウマ・オカ込み）
+              </div>
+              <div style={{ fontSize: 11, color: t.dm, marginBottom: 12 }}>
+                素点を五捨六入し、オカとウマを加えたものです
+              </div>
+              {order.map(o => (
+                <div key={o.i} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "11px 14px", borderRadius: 10, marginBottom: 6,
+                  background: o.rank === 1 ? t.gdS : "transparent",
+                  border: o.rank === 1 ? `1px solid ${t.gd}44` : `1px solid ${t.bd}33`,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 15, fontWeight: 900, width: 24, color: o.rank === 1 ? t.gd : t.dm }}>{o.rank}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{players[o.i]}</span>
+                  </div>
+                  <span style={{
+                    fontSize: 17, fontWeight: 900, fontVariantNumeric: "tabular-nums",
+                    color: o.pt > 0 ? t.gn : o.pt < 0 ? t.rd : t.tx,
+                  }}>{o.pt > 0 ? "+" : ""}{o.pt}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Round history */}
         <div style={card}>
