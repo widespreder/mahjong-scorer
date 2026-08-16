@@ -13244,13 +13244,53 @@ input, select { padding: 10px 14px; }
     onClick: () => setSetupStep(activeLeagueId ? 4 : 2)
   }, "席決めをスキップ（今の並びのまま）"), React.createElement("div", {
     style: {
-      fontSize: 10,
+      fontSize: 12,
       color: t.dm,
       textAlign: "center",
-      marginTop: 6,
+      marginTop: 10,
       lineHeight: 1.7
     }
-  }, "前の画面で選んだ順に、東・南・西・北 になります", React.createElement("br", null), "（", players.map((nm, i) => `${WIND_ORDER[i]}${nm}`).join("　"), "）"))), setupStep === 2 && React.createElement("div", {
+  }, "スキップした場合、前の画面で選んだ順にこの席になります"), React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 8,
+      marginTop: 10,
+      padding: 12,
+      borderRadius: 12,
+      background: t.sf,
+      border: `1px solid ${t.bd}`
+    }
+  }, players.map((nm, i) => React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      minWidth: 0
+    }
+  }, React.createElement("span", {
+    style: {
+      fontSize: 16,
+      fontWeight: 900,
+      lineHeight: 1,
+      flexShrink: 0,
+      color: i === 0 ? "#1a1a1a" : t.tx,
+      background: i === 0 ? t.gd : t.card,
+      border: `1px solid ${i === 0 ? t.gd : t.bd}`,
+      borderRadius: 6,
+      padding: "5px 8px"
+    }
+  }, WIND_ORDER[i]), React.createElement("span", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: t.tx,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, nm)))))), setupStep === 2 && React.createElement("div", {
     style: card
   }, React.createElement(Back, {
     onClick: () => setSetupStep(1)
