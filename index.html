@@ -5896,8 +5896,9 @@ input, select { padding: 10px 14px; }
         <div style={{
           width: PW, height: PH,
           padding: (tmWinStep || tmDrawMode) ? 8 : "12px 14px", borderRadius: 14,
-          background: (tmWinStep || tmDrawMode) ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : isDealer ? t.gdS : t.card,
-          border: (tmWinStep || tmDrawMode) ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
+          // 親の目印は風牌のバッジだけにして、パネル自体は他家と同じ見た目にする
+          background: (tmWinStep || tmDrawMode) ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : t.card,
+          border: (tmWinStep || tmDrawMode) ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
           display: "flex", flexDirection: "column", justifyContent: "center", gap: 5,
           position: "relative",
