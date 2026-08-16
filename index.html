@@ -6111,8 +6111,10 @@ input, select { padding: 10px 14px; }
     const mrRule = (gameConfig || {}).rules?.multiRon || "atamahane";
     const multiRonMax = mrRule === "triple" ? 3 : mrRule === "double" ? 2 : 1;
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
-    const PW = 166;   // パネルの長辺
-    const PH = 122;   // パネルの短辺
+    // 卓（正方形）の一辺に対する比率で決める。端末サイズが変わっても重ならない
+    const PW = "38cqmin";   // パネルの長辺
+    const PH = "24cqmin";   // パネルの短辺
+    const PGAP = "3cqmin"; // 卓のふちからの余白
 
     // サイコロの結果で割る山の持ち主
     const diceSum = diceVals[0] + diceVals[1];
@@ -6127,12 +6129,12 @@ input, select { padding: 10px 14px; }
       return (
         <div style={{
           width: PW, height: PH,
-          padding: (tmWinStep || tmDrawMode) ? 10 : "14px 16px", borderRadius: 14,
+          padding: (tmWinStep || tmDrawMode) ? "2cqmin" : "3cqmin 3.5cqmin", borderRadius: "3.5cqmin",
           // 親は外枠だけ黄色に。背景は他家と同じ
           background: (tmWinStep || tmDrawMode) ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : t.card,
           border: (tmWinStep || tmDrawMode) ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
-          display: "flex", flexDirection: "column", justifyContent: "center", gap: 7,
+          display: "flex", flexDirection: "column", justifyContent: "center", gap: "1.5cqmin",
           position: "relative",
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
@@ -6257,30 +6259,30 @@ input, select { padding: 10px 14px; }
           ) : (
             <>
               <div {...longPressHandlers(i)} style={{ ...longPressHandlers(i).style, cursor: "pointer", padding: "0 2px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5cqmin" }}>
                   <span style={{
-                    fontSize: 17, fontWeight: 900, lineHeight: 1,
+                    fontSize: "4.2cqmin", fontWeight: 900, lineHeight: 1,
                     color: isDealer ? "#1a1a1a" : t.tx,
                     background: isDealer ? t.gd : t.sf,
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                    borderRadius: 6, padding: "5px 9px", flexShrink: 0,
+                    borderRadius: "1.6cqmin", padding: "1.2cqmin 2cqmin", flexShrink: 0,
                   }}>{seatWind}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
+                  <span style={{ fontSize: "3.3cqmin", fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1, textAlign: "left" }}>
                     {players[i]}
                   </span>
                 </div>
                 <div style={{
-                  fontSize: 21, fontWeight: 900, lineHeight: 1.15, marginTop: 1,
+                  fontSize: "5.8cqmin", fontWeight: 900, lineHeight: 1.15, marginTop: 1,
                   color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
                 }}>{score.toLocaleString()}</div>
               </div>
               {/* リーチボタン */}
               <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
-                width: "100%", padding: "7px 8px", borderRadius: 8, cursor: "pointer", marginTop: 3,
+                width: "100%", padding: "1.7cqmin 2cqmin", borderRadius: "2cqmin", cursor: "pointer", marginTop: "0.6cqmin",
                 border: `1px solid ${isRiichi ? t.rd : t.bd}`,
                 background: isRiichi ? t.rd : "transparent",
                 color: isRiichi ? "#fff" : t.dm,
-                fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
+                fontSize: "2.7cqmin", fontWeight: 800, letterSpacing: "0.06em", whiteSpace: "nowrap",
               }}>
                 {isRiichi ? "🔴 リーチ中 (取消)" : "リーチ"}
               </button>
@@ -6304,7 +6306,7 @@ input, select { padding: 10px 14px; }
       const h = PH;
       return (
         <div key={i} style={{
-          position: "absolute", [side]: 12, top: "50%",
+          position: "absolute", [side]: PGAP, top: "50%",
           width: h, height: PW,
           transform: "translateY(-50%)",
         }}>
@@ -6415,19 +6417,26 @@ input, select { padding: 10px 14px; }
         {actionRow(true)}
 
         <div style={{
-          position: "relative", width: "100%", flex: "1 1 auto", minHeight: 400,
-          background: "linear-gradient(160deg, #16452f, #103526)",
-          borderRadius: 20, border: "3px solid #24583f", overflow: "hidden",
+          flex: "1 1 auto", minHeight: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          {hSlot((2 + seatRot) % 4, { top: 14, left: "50%" }, 180)}
+        <div style={{
+          position: "relative", aspectRatio: "1 / 1",
+          width: "100%", height: "auto", maxWidth: "100%", maxHeight: "100%",
+          flex: "0 1 auto", margin: "auto",
+          containerType: "size",
+          background: "linear-gradient(160deg, #16452f, #103526)",
+          borderRadius: 24, border: "3px solid #24583f", overflow: "hidden",
+        }}>
+          {hSlot((2 + seatRot) % 4, { top: PGAP, left: "50%" }, 180)}
           {vSlot((1 + seatRot) % 4, "right", -90)}
           {vSlot((3 + seatRot) % 4, "left", 90)}
-          {hSlot((0 + seatRot) % 4, { bottom: 14, left: "50%" }, 0)}
+          {hSlot((0 + seatRot) % 4, { bottom: PGAP, left: "50%" }, 0)}
 
           {/* 中央: 局情報 + サイコロ */}
           <div style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-            width: tmWinStep === "how" ? 132 : 104, height: tmWinStep === "how" ? 132 : 104, boxSizing: "border-box",
+            width: "25cqmin", height: "25cqmin", boxSizing: "border-box",
             background: "rgba(0,0,0,0.45)", borderRadius: 18, transition: "width 0.25s, height 0.25s",
             border: "1px solid rgba(255,255,255,0.1)",
             display: "flex", flexDirection: "column",
@@ -6575,6 +6584,7 @@ input, select { padding: 10px 14px; }
 
             </div>
           </div>
+        </div>
         </div>
 
         {actionRow(false)}
