@@ -327,6 +327,7 @@ function MahjongScorer() {
   // ダブロン／トリプルロン: 複数人の手を順番に入力するためのキュー
   const [multiRon, setMultiRon] = useState(null); // { loser, queue:[idx], done:[{winner,han,fu,result,limitName}] }
   const [ronPick, setRonPick] = useState([]);     // 和了者の複数選択
+  const [ronLoserPick, setRonLoserPick] = useState(null); // 放銃者の選択（確定ボタンで進む）
   const [gTsumo, setGTsumo] = useState(null);
   const [gLoser, setGLoser] = useState(null);
   const [gHan, setGHan] = useState(null);
@@ -6146,25 +6147,25 @@ input, select { padding: 10px 14px; }
               : isRiichi;
             return (
             <button disabled={lockR} onClick={() => { if (lockR) return; const n = [...drawTenpai]; n[i] = !n[i]; setDrawTenpai(n); }} style={{
-              width: "100%", height: "100%", borderRadius: 10, cursor: lockR ? "default" : "pointer", padding: "8px 6px",
+              width: "100%", height: "100%", borderRadius: 10, cursor: lockR ? "default" : "pointer", padding: "2cqmin", boxSizing: "border-box", overflow: "hidden",
               border: `2px solid ${lockR ? t.rd : drawTenpai[i] ? t.gn : t.bd}`,
               background: lockR ? "rgba(220,60,60,0.14)" : drawTenpai[i] ? t.gnS : t.card,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.8cqmin",
             }}>
               <div style={{
-                fontSize: 18, fontWeight: 900, lineHeight: 1,
+                fontSize: "4.4cqmin", fontWeight: 900, lineHeight: 1,
                 color: isDealer ? "#1a1a1a" : t.tx,
                 background: isDealer ? t.gd : t.sf,
                 border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                borderRadius: 6, padding: "5px 9px",
+                borderRadius: "1.6cqmin", padding: "1.2cqmin 2.2cqmin",
               }}>{seatWind}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%" }}>
+              <div style={{ fontSize: "3.4cqmin", fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%" }}>
                 {players[i]}
               </div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: lockR ? t.gn : drawTenpai[i] ? t.gn : t.dm }}>
+              <div style={{ fontSize: "3.8cqmin", fontWeight: 900, color: lockR ? t.gn : drawTenpai[i] ? t.gn : t.dm, whiteSpace: "nowrap" }}>
                 {lockR ? "✓ テンパイ" : drawTenpai[i] ? "✓ テンパイ" : "ノーテン"}
               </div>
-              {lockR && <div style={{ fontSize: 9, color: t.rd, fontWeight: 700 }}>🔴 リーチ済み</div>}
+              {lockR && <div style={{ fontSize: "2.4cqmin", color: t.rd, fontWeight: 700, whiteSpace: "nowrap" }}>🔴 リーチ済み</div>}
             </button>
             );
             })()
@@ -6179,22 +6180,22 @@ input, select { padding: 10px 14px; }
                     ? prev.filter(x => x !== i)
                     : (prev.length >= maxRon ? prev : [...prev, i]));
                 }} style={{
-                  width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "8px 6px",
+                  width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "2cqmin", boxSizing: "border-box", overflow: "hidden",
                   border: `2px solid ${picked ? t.gd : t.ac}`,
                   background: picked ? t.gdS : t.acS,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.9cqmin",
                 }}>
                   <div style={{
-                    fontSize: 20, fontWeight: 900, lineHeight: 1,
+                    fontSize: "4.6cqmin", fontWeight: 900, lineHeight: 1,
                     color: isDealer ? "#1a1a1a" : t.tx,
                     background: isDealer ? t.gd : t.sf,
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
-                    borderRadius: 6, padding: "4px 9px",
+                    borderRadius: "1.6cqmin", padding: "1.1cqmin 2.2cqmin",
                   }}>{seatWind}</div>
-                  <div style={{ fontSize: 19, fontWeight: 900, color: picked ? t.gd : t.ac, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                  <div style={{ fontSize: "4.2cqmin", fontWeight: 900, color: picked ? t.gd : t.ac, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
                     {players[i]}
                   </div>
-                  <div style={{ fontSize: 10, color: picked ? t.gd : t.dm }}>
+                  <div style={{ fontSize: "2.7cqmin", color: picked ? t.gd : t.dm, whiteSpace: "nowrap" }}>
                     {picked ? "✓ アガリ" : "タップで選択"}
                   </div>
                 </button>
@@ -6206,39 +6207,31 @@ input, select { padding: 10px 14px; }
               <div style={{
                 width: "100%", height: "100%", borderRadius: 10, padding: "8px 6px",
                 border: `2px solid ${t.gd}`, background: t.gdS,
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.8cqmin",
+                padding: "2cqmin", boxSizing: "border-box", overflow: "hidden",
               }}>
-                <div style={{ fontSize: 22 }}>🏆</div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: t.gd, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                <div style={{ fontSize: "5cqmin", lineHeight: 1 }}>🏆</div>
+                <div style={{ fontSize: "4cqmin", fontWeight: 900, color: t.gd, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
                   {players[i]}
                 </div>
-                <div style={{ fontSize: 10, color: t.dm }}>あがった人</div>
+                <div style={{ fontSize: "2.7cqmin", color: t.dm }}>あがった人</div>
               </div>
             ) : (
               /* 放銃者候補 */
-              <button onClick={() => {
-                setTmWinStep(null);
-                setGTsumo(false); setGLoser(i);
-                if (ronPick.length >= 2) {
-                  // 放銃者から反時計回りに近い順（頭ハネ順）で入力
-                  const order = [...ronPick].sort((x, y) => ((x - i + 4) % 4) - ((y - i + 4) % 4));
-                  setMultiRon({ loser: i, queue: order, done: [] });
-                  setGWinner(order[0]);
-                } else {
-                  setMultiRon(null);
-                }
-                setGHan(null); setGFu(null); setFuGuide(null);
-                setShowGW(true); setGStep(5);
-              }} style={{
-                width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "8px 6px",
-                border: `2px solid ${t.rd}`, background: t.rdS,
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+              <button onClick={() => setRonLoserPick(ronLoserPick === i ? null : i)} style={{
+                width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "2cqmin",
+                border: `2px solid ${t.rd}`,
+                background: ronLoserPick === i ? "rgba(239,68,68,0.32)" : t.rdS,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.8cqmin",
+                overflow: "hidden",
               }}>
-                <div style={{ fontSize: 17, fontWeight: 900, color: t.rd }}>ロン</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                <div style={{ fontSize: "4.6cqmin", fontWeight: 900, color: t.rd }}>ロン</div>
+                <div style={{ fontSize: "3.6cqmin", fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
                   {players[i]}
                 </div>
-                <div style={{ fontSize: 10, color: t.dm }}>から出アガリ</div>
+                <div style={{ fontSize: "2.7cqmin", color: ronLoserPick === i ? t.rd : t.dm, fontWeight: ronLoserPick === i ? 800 : 400 }}>
+                  {ronLoserPick === i ? "✓ 選択中" : "から出アガリ"}
+                </div>
               </button>
             )
           ) : isWallTarget ? (
@@ -6369,12 +6362,12 @@ input, select { padding: 10px 14px; }
                     : "")}
             </div>
             <button style={smallBtn()} onClick={() => {
-              setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null); setRonRuleWarn(false);
+              setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null); setRonRuleWarn(false); setRonLoserPick(null);
             }}>キャンセル</button>
           </>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
-            <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setRonPick([]); setMultiRon(null); setTmWinStep("winner"); }}>アガリ入力</button>
+            <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setRonPick([]); setMultiRon(null); setRonLoserPick(null); setTmWinStep("winner"); }}>アガリ入力</button>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
             <button aria-label="ルール確認" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
               onClick={() => setShowRuleCheck(flip ? "flip" : true)}>📋</button>
@@ -6491,6 +6484,34 @@ input, select { padding: 10px 14px; }
                     ホウジュウ<br />した人を選択
                   </div>
                 </div>
+              ) : ronLoserPick !== null ? (
+                /* 放銃者を選んだら確定ボタン */
+                <button onClick={(e) => {
+                  e.stopPropagation();
+                  const i = ronLoserPick;
+                  setTmWinStep(null);
+                  setGTsumo(false); setGLoser(i);
+                  if (ronPick.length >= 2) {
+                    const order = [...ronPick].sort((x, y) => ((x - i + 4) % 4) - ((y - i + 4) % 4));
+                    setMultiRon({ loser: i, queue: order, done: [] });
+                    setGWinner(order[0]);
+                  } else {
+                    setMultiRon(null);
+                  }
+                  setRonLoserPick(null);
+                  setGHan(null); setGFu(null); setFuGuide(null);
+                  setShowGW(true); setGStep(5);
+                }} style={{
+                  width: "100%", height: "100%", borderRadius: 16, cursor: "pointer",
+                  border: "none", background: t.ac, color: "#fff",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1cqmin",
+                  padding: "2cqmin", boxSizing: "border-box", overflow: "hidden",
+                }}>
+                  <div style={{ fontSize: "5cqmin", fontWeight: 900, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>確定</div>
+                  <div style={{ fontSize: "2.6cqmin", opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                    {players[ronLoserPick]} から
+                  </div>
+                </button>
               ) : (
                 <button onClick={(e) => {
                   e.stopPropagation();
@@ -6499,10 +6520,10 @@ input, select { padding: 10px 14px; }
                 }} style={{
                   width: "100%", height: "100%", borderRadius: 16, cursor: "pointer",
                   border: `2px solid ${t.gn}`, background: t.gnS,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
-                  padding: 6, boxSizing: "border-box",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "2cqmin", boxSizing: "border-box", overflow: "hidden",
                 }}>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: t.gn, letterSpacing: "0.06em" }}>ツモ</div>
+                  <div style={{ fontSize: "5cqmin", fontWeight: 900, color: t.gn, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>ツモ</div>
                 </button>
               )
             )}
