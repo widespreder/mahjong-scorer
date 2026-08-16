@@ -6112,8 +6112,8 @@ input, select { padding: 10px 14px; }
     const multiRonMax = mrRule === "triple" ? 3 : mrRule === "double" ? 2 : 1;
     // 席順: players[0]=手前, [1]=右, [2]=向かい, [3]=左（反時計回り＝下家が右）
     // 卓（正方形）の一辺に対する比率で決める。端末サイズが変わっても重ならない
-    const PW = "38cqmin";   // パネルの長辺
-    const PH = "24cqmin";   // パネルの短辺
+    const PW = "37cqmin";   // パネルの長辺
+    const PH = "26cqmin";   // パネルの短辺
     const PGAP = "3cqmin"; // 卓のふちからの余白
 
     // サイコロの結果で割る山の持ち主
@@ -6261,7 +6261,7 @@ input, select { padding: 10px 14px; }
               <div {...longPressHandlers(i)} style={{ ...longPressHandlers(i).style, cursor: "pointer", padding: "0 2px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5cqmin" }}>
                   <span style={{
-                    fontSize: "4.2cqmin", fontWeight: 900, lineHeight: 1,
+                    fontSize: "3.9cqmin", fontWeight: 900, lineHeight: 1,
                     color: isDealer ? "#1a1a1a" : t.tx,
                     background: isDealer ? t.gd : t.sf,
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
@@ -6272,17 +6272,17 @@ input, select { padding: 10px 14px; }
                   </span>
                 </div>
                 <div style={{
-                  fontSize: "5.8cqmin", fontWeight: 900, lineHeight: 1.15, marginTop: 1,
+                  fontSize: "5.3cqmin", fontWeight: 900, lineHeight: 1.15, marginTop: 0,
                   color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
                 }}>{score.toLocaleString()}</div>
               </div>
               {/* リーチボタン */}
               <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
-                width: "100%", padding: "1.7cqmin 2cqmin", borderRadius: "2cqmin", cursor: "pointer", marginTop: "0.6cqmin",
+                width: "100%", padding: "1.1cqmin 1.2cqmin", borderRadius: "2cqmin", cursor: "pointer", marginTop: "0.3cqmin",
                 border: `1px solid ${isRiichi ? t.rd : t.bd}`,
                 background: isRiichi ? t.rd : "transparent",
                 color: isRiichi ? "#fff" : t.dm,
-                fontSize: "2.7cqmin", fontWeight: 800, letterSpacing: "0.06em", whiteSpace: "nowrap",
+                fontSize: "2.5cqmin", fontWeight: 800, letterSpacing: "0.04em", whiteSpace: "nowrap",
               }}>
                 {isRiichi ? "🔴 リーチ中 (取消)" : "リーチ"}
               </button>
@@ -6553,7 +6553,7 @@ input, select { padding: 10px 14px; }
               const rot = ROT[(dealerIdx - seatRot + 4) % 4] ?? 0;
               const posBase = (offsetY) => ({
                 position: "absolute", top: "50%", left: "50%",
-                transform: `translate(-50%,-50%) rotate(${rot}deg) translateY(${offsetY}px)`,
+                transform: `translate(-50%,-50%) rotate(${rot}deg) translateY(${offsetY}cqmin)`,
                 transition: "transform 0.4s cubic-bezier(.3,1.2,.4,1)",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                 whiteSpace: "nowrap", lineHeight: 1,
@@ -6561,15 +6561,15 @@ input, select { padding: 10px 14px; }
               return (
                 <>
                   {/* サイコロの上: 何局 */}
-                  <div style={posBase(-36)}>
-                    <span style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>
+                  <div style={posBase(-8.5)}>
+                    <span style={{ fontSize: "3.9cqmin", fontWeight: 900, color: "#fff" }}>
                       {roundWind}{dealerIdx + 1}局
                     </span>
                   </div>
                   {/* サイコロの下: 本場・供託 */}
-                  <div style={posBase(36)}>
+                  <div style={posBase(8.5)}>
                     <span style={{
-                      fontSize: 12, fontWeight: 800,
+                      fontSize: "3.2cqmin", fontWeight: 800,
                       color: honba > 0 ? t.gd : "rgba(255,255,255,0.45)",
                     }}>{honba}本場</span>
                     {riichiBets > 0 && (
