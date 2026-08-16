@@ -9604,7 +9604,7 @@ input, select { padding: 10px 14px; }
           marginTop: 2
         }
       }, o.desc)));
-    }), [["kuitan", "食いタンあり", null], ["atozuke", "後付けあり", null], ["kiriage", "切り上げ満貫", "4翻30符・3翻60符を満貫扱い"], ["orasYame", "オーラスは親トップで終了", "アガリやめ・テンパイやめ"], ["tobiEnd", "トビで終了", "誰かの持ち点が0未満になった時点で終局"]].map(([key, label, hint]) => React.createElement("div", {
+    }), [["kuitan", "食いタンあり", "鳴いたタンヤオを認めるか。OFFだと鳴くと役なしになる場面が増えます"], ["atozuke", "後付けあり", "役が未確定のまま鳴き、あとから役を確定させてよいか。OFFは完全先付け"], ["kiriage", "切り上げ満貫", "4翻30符・3翻60符を満貫扱い"], ["orasYame", "オーラスは親トップで終了", "アガリやめ・テンパイやめ"], ["tobiEnd", "トビで終了", "誰かの持ち点が0未満になった時点で終局"]].map(([key, label, hint]) => React.createElement("div", {
       key: key,
       style: {
         padding: "10px 0",
@@ -10647,14 +10647,17 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         margin: "12px 0 2px"
       }
-    }, "\u305D\u306E\u4ED6"), [["kuitan", "食いタンあり"], ["atozuke", "後付けあり"], ["kiriage", "切り上げ満貫"], ["orasYame", "オーラスは親トップで終了"], ["tobiEnd", "トビで終了"]].map(([k, lb]) => React.createElement("div", {
+    }, "\u305D\u306E\u4ED6"), [["kuitan", "食いタンあり", "鳴いたタンヤオを認めるか"], ["atozuke", "後付けあり", "役を後から確定させてよいか"], ["kiriage", "切り上げ満貫", "4翻30符・3翻60符を満貫扱い"], ["orasYame", "オーラスは親トップで終了", "アガリやめ・テンパイやめ"], ["tobiEnd", "トビで終了", "持ち点が0未満になった時点で終局"]].map(([k, lb, hint]) => React.createElement("div", {
       key: k,
+      style: {
+        padding: "9px 0",
+        borderBottom: `1px solid ${t.bd}33`
+      }
+    }, React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        padding: "9px 0",
-        borderBottom: `1px solid ${t.bd}33`
+        justifyContent: "space-between"
       }
     }, React.createElement("span", {
       style: {
@@ -10690,14 +10693,13 @@ input, select { padding: 10px 14px; }
         background: "#fff",
         transition: "left 0.15s"
       }
-    })))), React.createElement("div", {
+    }))), hint && React.createElement("div", {
       style: {
         fontSize: 10,
         color: t.dm,
-        marginTop: 8,
-        lineHeight: 1.7
+        marginTop: 3
       }
-    }, "\u5207\u308A\u4E0A\u3052\u6E80\u8CAB\u306F4\u7FFB30\u7B26\u30FB3\u7FFB60\u7B26\u3092\u6E80\u8CAB\u6271\u3044\u3002\u30C8\u30D3\u306F\u6301\u3061\u70B9\u304C0\u672A\u6E80\u306B\u306A\u3063\u305F\u6642\u70B9\u3067\u7D42\u5C40\u3067\u3059"), React.createElement(RuleHelp, null)), !canSave && React.createElement("div", {
+    }, hint))), React.createElement(RuleHelp, null)), !canSave && React.createElement("div", {
       style: {
         padding: "12px 14px",
         marginBottom: 10,
@@ -12998,10 +13000,28 @@ input, select { padding: 10px 14px; }
   }, "\u305D\u306E\u4ED6"), toggleRow("食いタンあり", rules.kuitan, () => setRules(r => ({
     ...r,
     kuitan: !r.kuitan
-  }))), toggleRow("後付けあり", rules.atozuke, () => setRules(r => ({
+  }))), React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: t.dm,
+      paddingLeft: 2,
+      marginTop: -4,
+      marginBottom: 6,
+      lineHeight: 1.7
+    }
+  }, "\u9CF4\u3044\u305F\u30BF\u30F3\u30E4\u30AA\u3092\u8A8D\u3081\u308B\u304B\u3002OFF\u3060\u3068\u9CF4\u304F\u3068\u5F79\u306A\u3057\u306B\u306A\u308B\u5834\u9762\u304C\u5897\u3048\u307E\u3059"), toggleRow("後付けあり", rules.atozuke, () => setRules(r => ({
     ...r,
     atozuke: !r.atozuke
-  }))), toggleRow("切り上げ満貫", rules.kiriage, () => setRules(r => ({
+  }))), React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: t.dm,
+      paddingLeft: 2,
+      marginTop: -4,
+      marginBottom: 6,
+      lineHeight: 1.7
+    }
+  }, "\u5F79\u304C\u672A\u78BA\u5B9A\u306E\u307E\u307E\u9CF4\u304D\u3001\u3042\u3068\u304B\u3089\u5F79\u3092\u78BA\u5B9A\u3055\u305B\u3066\u3088\u3044\u304B\u3002OFF\u306F\u5B8C\u5168\u5148\u4ED8\u3051"), toggleRow("切り上げ満貫", rules.kiriage, () => setRules(r => ({
     ...r,
     kiriage: !r.kiriage
   }))), React.createElement("div", {
