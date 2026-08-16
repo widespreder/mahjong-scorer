@@ -9771,7 +9771,7 @@ input, select { padding: 10px 14px; }
         fontWeight: 900,
         marginBottom: 16
       }
-    }, cat.icon, " ", cat.title), homeCat === "play" && React.createElement(React.Fragment, null, menuItem("▶", "東風戦・半荘戦", "1回きりの対局。成績は履歴に残ります", () => {
+    }, cat.icon, " ", cat.title), homeCat === "play" && React.createElement(React.Fragment, null, menuItem("▶", "東風戦・半荘戦・全荘戦", "1回きりの対局。成績は履歴に残ります", () => {
       setView("game");
       setGameStarted(false);
       setGameFinished(false);
@@ -9786,7 +9786,7 @@ input, select { padding: 10px 14px; }
       setPlayerMode([false, false, false, false]);
       setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
       setTableMode(true);
-    }), menuItem("🏆", "リーグ戦", "複数の半荘戦・東風戦を通して順位を争う", () => {
+    }), menuItem("🏆", "リーグ戦", "複数の対局を通して順位を争う", () => {
       setView("league");
     }), menuItem("🔢", "1局戦", "翻・符から点数をすぐ計算", () => {
       setView("calc");
