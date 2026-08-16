@@ -6146,8 +6146,10 @@ input, select { padding: 10px 14px; }
           <div style={{ display: "flex", gap: 8 }}>
             <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setRonPick([]); setMultiRon(null); setTmWinStep("winner"); }}>アガリ入力</button>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
-            <button style={{ ...smallBtn(), flex: "0 0 60px" }} onClick={() => setShowRuleCheck(true)}>📋 ルール</button>
-            <button style={{ ...smallBtn(), flex: "0 0 60px" }} onClick={() => setSeatRot(r => (r + 1) % 4)}>🔄 回転</button>
+            <button aria-label="ルール確認" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
+              onClick={() => setShowRuleCheck(true)}>📋</button>
+            <button aria-label="席順を回す" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
+              onClick={() => setSeatRot(r => (r + 1) % 4)}>🔄</button>
           </div>
         )}
       </div>
