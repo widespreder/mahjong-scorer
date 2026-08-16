@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 
 // ── Score Engine ──
 function calcBasePoints(fu, han, kiriage) {
-  if (han >= 13) return 8000;
+  if (han >= 13) return 8000 * Math.max(1, Math.floor(han / 13)); // 13=役満, 26=ダブル役満, 39=トリプル役満
   if (han >= 11) return 6000;
   if (han >= 8) return 4000;
   if (han >= 6) return 3000;
@@ -26,6 +26,8 @@ function calcScore(fu, han, isParent, isTsumo, kiriage) {
   }
 }
 function getLimitName(han) {
+  if (han >= 39) return "トリプル役満";
+  if (han >= 26) return "ダブル役満";
   if (han >= 13) return "役満";
   if (han >= 11) return "三倍満";
   if (han >= 8) return "倍満";
@@ -223,6 +225,7 @@ export default function MahjongScorer() {
     kuitan: true,           // 食いタン
     atozuke: true,          // 後付け
     kiriage: false,         // 切り上げ満貫（4翻30符・3翻60符を満貫扱い）
+    doubleYakuman: false,   // ダブル役満（役満の複合を2倍・3倍で計算）
     orasYame: true,         // オーラスで親がトップなら終了（アガリやめ・テンパイやめ）
     multiRon: "atamahane",  // 複数ロン: "atamahane"=頭ハネ / "double"=ダブロンまで / "triple"=トリプルロンまで
     startPoints: 30000,     // 持ち点
@@ -286,17 +289,31 @@ export default function MahjongScorer() {
   const [gameFinished, setGameFinished] = useState(false);
   const [showExtendConfirm, setShowExtendConfirm] = useState(false); // tonpu → hanchan extension // natural game end
 
+  // 終局時に卓上へ残った供託リーチ棒（オーラス流局など）はトップが受け取る
+  const [kyotakuAward, setKyotakuAward] = useState(null); // { idx, n } 表示用
+  React.useEffect(() => {
+    if (gameFinished && riichiBets > 0) {
+      const n = riichiBets;
+      // トップ判定（同点は起家に近い席が上位）
+      const top = scores.map((v, i) => ({ v, i })).sort((a, b) => (b.v - a.v) || (a.i - b.i))[0].i;
+      setScores(s => { const ns = [...s]; ns[top] += n * 1000; return ns; });
+      setKyotakuAward({ idx: top, n });
+      setRiichiBets(0);
+    }
+    if (!gameFinished) setKyotakuAward(null);
+  }, [gameFinished, riichiBets]);
+
   // ── Calc wizard ──
   const [calcStep, setCalcStep] = useState(0);
   const [cTsumo, setCTsumo] = useState(null);
   const [cParent, setCParent] = useState(null);
   const [cHan, setCHan] = useState(null);
   const [cFu, setCFu] = useState(null);
-  const resetCalc = useCallback(() => { setCalcStep(0); setCTsumo(null); setCParent(null); setCHan(null); setCFu(null); }, []);
+  const resetCalc = useCallback(() => { setCalcStep(0); setCTsumo(null); setCParent(null); setCHan(null); setCFu(null); setGKnownNaki(null); setFuGuide(null); setFuGuideStep(0); }, []);
   const calcResult = useMemo(() => {
     if (cHan === null || cFu === null || cParent === null || cTsumo === null) return null;
     return calcScore(cFu, cHan, cParent, cTsumo, rules.kiriage);
-  }, [cHan, cFu, cParent, cTsumo]);
+  }, [cHan, cFu, cParent, cTsumo, rules.kiriage]);
   const calcLimit = useMemo(() => cHan !== null ? getLimitName(cHan) : null, [cHan]);
 
   // ── Game round wizard ──
@@ -315,6 +332,8 @@ export default function MahjongScorer() {
   // Fu guide state
   const [fuGuide, setFuGuide] = useState(null); // null=not started, object={mentsu, machi, jantou}
   const [fuGuideStep, setFuGuideStep] = useState(0); // wizard step
+  // 役ピッカーで答えた「鳴きの有無」を符ガイドに引き継ぐ（同じ質問を2回しない）
+  const [gKnownNaki, setGKnownNaki] = useState(null); // null=未回答 / true / false
 
   // ── 役から翻数を計算するピッカー ──
   const [yakuPickerOpen, setYakuPickerOpen] = useState(false);
@@ -323,28 +342,35 @@ export default function MahjongScorer() {
   const [pickerDora, setPickerDora] = useState(0);
   const [pickerUra, setPickerUra] = useState(0);   // 裏ドラ
 
-  const resetYakuPicker = () => { setPickedYaku([]); setPickerNaki(null); setPickerDora(0); setYakuPickerOpen(false); };
+  const resetYakuPicker = () => { setPickedYaku([]); setPickerNaki(null); setPickerDora(0); setPickerUra(0); setYakuPickerOpen(false); };
+
+  // 対局中は対局ルール、それ以外（単独計算機）は現在のルール
+  const activePickerRules = () => (gameStarted && gameConfig && gameConfig.rules) ? gameConfig.rules : rules;
 
   const pickerTotalHan = () => {
+    const dbl = activePickerRules().doubleYakuman === true;
     let total = 0;
-    let hasYakuman = false;
+    let yakumanCount = 0;
     pickedYaku.forEach(name => {
       const y = YAKU_DATA.find(x => x.name === name);
       if (!y) return;
       const h = pickerNaki ? y.naki : y.han;
       if (h === null) return;
-      if (h >= 13) hasYakuman = true;
+      if (h >= 13) { yakumanCount++; return; }
       total += h;
     });
-    if (hasYakuman) return 13;
-    return total + pickerDora + pickerUra;
+    if (yakumanCount > 0) return dbl ? 13 * yakumanCount : 13; // 役満はドラ・通常役を加算しない
+    return Math.min(total + pickerDora + pickerUra, 13);        // 数え役満は13翻止め
   };
   const resetFuGuide = () => { setFuGuide(null); setFuGuideStep(0); };
   const initFuGuide = () => {
     // リーチしている＝門前が確定しているので「鳴きましたか？」は飛ばす
-    const riichiWinner = gWinner !== null && declaredRiichi[gWinner];
-    setFuGuide({ naki: riichiWinner ? false : null, mentsu: [], machi: "ryanmen", jantou: "suuhai", pinfu: false, chiitoi: false, kuipin: false });
-    setFuGuideStep(riichiWinner ? 1 : 0);
+    // （実況リーチ・ウィザードのリーチ棒入力のどちらでも）
+    const riichiWinner = gWinner !== null && (declaredRiichi[gWinner] || gRiichi[gWinner]);
+    // 役ピッカーで鳴きの有無に回答済みなら、その答えを引き継いで質問を省く
+    const known = riichiWinner ? false : gKnownNaki;
+    setFuGuide({ naki: known !== null ? known : null, mentsu: [], machi: "ryanmen", jantou: "suuhai", pinfu: false, chiitoi: false, kuipin: false });
+    setFuGuideStep(known !== null ? 1 : 0);
   };
   const [showFuHelp, setShowFuHelp] = useState(false);
   const MENTSU_OPTIONS = [
@@ -368,21 +394,22 @@ export default function MahjongScorer() {
     { id: "suuhai", label: "数牌/オタ風", fu: 0, desc: "数牌や役がつかない風牌" },
     { id: "yakuhai", label: "役牌", fu: 2, desc: "白發中・場風・自風" },
   ];
-  const calcFuFromGuide = (guide) => {
+  const calcFuFromGuide = (guide, isTsumo) => {
     if (!guide) return 30;
     // 七対子は25符固定
     if (guide.chiitoi) return 25;
     // クイピン形（鳴き＋順子のみ＋両面待ち＋雀頭が役牌以外）= 副底20符ちょうど → 30符に繰り上げ
     if (guide.kuipin) return 30;
-    const hasNaki = guide.naki === true || guide.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_"));
+    // 鳴きの有無は明示的な回答のみで判定する
+    // （門前ロンのシャンポンで完成した明刻を数えても、門前加符が消えないように）
+    const hasNaki = guide.naki === true;
     // 平和の特例
     if (guide.pinfu) {
-      if (gTsumo) return 20;        // 平和ツモ = 20符固定（ツモ符なし）
-      if (!hasNaki) return 30;      // 平和ロン(門前) = 30符固定
-      return 30;                    // クイピン形 = 30符固定
+      if (isTsumo) return 20;       // 平和ツモ = 20符固定（ツモ符なし）
+      return 30;                    // 平和ロン(門前) = 30符固定
     }
     let base = 20;                              // 副底
-    if (gTsumo) base += 2;                      // ツモ符
+    if (isTsumo) base += 2;                     // ツモ符
     else if (!hasNaki) base += 10;              // 門前加符
     let mentsuFu = 0;
     guide.mentsu.forEach(m => { const opt = MENTSU_OPTIONS.find(o => o.id === m); if (opt) mentsuFu += opt.fu; });
@@ -390,10 +417,10 @@ export default function MahjongScorer() {
     const jantouOpt = JANTOU_OPTIONS.find(o => o.id === guide.jantou);
     let total = base + mentsuFu + (machiOpt?.fu || 0) + (jantouOpt?.fu || 0);
     // 鳴きで20符ちょうど（クイピン形）は30符に繰り上げ
-    if (hasNaki && !gTsumo && total === 20) total = 30;
+    if (hasNaki && !isTsumo && total === 20) total = 30;
     return Math.ceil(total / 10) * 10;
   };
-  const resetGW = useCallback(() => { setGStep(0); setGWinner(null); setGTsumo(null); setGLoser(null); setGHan(null); setGFu(null); setGRiichi([false,false,false,false]); setFuGuide(null); setShowGW(false); setCorrectingIdx(null); }, []);
+  const resetGW = useCallback(() => { setGStep(0); setGWinner(null); setGTsumo(null); setGLoser(null); setGHan(null); setGFu(null); setGRiichi([false,false,false,false]); setFuGuide(null); setGKnownNaki(null); setShowGW(false); setCorrectingIdx(null); }, []);
 
   // Score correction: which round index is being corrected
   const [correctingIdx, setCorrectingIdx] = useState(null);
@@ -415,7 +442,7 @@ export default function MahjongScorer() {
     setGTsumo(r.tsumo);
     setGLoser(r.loser !== undefined ? r.loser : null);
     setGHan(r.han);
-    setGFu(r.fu || (r.han >= 5 ? 30 : 30));
+    setGFu(r.fu || 30);
     setGRiichi(r.riichi || [false,false,false,false]);
     setFuGuide(null);
     setCorrectingIdx(idx);
@@ -507,42 +534,58 @@ export default function MahjongScorer() {
     resetGW();
   }, [scores, honba, gRiichi, riichiBets, rounds, roundWind, dealerIdx, advanceAfterWin, resetGW]);
 
+  // 全局を最初から再計算する（局修正用）
+  // 供託は保存値（pool）を信用せず、履歴のリーチから毎回導出する。
+  // これにより修正でリーチの有無を変えても点棒の総量が狂わない。
+  const recalcAllRounds = (roundList, cfg) => {
+    const sp = cfg.rules?.startPoints || 30000;
+    const ns = [sp, sp, sp, sp];
+    let carry = 0; // 卓上に残っている供託（本数）
+    const fixed = roundList.map(r => {
+      const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
+      if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) ns[i] -= 1000; } }
+      if (r.draw) {
+        carry += rc; // 流局のリーチ棒は次の和了へ持ち越し
+        const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
+        const nc = 4 - tc;
+        if (tc > 0 && tc < 4) {
+          const nPay = Math.floor(3000 / nc), tGet = Math.floor(3000 / tc);
+          for (let i = 0; i < 4; i++) { if (r.tenpai[i]) ns[i] += tGet; else ns[i] -= nPay; }
+        }
+        return r;
+      }
+      const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
+      const pool2 = (carry + rc) * 1000; // ダブロンの2人目以降は riichi 空・carry 0 なので自然に 0 になる
+      carry = 0;
+      const hb2 = r.honba * 300;
+      if (r.tsumo) {
+        if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) ns[i] += res.each * 3 + hb2 + pool2; else ns[i] -= res.each + Math.floor(hb2 / 3); } }
+        else { for (let i = 0; i < 4; i++) { if (i === r.winner) ns[i] += res.total + hb2 + pool2; else if (i === r.dealer) ns[i] -= res.fromParent + Math.floor(hb2 / 3); else ns[i] -= res.fromChild + Math.floor(hb2 / 3); } }
+      } else { ns[r.winner] += res.total + hb2 + pool2; ns[r.loser] -= res.total + hb2; }
+      return { ...r, pool: pool2, score: res.total }; // 表示用のpool・scoreも導出値で上書き
+    });
+    return { scores: ns, rounds: fixed, carry };
+  };
+
   const applyRound = useCallback(() => {
     if (gWinner === null || !gResult) return;
 
     if (correctingIdx !== null) {
       // CORRECTION MODE: replace the old round and recalculate everything
       const cfg = gameConfig || {};
-      const sp = cfg.rules?.startPoints || 30000;
       const correctedRound = { ...rounds[correctingIdx], winner: gWinner, loser: gLoser, han: gHan, fu: gHan >= 5 ? null : gFu, score: gResult.total, tsumo: gTsumo, limitName: gLimit, riichi: [...gRiichi] };
       const newRounds = [...rounds];
       newRounds[correctingIdx] = correctedRound;
 
-      // Recalculate all scores from scratch
-      let newScores = [sp, sp, sp, sp];
-      newRounds.forEach(r => {
-        if (r.draw) {
-          if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
-          const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
-          const nc = 4 - tc;
-          if (tc > 0 && tc < 4) {
-            const nPay = Math.floor(3000 / nc), tGet = Math.floor(3000 / tc);
-            for (let i = 0; i < 4; i++) { if (r.tenpai[i]) newScores[i] += tGet; else newScores[i] -= nPay; }
-          }
-        } else {
-          const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
-          const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
-          const pool2 = (typeof r.pool === "number") ? r.pool : rc * 1000;
-          if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
-          const hb2 = r.honba * 300;
-          if (r.tsumo) {
-            if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.each * 3 + hb2 + pool2; else newScores[i] -= res.each + Math.floor(hb2 / 3); } }
-            else { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.total + hb2 + pool2; else if (i === r.dealer) newScores[i] -= res.fromParent + Math.floor(hb2 / 3); else newScores[i] -= res.fromChild + Math.floor(hb2 / 3); } }
-          } else { newScores[r.winner] += res.total + hb2 + pool2; newScores[r.loser] -= res.total + hb2; }
-        }
-      });
-      setRounds(newRounds);
+      // 全局を再計算（供託は履歴から導出）
+      const recalced = recalcAllRounds(newRounds, cfg);
+      const newScores = [...recalced.scores];
+      // 現在宣言中の実況リーチ分を復元（宣言時に既に-1000されている状態）
+      let liveCount = 0;
+      for (let i = 0; i < 4; i++) { if (declaredRiichi[i]) { newScores[i] -= 1000; liveCount++; } }
+      setRounds(recalced.rounds);
       setScores(newScores);
+      setRiichiBets(recalced.carry + liveCount);
       resetGW();
       return;
     }
@@ -557,7 +600,7 @@ export default function MahjongScorer() {
         setGWinner(queue[0]);
         setGTsumo(false);
         setGLoser(multiRon.loser);
-        setGHan(null); setGFu(null); setFuGuide(null);
+        setGHan(null); setGFu(null); setFuGuide(null); setGKnownNaki(null);
         setGStep(5); setShowGW(true);
         return;
       }
@@ -601,34 +644,16 @@ export default function MahjongScorer() {
 
     // ── 流局の修正モード: テンパイの内容だけ差し替えて全体を再計算 ──
     if (correctingDrawIdx !== null) {
-      const sp = cfgAll.rules?.startPoints || 30000;
       const newRounds = [...rounds];
-      // 本場・供託（リーチ棒）はそのまま維持し、テンパイだけ上書きする
+      // 本場はそのまま維持し、テンパイだけ上書きする（供託は履歴から再導出）
       newRounds[correctingDrawIdx] = { ...newRounds[correctingDrawIdx], tenpai: [...drawTenpai] };
-      let newScores = [sp, sp, sp, sp];
-      newRounds.forEach(r => {
-        if (r.draw) {
-          if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
-          const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
-          const nc = 4 - tc;
-          if (tc > 0 && tc < 4) {
-            const nPay = Math.floor(3000 / nc), tGet = Math.floor(3000 / tc);
-            for (let i = 0; i < 4; i++) { if (r.tenpai[i]) newScores[i] += tGet; else newScores[i] -= nPay; }
-          }
-        } else {
-          const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfgAll.rules?.kiriage);
-          const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
-          const pool2 = (typeof r.pool === "number") ? r.pool : rc * 1000;
-          if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
-          const hb2 = r.honba * 300;
-          if (r.tsumo) {
-            if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.each * 3 + hb2 + pool2; else newScores[i] -= res.each + Math.floor(hb2 / 3); } }
-            else { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.total + hb2 + pool2; else if (i === r.dealer) newScores[i] -= res.fromParent + Math.floor(hb2 / 3); else newScores[i] -= res.fromChild + Math.floor(hb2 / 3); } }
-          } else { newScores[r.winner] += res.total + hb2 + pool2; newScores[r.loser] -= res.total + hb2; }
-        }
-      });
-      setRounds(newRounds);
+      const recalced = recalcAllRounds(newRounds, cfgAll);
+      const newScores = [...recalced.scores];
+      let liveCount = 0;
+      for (let i = 0; i < 4; i++) { if (declaredRiichi[i]) { newScores[i] -= 1000; liveCount++; } }
+      setRounds(recalced.rounds);
       setScores(newScores);
+      setRiichiBets(recalced.carry + liveCount);
       setCorrectingDrawIdx(null);
       resetDrawWiz();
       setTmDrawMode(false);
@@ -760,6 +785,8 @@ export default function MahjongScorer() {
             {item("後付け", <>役が確定しないまま鳴き、あとから役を確定させる打ち方を認めるかどうかです。認めないルール（完全先付け）では、鳴く時点で役が確定している必要があります。</>)}
 
             {item("切り上げ満貫", <>4翻30符（子7,700・親11,600）と3翻60符を、満貫として扱うルールです。ONにすると子8,000・親12,000になります。</>)}
+
+            {item("ダブル役満", <>大三元＋字一色のように役満が複合したとき、2倍（子64,000・親96,000）・3倍で計算するルールです。OFFでは複合してもシングル役満（子32,000・親48,000）です。「役を選んで計算する」から役満を複数選ぶと適用されます。</>)}
 
             {item("オーラスは親トップで終了", <>最終局で親がトップの状態でアガる、またはテンパイで流局したときに、そこで対局を終える設定です（アガリやめ・テンパイやめ）。OFFにすると親がトップでも連荘を続けます。</>)}
 
@@ -1268,11 +1295,13 @@ export default function MahjongScorer() {
     );
   };
 
-  const FuGuideWizard = ({ onComplete, onBack }) => {
+  const FuGuideWizard = ({ onComplete, onBack, isTsumo }) => {
     if (!fuGuide) return null;
     const g = fuGuide;
     const step = fuGuideStep;
-    const hasNaki = g.naki === true || g.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_"));
+    const hasNaki = g.naki === true;
+    // 実況リーチ・ウィザードのリーチ棒入力のどちらでも門前確定
+    const riichiLocked = gWinner !== null && (declaredRiichi[gWinner] || gRiichi[gWinner]);
 
     // Total steps depends on path
     const StepLabel = ({ n, total, label }) => (
@@ -1337,13 +1366,13 @@ export default function MahjongScorer() {
           <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 16 }}>
             ポン・チー・明カンをしたかどうか
           </div>
-          <button onClick={() => { setFuGuide(gg => ({ ...gg, naki: false })); setFuGuideStep(1); }}
+          <button onClick={() => { setFuGuide(gg => ({ ...gg, naki: false, kuipin: false, mentsu: gg.mentsu.filter(m => !m.startsWith("minko_") && !m.startsWith("minkan_")) })); setFuGuideStep(1); }}
             style={{ width: "100%", padding: "18px 12px", marginBottom: 10, borderRadius: 12, cursor: "pointer",
               border: `2px solid ${t.ac}`, background: t.acS, color: t.ac, textAlign: "center" }}>
             <div style={{ fontSize: 17, fontWeight: 800 }}>門前（メンゼン）</div>
             <div style={{ fontSize: 11, color: t.dm, marginTop: 3 }}>鳴いていない → 門前加符10符</div>
           </button>
-          <button onClick={() => { setFuGuide(gg => ({ ...gg, naki: true })); setFuGuideStep(1); }}
+          <button onClick={() => { setFuGuide(gg => ({ ...gg, naki: true, pinfu: false, chiitoi: false })); setFuGuideStep(1); }}
             style={{ width: "100%", padding: "18px 12px", borderRadius: 12, cursor: "pointer",
               border: `2px solid ${t.gn}`, background: t.gnS, color: t.gn, textAlign: "center" }}>
             <div style={{ fontSize: 17, fontWeight: 800 }}>鳴きあり</div>
@@ -1358,10 +1387,10 @@ export default function MahjongScorer() {
       return (
         <div>
           {/* リーチ済みは STEP1 を飛ばしているので戻り先がない */}
-          {!(gWinner !== null && declaredRiichi[gWinner]) &&
+          {!riichiLocked &&
             <button style={backBtn} onClick={() => setFuGuideStep(0)}>← 戻る</button>}
           <StepLabel n={2} total={7} label="STEP 2 / 特殊な形" />
-          {gWinner !== null && declaredRiichi[gWinner] && (
+          {riichiLocked && (
             <div style={{ fontSize: 11, color: t.rd, textAlign: "center", marginBottom: 10, fontWeight: 700 }}>
               🔴 リーチ済みのため門前で計算します
             </div>
@@ -1450,13 +1479,20 @@ export default function MahjongScorer() {
 
     // STEP 2: 刻子（明刻・暗刻）
     if (step === 2) {
-      const kotsuOpts = MENTSU_OPTIONS.filter(o => o.id.includes("ko_") && (g.naki || !o.id.startsWith("minko_")));
+      // 門前でも、ロンで完成した刻子（シャンポン待ち）は明刻扱いになるので
+      // ロンのときは明刻の選択肢を残す。門前ツモは全て暗刻なので明刻を隠す。
+      const kotsuOpts = MENTSU_OPTIONS.filter(o => o.id.includes("ko_") && (g.naki || !isTsumo || !o.id.startsWith("minko_")));
       return (
         <div>
           <button style={backBtn} onClick={() => setFuGuideStep(1)}>← 戻る</button>
           <StepLabel n={3} total={7} label="STEP 3 / 刻子（コーツ）" />
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 6 }}>刻子はいくつありますか？</div>
           <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 14 }}>同じ牌3枚の組。なければ 0 のまま次へ</div>
+          {!g.naki && !isTsumo && (
+            <div style={{ fontSize: 10, color: t.gd, textAlign: "center", marginBottom: 12, lineHeight: 1.7, padding: "7px 10px", borderRadius: 8, background: t.gdS, border: `1px solid ${t.gd}33` }}>
+              シャンポン待ちをロンで完成させた刻子は<b>明刻</b>として数えます
+            </div>
+          )}
           {kotsuOpts.map(counterRow)}
           <button style={actionBtn("p")} onClick={() => setFuGuideStep(3)}>次へ</button>
         </div>
@@ -1535,7 +1571,7 @@ export default function MahjongScorer() {
 
     // STEP 6: 結果
     if (step === 6) {
-      const fu = calcFuFromGuide(g);
+      const fu = calcFuFromGuide(g, isTsumo);
       const mentsuFu = g.mentsu.reduce((s, m) => s + (MENTSU_OPTIONS.find(o => o.id === m)?.fu || 0), 0);
       const machiFu = MACHI_OPTIONS.find(o => o.id === g.machi)?.fu || 0;
       const jantouFu = JANTOU_OPTIONS.find(o => o.id === g.jantou)?.fu || 0;
@@ -1558,14 +1594,14 @@ export default function MahjongScorer() {
                 <span style={{ color: t.gd, fontWeight: 700 }}>鳴きの20符ちょうど → 30符に繰り上げ</span>
               </div>
             ) : g.pinfu ? (
-              <div style={{ fontSize: 13, color: t.tx }}>平和 {gTsumo ? "ツモ → 20符固定" : "ロン → 30符固定"}</div>
+              <div style={{ fontSize: 13, color: t.tx }}>平和 {isTsumo ? "ツモ → 20符固定" : "ロン → 30符固定"}</div>
             ) : (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.tx }}>
                   <span>副底</span><span>20符</span>
                 </div>
-                {gTsumo && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.gn }}><span>ツモ符</span><span>+2符</span></div>}
-                {!gTsumo && !hasNaki && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.ac }}><span>門前加符</span><span>+10符</span></div>}
+                {isTsumo && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.gn }}><span>ツモ符</span><span>+2符</span></div>}
+                {!isTsumo && !hasNaki && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", color: t.ac }}><span>門前加符</span><span>+10符</span></div>}
                 {mentsuFu > 0 && (() => {
                   // 面子を種類ごとに集計
                   const counts = {};
@@ -1598,7 +1634,7 @@ export default function MahjongScorer() {
             )}
           </div>
           <button style={actionBtn("p")} onClick={() => onComplete(fu)}>この符数で確定</button>
-          <button style={actionBtn()} onClick={() => { setFuGuideStep(0); }}>最初からやり直す</button>
+          <button style={actionBtn()} onClick={() => { initFuGuide(); }}>最初からやり直す</button>
         </div>
       );
     }
@@ -1608,12 +1644,120 @@ export default function MahjongScorer() {
   // ══════════════════════════════════
   // ── YAKU PICKER (役から翻数を計算) ──
   // ══════════════════════════════════
-  const YakuPicker = ({ onConfirm, onCancel }) => {
+  // アガリ方・親子・リーチと矛盾する役はリストに出さない
+  const YAKU_REQ = {
+    "門前清自摸和（メンゼンツモ）": { tsumo: true },
+    "嶺上開花（リンシャンカイホウ）": { tsumo: true },
+    "海底摸月（ハイテイ）": { tsumo: true },
+    "河底撈魚（ホウテイ）": { tsumo: false },
+    "搶槓（チャンカン）": { tsumo: false },
+    "一発（イッパツ）": { needsRiichi: true },
+    "天和（テンホウ）": { tsumo: true, parent: true },
+    "地和（チーホウ）": { tsumo: true, parent: false },
+  };
+  // 同時に成立しない役のペア。片方を選んだらもう片方を自動で外す
+  const YAKU_CONFLICT_PAIRS = [
+    ["リーチ（立直）", "ダブル立直（ダブルリーチ）"],
+    // 平和: 刻子・槓子・役牌雀頭を含む役と両立しない
+    ["平和（ピンフ）", "対々和（トイトイ）"], ["平和（ピンフ）", "三暗刻（サンアンコー）"],
+    ["平和（ピンフ）", "三色同刻（サンショクドウコー）"], ["平和（ピンフ）", "三槓子（サンカンツ）"],
+    ["平和（ピンフ）", "混老頭（ホンロウトウ）"], ["平和（ピンフ）", "七対子（チートイツ）"],
+    ["平和（ピンフ）", "役牌 白（ハク）"], ["平和（ピンフ）", "役牌 發（ハツ）"], ["平和（ピンフ）", "役牌 中（チュン）"],
+    ["平和（ピンフ）", "場風牌（バカゼハイ）"], ["平和（ピンフ）", "自風牌（ジカゼハイ）"], ["平和（ピンフ）", "小三元（ショウサンゲン）"],
+    ["平和（ピンフ）", "嶺上開花（リンシャンカイホウ）"],
+    // 七対子: 面子を使う役と両立しない（混老頭のみ複合可）
+    ["七対子（チートイツ）", "対々和（トイトイ）"], ["七対子（チートイツ）", "三暗刻（サンアンコー）"],
+    ["七対子（チートイツ）", "三色同刻（サンショクドウコー）"], ["七対子（チートイツ）", "三槓子（サンカンツ）"],
+    ["七対子（チートイツ）", "一盃口（イーペーコー）"], ["七対子（チートイツ）", "二盃口（リャンペーコー）"],
+    ["七対子（チートイツ）", "一気通貫（イッキツウカン）"], ["七対子（チートイツ）", "三色同順（サンショクドウジュン）"],
+    ["七対子（チートイツ）", "混全帯么九（チャンタ）"], ["七対子（チートイツ）", "純全帯么九（ジュンチャン）"],
+    ["七対子（チートイツ）", "役牌 白（ハク）"], ["七対子（チートイツ）", "役牌 發（ハツ）"], ["七対子（チートイツ）", "役牌 中（チュン）"],
+    ["七対子（チートイツ）", "場風牌（バカゼハイ）"], ["七対子（チートイツ）", "自風牌（ジカゼハイ）"],
+    ["七対子（チートイツ）", "小三元（ショウサンゲン）"], ["七対子（チートイツ）", "嶺上開花（リンシャンカイホウ）"],
+    // 盃口系
+    ["一盃口（イーペーコー）", "二盃口（リャンペーコー）"],
+    ["一盃口（イーペーコー）", "対々和（トイトイ）"], ["一盃口（イーペーコー）", "三暗刻（サンアンコー）"],
+    ["二盃口（リャンペーコー）", "対々和（トイトイ）"], ["二盃口（リャンペーコー）", "三暗刻（サンアンコー）"],
+    ["二盃口（リャンペーコー）", "混老頭（ホンロウトウ）"], ["一盃口（イーペーコー）", "混老頭（ホンロウトウ）"],
+    // 么九系・染め手系
+    ["断么九（タンヤオ）", "混全帯么九（チャンタ）"], ["断么九（タンヤオ）", "純全帯么九（ジュンチャン）"],
+    ["断么九（タンヤオ）", "混老頭（ホンロウトウ）"], ["断么九（タンヤオ）", "混一色（ホンイツ）"],
+    ["混全帯么九（チャンタ）", "純全帯么九（ジュンチャン）"], ["混全帯么九（チャンタ）", "混老頭（ホンロウトウ）"],
+    ["混全帯么九（チャンタ）", "清一色（チンイツ）"],
+    ["純全帯么九（ジュンチャン）", "混老頭（ホンロウトウ）"], ["純全帯么九（ジュンチャン）", "混一色（ホンイツ）"],
+    ["混老頭（ホンロウトウ）", "一気通貫（イッキツウカン）"], ["混老頭（ホンロウトウ）", "三色同順（サンショクドウジュン）"],
+    ["混老頭（ホンロウトウ）", "清一色（チンイツ）"],
+    ["混一色（ホンイツ）", "清一色（チンイツ）"],
+    // 対々和は順子役と両立しない
+    ["対々和（トイトイ）", "一気通貫（イッキツウカン）"], ["対々和（トイトイ）", "三色同順（サンショクドウジュン）"],
+    // 役満同士で形が両立しないもの
+    ["国士無双（コクシムソウ）", "四暗刻（スーアンコー）"], ["国士無双（コクシムソウ）", "大三元（ダイサンゲン）"],
+    ["国士無双（コクシムソウ）", "字一色（ツーイーソー）"], ["国士無双（コクシムソウ）", "小四喜（ショウスーシー）"],
+    ["国士無双（コクシムソウ）", "大四喜（ダイスーシー）"], ["国士無双（コクシムソウ）", "緑一色（リューイーソー）"],
+    ["国士無双（コクシムソウ）", "清老頭（チンロウトウ）"], ["国士無双（コクシムソウ）", "九蓮宝燈（チューレンポウトウ）"],
+    ["国士無双（コクシムソウ）", "四槓子（スーカンツ）"], ["国士無双（コクシムソウ）", "天和（テンホウ）"],
+    ["国士無双（コクシムソウ）", "地和（チーホウ）"],
+    ["九蓮宝燈（チューレンポウトウ）", "四暗刻（スーアンコー）"], ["九蓮宝燈（チューレンポウトウ）", "大三元（ダイサンゲン）"],
+    ["九蓮宝燈（チューレンポウトウ）", "字一色（ツーイーソー）"], ["九蓮宝燈（チューレンポウトウ）", "小四喜（ショウスーシー）"],
+    ["九蓮宝燈（チューレンポウトウ）", "大四喜（ダイスーシー）"], ["九蓮宝燈（チューレンポウトウ）", "緑一色（リューイーソー）"],
+    ["九蓮宝燈（チューレンポウトウ）", "清老頭（チンロウトウ）"], ["九蓮宝燈（チューレンポウトウ）", "四槓子（スーカンツ）"],
+    ["大四喜（ダイスーシー）", "小四喜（ショウスーシー）"],
+    ["大三元（ダイサンゲン）", "小四喜（ショウスーシー）"], ["大三元（ダイサンゲン）", "大四喜（ダイスーシー）"],
+    ["字一色（ツーイーソー）", "緑一色（リューイーソー）"], ["字一色（ツーイーソー）", "清老頭（チンロウトウ）"],
+    ["緑一色（リューイーソー）", "清老頭（チンロウトウ）"],
+    ["天和（テンホウ）", "地和（チーホウ）"],
+  ];
+  const YAKU_CONFLICTS = (() => {
+    const m = {};
+    YAKU_CONFLICT_PAIRS.forEach(([a, b]) => {
+      if (!m[a]) m[a] = [];
+      if (!m[b]) m[b] = [];
+      m[a].push(b); m[b].push(a);
+    });
+    return m;
+  })();
+  const YAKUMAN_LABEL = (h) => h >= 39 ? "トリプル役満" : h >= 26 ? "ダブル役満" : "役満";
+
+  const YakuPicker = ({ onConfirm, onCancel, isTsumo, isParent, lockedRiichi }) => {
     const total = pickerTotalHan();
     const CATS = ["1翻", "2翻", "3翻以上", "役満"];
     // 鳴き時は食い下がり後の翻数でグループ分け
     const effHan = (y) => (pickerNaki ? y.naki : y.han);
     const catOf = (y) => { const eh = effHan(y); return eh >= 13 ? "役満" : eh >= 3 ? "3翻以上" : `${eh}翻`; };
+
+    const kuitanOff = activePickerRules().kuitan === false;
+    // リーチが立っているか（宣言済み・リーチ or ダブリー選択のいずれか）
+    const riichiOn = lockedRiichi || pickedYaku.includes("リーチ（立直）") || pickedYaku.includes("ダブル立直（ダブルリーチ）");
+    // アガリ方・親子・リーチ・食いタン設定と矛盾する役を選択肢から外す
+    const ctxOk = (y) => {
+      const rq = YAKU_REQ[y.name];
+      if (rq) {
+        if (rq.tsumo === true && isTsumo === false) return false;
+        if (rq.tsumo === false && isTsumo === true) return false;
+        if (rq.parent === true && isParent === false) return false;
+        if (rq.parent === false && isParent === true) return false;
+        if (rq.needsRiichi && !riichiOn) return false;
+      }
+      if (pickerNaki && y.naki === null) return false;
+      if (pickerNaki && kuitanOff && y.name === "断么九（タンヤオ）") return false;
+      return true;
+    };
+    // 門前/鳴きの切替（リーチ確定時はロック）。切替に伴い矛盾する選択を自動整理
+    const switchNaki = (v) => {
+      if (lockedRiichi && v === true) return;
+      setPickerNaki(v);
+      if (v === true) {
+        setPickedYaku(prev => prev.filter(n => {
+          const o = YAKU_DATA.find(x => x.name === n);
+          if (!o || o.naki === null) return false;                       // 門前限定役を外す
+          if (kuitanOff && n === "断么九（タンヤオ）") return false;      // 食いタンなし
+          return true;
+        }));
+        setPickerUra(0);                                                  // 鳴き=リーチ不可 → 裏ドラなし
+      } else if (isTsumo && !pickedYaku.includes("門前清自摸和（メンゼンツモ）")) {
+        setPickedYaku(prev => prev.includes("門前清自摸和（メンゼンツモ）") ? prev : [...prev, "門前清自摸和（メンゼンツモ）"]);
+      }
+    };
 
     // STEP1: 門前か鳴きかを先に確認
     if (pickerNaki === null) {
@@ -1623,14 +1767,14 @@ export default function MahjongScorer() {
           <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 20 }}>
             ポン・チー・明カンをしたかどうか
           </div>
-          <button onClick={() => setPickerNaki(false)} style={{
+          <button onClick={() => switchNaki(false)} style={{
             width: "100%", padding: "18px 12px", marginBottom: 10, borderRadius: 14, cursor: "pointer",
             border: `2px solid ${t.ac}`, background: t.acS, color: t.ac, textAlign: "center",
           }}>
             <div style={{ fontSize: 18, fontWeight: 800 }}>門前（メンゼン）</div>
-            <div style={{ fontSize: 11, color: t.dm, marginTop: 4 }}>鳴いていない</div>
+            <div style={{ fontSize: 11, color: t.dm, marginTop: 4 }}>鳴いていない{isTsumo ? " → メンゼンツモを自動でチェック" : ""}</div>
           </button>
-          <button onClick={() => setPickerNaki(true)} style={{
+          <button onClick={() => switchNaki(true)} style={{
             width: "100%", padding: "18px 12px", marginBottom: 16, borderRadius: 14, cursor: "pointer",
             border: `2px solid ${t.gn}`, background: t.gnS, color: t.gn, textAlign: "center",
           }}>
@@ -1645,26 +1789,27 @@ export default function MahjongScorer() {
     return (
       <div>
         <div style={{ fontSize: 14, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>役を選んで翻数を計算</div>
-        {gWinner !== null && declaredRiichi[gWinner] && (
+        {lockedRiichi && (
           <div style={{ fontSize: 11, color: t.rd, textAlign: "center", marginBottom: 8, fontWeight: 700 }}>
-            🔴 リーチ宣言済み{gTsumo ? "・ツモ" : ""}のため自動でチェック済み
+            🔴 リーチ宣言済み{isTsumo ? "・ツモ" : ""}のため自動でチェック済み（門前固定）
           </div>
         )}
 
-        {/* 門前/鳴き（切替可能） */}
+        {/* 門前/鳴き（切替可能・リーチ確定時はロック） */}
         <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
-          <button onClick={() => setPickerNaki(false)} style={{
+          <button onClick={() => switchNaki(false)} style={{
             flex: 1, padding: "7px", borderRadius: 8, cursor: "pointer",
             border: `1.5px solid ${!pickerNaki ? t.ac : t.bd}`,
             background: !pickerNaki ? t.acS : "transparent",
             color: !pickerNaki ? t.ac : t.dm, fontSize: 12, fontWeight: 700,
           }}>門前</button>
-          <button onClick={() => setPickerNaki(true)} style={{
-            flex: 1, padding: "7px", borderRadius: 8, cursor: "pointer",
+          <button onClick={() => switchNaki(true)} disabled={lockedRiichi} style={{
+            flex: 1, padding: "7px", borderRadius: 8, cursor: lockedRiichi ? "default" : "pointer",
             border: `1.5px solid ${pickerNaki ? t.gn : t.bd}`,
             background: pickerNaki ? t.gnS : "transparent",
             color: pickerNaki ? t.gn : t.dm, fontSize: 12, fontWeight: 700,
-          }}>鳴きあり</button>
+            opacity: lockedRiichi ? 0.4 : 1,
+          }}>{lockedRiichi ? "🔒 鳴きあり" : "鳴きあり"}</button>
         </div>
 
         {/* 合計 ＋ ドラ・裏ドラ */}
@@ -1677,25 +1822,26 @@ export default function MahjongScorer() {
             display: "flex", flexDirection: "column", justifyContent: "center",
           }}>
             <div style={{ fontSize: 10, color: t.dm, lineHeight: 1 }}>合計</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: total >= 13 ? t.gd : t.ac, lineHeight: 1.15 }}>
-              {total >= 13 ? "役満" : `${total}翻`}
+            <div style={{ fontSize: total >= 26 ? 15 : 24, fontWeight: 900, color: total >= 13 ? t.gd : t.ac, lineHeight: 1.15 }}>
+              {total >= 13 ? YAKUMAN_LABEL(total) : `${total}翻`}
             </div>
           </div>
 
-          {/* ドラ・裏ドラ */}
+          {/* ドラ・裏ドラ（裏ドラはリーチ時のみ） */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
             {[
-              { label: "ドラ", val: pickerDora, set: setPickerDora },
-              { label: "裏ドラ", val: pickerUra, set: setPickerUra },
+              { label: "ドラ", val: pickerDora, set: setPickerDora, lock: false },
+              { label: "裏ドラ", val: pickerUra, set: setPickerUra, lock: !riichiOn },
             ].map(row => (
               <div key={row.label} style={{
                 flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between",
                 background: t.sf, borderRadius: 10, padding: "5px 8px",
                 border: `1px solid ${row.val > 0 ? t.gd + "55" : t.bd}`,
+                opacity: row.lock ? 0.35 : 1,
               }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: t.tx, flexShrink: 0 }}>{row.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: t.tx, flexShrink: 0 }}>{row.label}{row.lock ? " (リーチ時のみ)" : ""}</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <button onClick={() => row.set(v => Math.max(0, v - 1))} style={{
+                  <button disabled={row.lock} onClick={() => row.set(v => Math.max(0, v - 1))} style={{
                     width: 32, height: 32, borderRadius: 8, border: `1.5px solid ${row.val > 0 ? t.gd : t.bd}`,
                     background: t.card, color: row.val > 0 ? t.gd : t.dm, fontSize: 19, fontWeight: 700,
                     cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0,
@@ -1704,10 +1850,10 @@ export default function MahjongScorer() {
                     fontSize: 20, fontWeight: 900, width: 22, textAlign: "center",
                     color: row.val > 0 ? t.gd : t.dm, fontVariantNumeric: "tabular-nums",
                   }}>{row.val}</span>
-                  <button onClick={() => row.set(v => v + 1)} style={{
+                  <button disabled={row.lock} onClick={() => row.set(v => v + 1)} style={{
                     width: 32, height: 32, borderRadius: 8, border: `1.5px solid ${t.gd}`,
                     background: t.gdS, color: t.gd, fontSize: 19, fontWeight: 700,
-                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0,
+                    cursor: row.lock ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0,
                   }}>+</button>
                 </div>
               </div>
@@ -1718,7 +1864,7 @@ export default function MahjongScorer() {
         {/* 役リスト */}
         <div style={{ maxHeight: 420, overflowY: "auto", marginBottom: 10 }}>
           {CATS.map(cat => {
-            const list = YAKU_DATA.filter(y => catOf(y) === cat && (!pickerNaki || y.naki !== null));
+            const list = YAKU_DATA.filter(y => catOf(y) === cat && ctxOk(y));
             if (!list.length) return null;
             return (
               <div key={cat} style={{ marginBottom: 4 }}>
@@ -1747,7 +1893,28 @@ export default function MahjongScorer() {
                     const main = isKana ? (paren || base) : base;
                     return (
                       <button key={y.name} onClick={() => {
-                        setPickedYaku(prev => prev.includes(y.name) ? prev.filter(n => n !== y.name) : [...prev, y.name]);
+                        const cur = pickedYaku;
+                        let next;
+                        if (cur.includes(y.name)) {
+                          next = cur.filter(n => n !== y.name);
+                        } else {
+                          const conf = YAKU_CONFLICTS[y.name] || [];
+                          const isYk = y.han >= 13;
+                          next = cur.filter(n => {
+                            const o = YAKU_DATA.find(x => x.name === n);
+                            if (!o) return false;
+                            if ((o.han >= 13) !== isYk) return false; // 役満と通常役は同時計上しない
+                            return !conf.includes(n);
+                          });
+                          next = [...next, y.name];
+                        }
+                        // リーチが外れたら一発・裏ドラも自動で外す
+                        const rOn = lockedRiichi || next.includes("リーチ（立直）") || next.includes("ダブル立直（ダブルリーチ）");
+                        if (!rOn) {
+                          next = next.filter(n => n !== "一発（イッパツ）");
+                          if (pickerUra > 0) setPickerUra(0);
+                        }
+                        setPickedYaku(next);
                       }} style={{
                         padding: "9px 5px", borderRadius: 10, cursor: "pointer", textAlign: "center",
                         border: `1.5px solid ${on ? (y.han >= 13 ? t.gd : t.ac) : t.bd}`,
@@ -1778,9 +1945,9 @@ export default function MahjongScorer() {
           })}
         </div>
 
-        <button style={{ ...actionBtn("p"), opacity: total > 0 ? 1 : 0.4 }} disabled={total === 0}
-          onClick={() => onConfirm(total >= 13 ? 13 : total)}>
-          {total >= 13 ? "役満で確定" : `${total}翻で確定`}
+        <button style={{ ...actionBtn("p"), opacity: total > 0 && pickedYaku.length > 0 ? 1 : 0.4 }} disabled={total === 0 || pickedYaku.length === 0}
+          onClick={() => onConfirm(total)}>
+          {pickedYaku.length === 0 ? "役を選んでください（ドラのみでは和了できません）" : total >= 13 ? `${YAKUMAN_LABEL(total)}で確定` : `${total}翻で確定`}
         </button>
         <button style={actionBtn()} onClick={onCancel}>キャンセル</button>
       </div>
@@ -1791,7 +1958,7 @@ export default function MahjongScorer() {
     <div style={{ background: `linear-gradient(135deg, ${t.card}, ${t.sf})`, borderRadius: 16, padding: 24, textAlign: "center", border: `1px solid ${t.ac}33`, marginBottom: 14 }}>
       {limit && <div style={{ display: "inline-block", padding: "4px 18px", borderRadius: 20, fontSize: 14, fontWeight: 800, background: han >= 13 ? t.gdS : t.acS, color: han >= 13 ? t.gd : t.ac, marginBottom: 12 }}>{limit}</div>}
       <div style={{ fontSize: 13, color: t.dm, marginBottom: 10 }}>
-        {han >= 13 ? "役満" : han >= 5 ? `${han}翻` : `${han}翻 ${fu}符`} / {tsumo ? "ツモ" : "ロン"} / {parent ? "親" : "子"}
+        {han >= 13 ? getLimitName(han) : han >= 5 ? `${han}翻` : `${han}翻 ${fu}符`} / {tsumo ? "ツモ" : "ロン"} / {parent ? "親" : "子"}
       </div>
 
       {tsumo ? (
@@ -4030,7 +4197,7 @@ input, select { padding: 10px 14px; }
         // 受け取る供託。古い記録には pool が無いのでその場合だけ本数から求める
         const pool = (typeof r.pool === "number") ? r.pool : rc * 1000;
         const hb = r.honba * 300;
-        const handLabel = r.han >= 13 ? "役満" : r.fu ? `${r.han}飜${r.fu}符` : `${r.han}飜`;
+        const handLabel = r.han >= 13 ? getLimitName(r.han) : r.fu ? `${r.han}飜${r.fu}符` : `${r.han}飜`;
         if (paidRiichi) { delta -= 1000; }
 
         if (r.winner === pi) {
@@ -4198,6 +4365,8 @@ input, select { padding: 10px 14px; }
           {row("後付け", rs.atozuke ? "あり" : "なし")}
           {row("切り上げ満貫", rs.kiriage ? "あり" : "なし",
             rs.kiriage ? "4翻30符・3翻60符を満貫扱い" : null)}
+          {row("ダブル役満", rs.doubleYakuman ? "あり" : "なし",
+            rs.doubleYakuman ? "役満の複合を2倍・3倍で計算" : null)}
           {lg && row("ウマ", lg.uma.map(u => (u > 0 ? "+" : "") + u).join(" / "))}
 
           <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 12, lineHeight: 1.7 }}>
@@ -4669,6 +4838,7 @@ input, select { padding: 10px 14px; }
                 ["kuitan", "食いタンあり", "鳴いたタンヤオを認めるか。OFFだと鳴くと役なしになる場面が増えます"],
                 ["atozuke", "後付けあり", "役が未確定のまま鳴き、あとから役を確定させてよいか。OFFは完全先付け"],
                 ["kiriage", "切り上げ満貫", "4翻30符・3翻60符を満貫扱い"],
+                ["doubleYakuman", "ダブル役満あり", "役満の複合（大三元＋字一色など）を2倍・3倍で計算"],
                 ["orasYame", "オーラスは親トップで終了", "アガリやめ・テンパイやめ"],
                 ["tobiEnd", "トビで終了", "誰かの持ち点が0未満になった時点で終局"],
               ].map(([key, label, hint]) => (
@@ -5181,6 +5351,7 @@ input, select { padding: 10px 14px; }
             ["kuitan", "食いタンあり", "鳴いたタンヤオを認めるか"],
             ["atozuke", "後付けあり", "役を後から確定させてよいか"],
             ["kiriage", "切り上げ満貫", "4翻30符・3翻60符を満貫扱い"],
+            ["doubleYakuman", "ダブル役満あり", "役満の複合を2倍・3倍で計算"],
             ["orasYame", "オーラスは親トップで終了", "アガリやめ・テンパイやめ"],
             ["tobiEnd", "トビで終了", "持ち点が0未満になった時点で終局"],
           ].map(([k, lb, hint]) => (
@@ -5385,6 +5556,7 @@ input, select { padding: 10px 14px; }
                   lg.rules.kuitan ? "食いタンあり" : "食いタンなし",
                   lg.rules.atozuke ? "後付けあり" : "後付けなし",
                   lg.rules.kiriage ? "切り上げ満貫あり" : "切り上げ満貫なし",
+                  lg.rules.doubleYakuman ? "ダブル役満あり" : "ダブル役満なし",
                   lg.rules.orasYame !== false ? "オーラス親トップで終了" : "オーラスやめなし",
                   lg.rules.tobiEnd !== false ? "トビで終了" : "トビでも続行",
                 ].join(" ・ ")}</div>
@@ -6078,7 +6250,19 @@ input, select { padding: 10px 14px; }
         <div style={card}>
           {yakuPickerOpen ? (
             <YakuPicker
-              onConfirm={(h) => { setCHan(h); resetYakuPicker(); if (h >= 5) { setCFu(30); setCalcStep(4); } else setCalcStep(3); }}
+              isTsumo={cTsumo}
+              isParent={cParent}
+              lockedRiichi={false}
+              onConfirm={(h) => {
+                const pinfu = pickedYaku.includes("平和（ピンフ）");
+                const chiitoi = pickedYaku.includes("七対子（チートイツ）");
+                const naki = pickerNaki === true;
+                setCHan(h); setGKnownNaki(pickerNaki); resetYakuPicker();
+                if (h >= 5) { setCFu(30); setCalcStep(4); }
+                else if (chiitoi) { setCFu(25); setCalcStep(4); }
+                else if (pinfu && !naki) { setCFu(cTsumo ? 20 : 30); setCalcStep(4); }
+                else setCalcStep(3);
+              }}
               onCancel={() => setYakuPickerOpen(false)}
             />
           ) : (
@@ -6087,7 +6271,7 @@ input, select { padding: 10px 14px; }
               <Dots total={4} cur={2} />
               <div style={question}>翻数は？</div>
               <button style={{ ...actionBtn("p"), marginBottom: 12, background: t.gd, color: "#1a1a1a" }}
-                onClick={() => { setPickedYaku([]); setPickerDora(0); setPickerNaki(null); setYakuPickerOpen(true); }}>
+                onClick={() => { setPickedYaku([]); setPickerDora(0); setPickerUra(0); setPickerNaki(null); setGKnownNaki(null); setYakuPickerOpen(true); }}>
                 📖 役を選んで計算する
               </button>
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
@@ -6131,7 +6315,7 @@ input, select { padding: 10px 14px; }
                 <span style={{ fontSize: 15, fontWeight: 700 }}>符計算ガイド</span>
                 <button style={{ background: t.acS, border: `1px solid ${t.ac}44`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: t.ac, fontWeight: 700, cursor: "pointer" }} onClick={() => setShowFuHelp(true)}>解説</button>
               </div>
-              <FuGuideWizard onComplete={(fu) => { setCFu(fu); setCalcStep(4); resetFuGuide(); }} onBack={() => resetFuGuide()} />
+              <FuGuideWizard isTsumo={cTsumo} onComplete={(fu) => { setCFu(fu); setCalcStep(4); resetFuGuide(); }} onBack={() => resetFuGuide()} />
             </>
           )}
         </div>
@@ -6314,8 +6498,9 @@ input, select { padding: 10px 14px; }
               lastRules.agariRenchan ? "あがり連荘" : lastRules.tenpaiRenchan ? "テンパイ連荘" : "無条件連荘",
               lastRules.multiRon === "triple" ? "トリプルロン" : lastRules.multiRon === "double" ? "ダブロン" : "頭ハネ",
               lastRules.kuitan ? "食いタンあり" : "食いタンなし",
+              lastRules.doubleYakuman ? "ダブル役満あり" : null,
               `持ち点${(lastRules.startPoints || 0).toLocaleString()}`,
-            ].join(" ・ ");
+            ].filter(Boolean).join(" ・ ");
             return (
               <div style={{
                 padding: 14, marginBottom: 18, borderRadius: 12,
@@ -6438,6 +6623,10 @@ input, select { padding: 10px 14px; }
             {toggleRow("切り上げ満貫", rules.kiriage, () => setRules(r => ({ ...r, kiriage: !r.kiriage })))}
             <div style={{ fontSize: 10, color: t.dm, paddingLeft: 2, marginTop: -4, marginBottom: 6 }}>
               ONにすると4翻30符・3翻60符を満貫扱い
+            </div>
+            {toggleRow("ダブル役満あり", rules.doubleYakuman, () => setRules(r => ({ ...r, doubleYakuman: !r.doubleYakuman })))}
+            <div style={{ fontSize: 10, color: t.dm, paddingLeft: 2, marginTop: -4, marginBottom: 6 }}>
+              役満の複合（大三元＋字一色など）を2倍・3倍で計算。役の選択画面から適用されます
             </div>
             {toggleRow("トビで終了", rules.tobiEnd !== false, () => setRules(r => ({ ...r, tobiEnd: r.tobiEnd === false })))}
             <div style={{ fontSize: 10, color: t.dm, paddingLeft: 2, marginTop: -4, marginBottom: 6 }}>
@@ -6721,6 +6910,7 @@ input, select { padding: 10px 14px; }
                       rules.kuitan && chip("食いタン"),
                       rules.atozuke && chip("後付け"),
                       rules.kiriage && chip("切り上げ満貫"),
+                      rules.doubleYakuman && chip("ダブル役満"),
                       chip(rules.orasYame !== false ? "オーラス親トップで終了" : "オーラスやめなし"),
                       chip(rules.multiRon === "triple" ? "トリプルロンあり" : rules.multiRon === "double" ? "ダブロンあり" : "頭ハネ"),
                     ].filter(Boolean);
@@ -7161,6 +7351,8 @@ input, select { padding: 10px 14px; }
                     setGWinner(order[0]);
                   } else {
                     setMultiRon(null);
+                    // 結果画面からの訂正で戻ってきた場合にgWinnerが空なので再設定する
+                    if (ronPick.length === 1) setGWinner(ronPick[0]);
                   }
                   setRonLoserPick(null);
                   setGHan(null); setGFu(null); setFuGuide(null);
@@ -7177,6 +7369,8 @@ input, select { padding: 10px 14px; }
                 <button onClick={(e) => {
                   e.stopPropagation();
                   setGTsumo(true); setGLoser(null); setTmWinStep(null);
+                  // 結果画面からの訂正で戻ってきた場合にgWinnerが空なので再設定する
+                  if (ronPick.length === 1) setGWinner(ronPick[0]);
                   setShowGW(true); setGStep(5);
                 }} style={{
                   width: "100%", height: "100%", borderRadius: 16, cursor: "pointer",
@@ -7476,7 +7670,20 @@ input, select { padding: 10px 14px; }
               <div style={card}>
                 {yakuPickerOpen ? (
                   <YakuPicker
-                    onConfirm={(h) => { setGHan(h); resetYakuPicker(); if (h >= 5) { setGFu(30); setGStep(7); } else setGStep(6); }}
+                    isTsumo={gTsumo}
+                    isParent={gParent}
+                    lockedRiichi={gWinner !== null && (declaredRiichi[gWinner] || gRiichi[gWinner])}
+                    onConfirm={(h) => {
+                      // 役ピッカーの回答から符が確定できる場合は符ステップを飛ばす
+                      const pinfu = pickedYaku.includes("平和（ピンフ）");
+                      const chiitoi = pickedYaku.includes("七対子（チートイツ）");
+                      const naki = pickerNaki === true;
+                      setGHan(h); setGKnownNaki(pickerNaki); resetYakuPicker();
+                      if (h >= 5) { setGFu(30); setGStep(7); }
+                      else if (chiitoi) { setGFu(25); setGStep(7); }
+                      else if (pinfu && !naki) { setGFu(gTsumo ? 20 : 30); setGStep(7); }
+                      else setGStep(6);
+                    }}
                     onCancel={() => setYakuPickerOpen(false)}
                   />
                 ) : (
@@ -7506,7 +7713,8 @@ input, select { padding: 10px 14px; }
                     <div style={question}>翻数は？</div>
                     <button style={{ ...actionBtn("p"), marginBottom: 12, background: t.gd, color: "#1a1a1a" }}
                       onClick={() => {
-                        const riichi = gWinner !== null && declaredRiichi[gWinner];
+                        // 実況リーチ・リーチ棒入力のどちらでもリーチ扱い
+                        const riichi = gWinner !== null && (declaredRiichi[gWinner] || gRiichi[gWinner]);
                         const pre = [];
                         if (riichi) pre.push("リーチ（立直）");
                         // 門前でツモなら門前清自摸和も自動でチェック
@@ -7515,6 +7723,7 @@ input, select { padding: 10px 14px; }
                         setPickerDora(0);
                         setPickerUra(0);
                         setPickerNaki(riichi ? false : null);
+                        setGKnownNaki(null);
                         setYakuPickerOpen(true);
                       }}>
                       📖 役を選んで計算する
@@ -7560,7 +7769,7 @@ input, select { padding: 10px 14px; }
                       <span style={{ fontSize: 15, fontWeight: 700 }}>符計算ガイド</span>
                       <button style={{ background: t.acS, border: `1px solid ${t.ac}44`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: t.ac, fontWeight: 700, cursor: "pointer" }} onClick={() => setShowFuHelp(true)}>解説</button>
                     </div>
-                    <FuGuideWizard onComplete={(fu) => { setGFu(fu); setGStep(7); resetFuGuide(); }} onBack={() => resetFuGuide()} />
+                    <FuGuideWizard isTsumo={gTsumo} onComplete={(fu) => { setGFu(fu); setGStep(7); resetFuGuide(); }} onBack={() => resetFuGuide()} />
                   </>
                 )}
               </div>
@@ -7640,7 +7849,7 @@ input, select { padding: 10px 14px; }
                   <button onClick={() => setGStep(5)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
                     <span style={{ fontSize: 12, color: t.dm }}>翻数</span>
                     <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gHan >= 13 ? "役満" : `${gHan}翻`}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gHan >= 13 ? getLimitName(gHan) : `${gHan}翻`}</span>
                       <span style={editTag}>訂正</span>
                     </span>
                   </button>
@@ -7805,7 +8014,7 @@ input, select { padding: 10px 14px; }
                 ) : (
                   <span>
                     <span style={{ color: t.ac, fontWeight: 600 }}>{players[r.winner]}</span>
-                    {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
+                    {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? getLimitName(r.han) : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
                     {" "}<span style={{ fontWeight: 700, color: t.tx }}>{r.score?.toLocaleString()}</span>
                     {r.limitName && <span style={{ color: t.gd, marginLeft: 4 }}>{r.limitName}</span>}
                   </span>
@@ -7921,6 +8130,11 @@ input, select { padding: 10px 14px; }
         {/* Raw scores */}
         <div style={card}>
           <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 10, letterSpacing: "0.05em" }}>最終持ち点</div>
+          {kyotakuAward && (
+            <div style={{ fontSize: 11, color: t.gd, marginBottom: 10, padding: "7px 10px", borderRadius: 8, background: t.gdS, border: `1px solid ${t.gd}33`, lineHeight: 1.7 }}>
+              卓上に残った供託リーチ棒 {kyotakuAward.n}本（+{(kyotakuAward.n * 1000).toLocaleString()}点）はトップの {players[kyotakuAward.idx]} さんが受け取りました
+            </div>
+          )}
           {[...adjusted].sort((a, b) => b.rawScore - a.rawScore).map((s, rank) => (
             <div key={s.idx} style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -8024,7 +8238,7 @@ input, select { padding: 10px 14px; }
               ) : (
                 <span>
                   <span style={{ color: t.ac, fontWeight: 600 }}>{players[r.winner]}</span>
-                  {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
+                  {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? getLimitName(r.han) : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
                   {" "}<span style={{ fontWeight: 700 }}>{r.score?.toLocaleString()}</span>
                   {r.limitName && <span style={{ color: t.gd, marginLeft: 4 }}>{r.limitName}</span>}
                 </span>
@@ -8396,7 +8610,7 @@ input, select { padding: 10px 14px; }
                 ) : (
                   <span>
                     <span style={{ color: t.ac, fontWeight: 600 }}>{historyDetail.players[r.winner]}</span>
-                    {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
+                    {" "}<span style={{ color: t.dm }}>{r.han >= 13 ? getLimitName(r.han) : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}</span>
                     {" "}<span style={{ fontWeight: 700 }}>{r.score?.toLocaleString()}</span>
                     {r.limitName && <span style={{ color: t.gd, marginLeft: 4 }}>{r.limitName}</span>}
                   </span>
