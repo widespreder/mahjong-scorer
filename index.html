@@ -6440,9 +6440,9 @@ input, select { padding: 10px 14px; }
             {/* サイコロエリア */}
             <div>
               {!tmWinStep && !tmDrawMode && (diceRolling || diceSettled) && (() => {
-                // 選ばれた山のプレイヤーの向きに合わせて回転
+                // 局・本場と同じ向き（親の方向）に揃える
                 const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
-                const rot = diceSettled && wallTargetIdx >= 0 ? ROT[(wallTargetIdx - seatRot + 4) % 4] : 0;
+                const rot = ROT[(dealerIdx - seatRot + 4) % 4] ?? 0;
                 return (
                   <div style={{ position: "relative", width: 72, height: 48, margin: "0 auto" }}>
                     <div style={{
