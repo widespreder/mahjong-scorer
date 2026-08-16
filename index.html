@@ -66,6 +66,16 @@ function getLimitName(han) {
 
 const WINDS = ["東", "南", "西", "北"];
 const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+// 翻数とアガリ方から、実戦でありえない符を除く
+// 20符 = 平和ツモのみ（平和1翻＋ツモ1翻で最低2翻）
+// 25符 = 七対子のみ（2翻。門前ツモが付くツモなら最低3翻）
+function validFuOptions(han, isTsumo) {
+  return FU_OPTIONS.filter(fu => {
+    if (fu === 20) return isTsumo === true && (han === null || han >= 2);
+    if (fu === 25) return han === null || han >= (isTsumo ? 3 : 2);
+    return true;
+  });
+}
 const DEFAULT_PRESET_NAMES = ["つとむ", "ひろこ", "はじめ", "こころ"];
 
 function MahjongScorer() {
@@ -5455,7 +5465,7 @@ input, select { padding: 10px 14px; }
               </button>
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
-                {FU_OPTIONS.map(f => (
+                {validFuOptions(cHan, cTsumo).map(f => (
                   <button key={f} style={numBtn(cFu===f)} onClick={() => { setCFu(f); setCalcStep(4); }}>{f}符</button>
                 ))}
               </div>
@@ -6665,7 +6675,7 @@ input, select { padding: 10px 14px; }
                     </button>
                     <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
-                      {FU_OPTIONS.map(f => (
+                      {validFuOptions(gHan, gTsumo).map(f => (
                         <button key={f} style={numBtn(gFu === f)} onClick={() => { setGFu(f); setGStep(7); }}>{f}符</button>
                       ))}
                     </div>
