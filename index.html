@@ -3702,10 +3702,10 @@ input, select { padding: 10px 14px; }
     const row = (label, value, hint) => (
       <div style={{ padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
-          <span style={{ fontSize: 13, color: t.dm, flexShrink: 0 }}>{label}</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: t.tx, textAlign: "right" }}>{value}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: t.tx, flexShrink: 0 }}>{label}</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: t.tx, textAlign: "right" }}>{value}</span>
         </div>
-        {hint && <div style={{ fontSize: 10, color: t.dm, marginTop: 3, lineHeight: 1.6 }}>{hint}</div>}
+        {hint && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, lineHeight: 1.6 }}>{hint}</div>}
       </div>
     );
     const renchan = rs.agariRenchan ? "あがり連荘" : rs.tenpaiRenchan ? "テンパイ連荘" : "無条件連荘";
@@ -3753,7 +3753,7 @@ input, select { padding: 10px 14px; }
             rs.kiriage ? "4翻30符・3翻60符を満貫扱い" : null)}
           {lg && row("ウマ", lg.uma.map(u => (u > 0 ? "+" : "") + u).join(" / "))}
 
-          <div style={{ fontSize: 10, color: t.dm, marginTop: 10, lineHeight: 1.7 }}>
+          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 12, lineHeight: 1.7 }}>
             ノーテン罰符は場で3,000点、本場は1本につき300点です
           </div>
 
