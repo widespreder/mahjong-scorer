@@ -361,7 +361,12 @@ function MahjongScorer() {
     return total + pickerDora;
   };
   const resetFuGuide = () => { setFuGuide(null); setFuGuideStep(0); };
-  const initFuGuide = () => { setFuGuide({ naki: null, mentsu: [], machi: "ryanmen", jantou: "suuhai", pinfu: false, chiitoi: false, kuipin: false }); setFuGuideStep(0); };
+  const initFuGuide = () => {
+    // リーチしている＝門前が確定しているので「鳴きましたか？」は飛ばす
+    const riichiWinner = gWinner !== null && declaredRiichi[gWinner];
+    setFuGuide({ naki: riichiWinner ? false : null, mentsu: [], machi: "ryanmen", jantou: "suuhai", pinfu: false, chiitoi: false, kuipin: false });
+    setFuGuideStep(riichiWinner ? 1 : 0);
+  };
   const [showFuHelp, setShowFuHelp] = useState(false);
   const MENTSU_OPTIONS = [
     { id: "minko_c", label: "明刻(中張)", fu: 2, desc: "ポンした2〜8の牌の3枚組" },
@@ -1176,8 +1181,15 @@ function MahjongScorer() {
     if (step === 1) {
       return (
         <div>
-          <button style={backBtn} onClick={() => setFuGuideStep(0)}>← 戻る</button>
+          {/* リーチ済みは STEP1 を飛ばしているので戻り先がない */}
+          {!(gWinner !== null && declaredRiichi[gWinner]) &&
+            <button style={backBtn} onClick={() => setFuGuideStep(0)}>← 戻る</button>}
           <StepLabel n={2} total={7} label="STEP 2 / 特殊な形" />
+          {gWinner !== null && declaredRiichi[gWinner] && (
+            <div style={{ fontSize: 11, color: t.rd, textAlign: "center", marginBottom: 10, fontWeight: 700 }}>
+              🔴 リーチ済みのため門前で計算します
+            </div>
+          )}
           <div style={{ fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>
             {g.naki ? "特別な形ですか？" : "平和や七対子ですか？"}
           </div>
@@ -1453,7 +1465,7 @@ function MahjongScorer() {
         <div style={{ fontSize: 14, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>役を選んで翻数を計算</div>
         {gWinner !== null && declaredRiichi[gWinner] && (
           <div style={{ fontSize: 11, color: t.rd, textAlign: "center", marginBottom: 8, fontWeight: 700 }}>
-            🔴 リーチ宣言済みのため自動でチェック済み
+            🔴 リーチ宣言済み{gTsumo ? "・ツモ" : ""}のため自動でチェック済み
           </div>
         )}
 
@@ -7045,7 +7057,17 @@ input, select { padding: 10px 14px; }
                     <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>翻数</div>
                     <div style={question}>翻数は？</div>
                     <button style={{ ...actionBtn("p"), marginBottom: 12, background: t.gd, color: "#1a1a1a" }}
-                      onClick={() => { setPickedYaku(gWinner !== null && declaredRiichi[gWinner] ? ["リーチ（立直）"] : []); setPickerDora(0); setPickerNaki(gWinner !== null && declaredRiichi[gWinner] ? false : null); setYakuPickerOpen(true); }}>
+                      onClick={() => {
+                        const riichi = gWinner !== null && declaredRiichi[gWinner];
+                        const pre = [];
+                        if (riichi) pre.push("リーチ（立直）");
+                        // 門前でツモなら門前清自摸和も自動でチェック
+                        if (gTsumo && riichi) pre.push("門前清自摸和（メンゼンツモ）");
+                        setPickedYaku(pre);
+                        setPickerDora(0);
+                        setPickerNaki(riichi ? false : null);
+                        setYakuPickerOpen(true);
+                      }}>
                       📖 役を選んで計算する
                     </button>
                     <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 10 }}>または直接選択</div>
