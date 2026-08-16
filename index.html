@@ -6225,21 +6225,27 @@ input, select { padding: 10px 14px; }
               </div>
             ) : (
               /* 放銃者候補 */
-              <button onClick={() => setRonLoserPick(ronLoserPick === i ? null : i)} style={{
+              (() => {
+              const sel = ronLoserPick === i;
+              const dim = ronLoserPick !== null && !sel;   // 他が選ばれている
+              return (
+              <button onClick={() => setRonLoserPick(sel ? null : i)} style={{
                 width: "100%", height: "100%", borderRadius: 10, cursor: "pointer", padding: "2cqmin",
-                border: `2px solid ${t.rd}`,
-                background: ronLoserPick === i ? "rgba(239,68,68,0.32)" : t.rdS,
+                border: `2px solid ${sel ? t.rd : dim ? "rgba(255,255,255,0.55)" : t.rd}`,
+                background: sel ? "rgba(239,68,68,0.32)" : dim ? "rgba(255,255,255,0.06)" : t.rdS,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.8cqmin",
                 overflow: "hidden",
               }}>
-                <div style={{ fontSize: "4.6cqmin", fontWeight: 900, color: t.rd, lineHeight: 1.2, flexShrink: 0 }}>ロン</div>
+                <div style={{ fontSize: "4.6cqmin", fontWeight: 900, color: dim ? "rgba(255,255,255,0.75)" : t.rd, lineHeight: 1.2, flexShrink: 0 }}>ロン</div>
                 <div style={{ fontSize: nameFont(players[i], 4.1), fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%", lineHeight: 1.35, flexShrink: 0 }}>
                   {players[i]}
                 </div>
-                <div style={{ fontSize: "2.7cqmin", color: ronLoserPick === i ? t.rd : t.dm, fontWeight: ronLoserPick === i ? 800 : 400, lineHeight: 1.3, flexShrink: 0, whiteSpace: "nowrap" }}>
-                  {ronLoserPick === i ? "✓ 選択中" : "から出アガリ"}
+                <div style={{ fontSize: "2.7cqmin", color: sel ? t.rd : t.dm, fontWeight: sel ? 800 : 400, lineHeight: 1.3, flexShrink: 0, whiteSpace: "nowrap" }}>
+                  {sel ? "✓ 選択中" : "から出アガリ"}
                 </div>
               </button>
+              );
+              })()
             )
           ) : isWallTarget ? (
             /* 山に選ばれた時は「山を割る」表示のみ */
@@ -6517,10 +6523,7 @@ input, select { padding: 10px 14px; }
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1cqmin",
                   padding: "2cqmin", boxSizing: "border-box", overflow: "hidden",
                 }}>
-                  <div style={{ fontSize: "5cqmin", fontWeight: 900, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>確定</div>
-                  <div style={{ fontSize: "2.6cqmin", opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
-                    {players[ronLoserPick]} から
-                  </div>
+                  <div style={{ fontSize: "5.6cqmin", fontWeight: 900, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>確定</div>
                 </button>
               ) : (
                 <button onClick={(e) => {
