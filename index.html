@@ -6043,10 +6043,9 @@ input, select { padding: 10px 14px; }
             /* 和了者を選ぶ（ダブロン可のときは複数選択） */
             (() => {
               const picked = ronPick.includes(i);
-              const maxRon = multiRonMax;
+              const maxRon = 3;   // 選択自体は常に3人まで（ルールとの差異は下に警告）
               return (
                 <button onClick={() => {
-                  if (maxRon === 1) { setGWinner(i); setRonPick([i]); setTmWinStep("how"); return; }
                   setRonPick(prev => prev.includes(i)
                     ? prev.filter(x => x !== i)
                     : (prev.length >= maxRon ? prev : [...prev, i]));
@@ -6067,7 +6066,7 @@ input, select { padding: 10px 14px; }
                     {players[i]}
                   </div>
                   <div style={{ fontSize: 10, color: picked ? t.gd : t.dm }}>
-                    {maxRon === 1 ? "タップで選択" : picked ? "✓ アガリ" : "タップで選択"}
+                    {picked ? "✓ アガリ" : "タップで選択"}
                   </div>
                 </button>
               );
@@ -6227,33 +6226,29 @@ input, select { padding: 10px 14px; }
             </div>
             <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 6 }}>
               {tmWinStep === "winner"
-                ? (multiRonMax > 1
-                    ? `${multiRonMax === 3 ? "トリプルロン" : "ダブロン"}あり — 最大${multiRonMax}人まで選べます`
-                    : "頭ハネ — アガれるのは1人だけです")
+                ? (multiRonMax >= 3
+                    ? "トリプルロンあり — 3人まで選べます"
+                    : multiRonMax === 2
+                      ? "ダブロンあり — 2人まで。3人目も選べますが警告が出ます"
+                      : "頭ハネ — 本来は1人だけ。複数選ぶと警告が出ます")
                 : (ronPick.length >= 2
                     ? `${ronPick.length}人でロン。放銃者に近い人から順に手を入力します`
                     : "")}
             </div>
-            {/* この対局だけ複数ロンを有効にする */}
-            {tmWinStep === "winner" && multiRonMax === 1 && (
-              <button
-                onClick={() => setGameConfig(g => ({ ...g, rules: { ...(g.rules || {}), multiRon: "double" } }))}
-                style={{
-                  display: "block", margin: "0 auto 8px", padding: "7px 14px", borderRadius: 9,
-                  border: `1px solid ${t.gd}66`, background: t.gdS, color: t.gd,
-                  fontSize: 11, fontWeight: 700, cursor: "pointer",
-                }}
-              >この対局でダブロンを有効にする</button>
-            )}
-            {tmWinStep === "winner" && multiRonMax === 2 && (
-              <button
-                onClick={() => setGameConfig(g => ({ ...g, rules: { ...(g.rules || {}), multiRon: "triple" } }))}
-                style={{
-                  display: "block", margin: "0 auto 8px", padding: "7px 14px", borderRadius: 9,
-                  border: `1px solid ${t.gd}66`, background: t.gdS, color: t.gd,
-                  fontSize: 11, fontWeight: 700, cursor: "pointer",
-                }}
-              >トリプルロンまで許可する</button>
+            {/* ルール設定と食い違う人数を選んだときの警告 */}
+            {tmWinStep === "winner" && ronPick.length > multiRonMax && (
+              <div style={{
+                margin: "0 auto 8px", padding: "9px 12px", borderRadius: 9, maxWidth: 340,
+                border: `1px solid ${t.rd}77`, background: t.rdS, textAlign: "center",
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: t.rd }}>
+                  ルール設定と異なります
+                </div>
+                <div style={{ fontSize: 10, color: t.dm, marginTop: 3, lineHeight: 1.6 }}>
+                  このリーグ・対局のルールは「{mrRule === "double" ? "ダブロンあり" : "頭ハネ"}」
+                  （{multiRonMax}人まで）です。{ronPick.length}人で確定するとルール外の記録になります。
+                </div>
+              </div>
             )}
             <button style={smallBtn()} onClick={() => {
               setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null);
@@ -6334,7 +6329,7 @@ input, select { padding: 10px 14px; }
               }}>確定</button>
             )}
             {tmWinStep === "winner" && (
-              multiRonMax > 1 && ronPick.length > 0 ? (
+              ronPick.length > 0 ? (
                 <button onClick={(e) => {
                   e.stopPropagation();
                   if (ronPick.length === 1) { setGWinner(ronPick[0]); }
