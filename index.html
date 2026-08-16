@@ -85,6 +85,9 @@ function getLimitName(han) {
   return null;
 }
 const WINDS = ["東", "南", "西", "北"];
+const MATCH_LABEL = mt => mt === "tonpu" ? "東風戦" : mt === "zenchan" ? "全荘戦" : "半荘戦";
+const MATCH_LABEL_SHORT = mt => mt === "tonpu" ? "東風" : mt === "zenchan" ? "全荘" : "半荘";
+const LAST_WIND = mt => mt === "tonpu" ? "東" : mt === "zenchan" ? "北" : "南";
 const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 function validFuOptions(han, isTsumo) {
   return FU_OPTIONS.filter(fu => {
@@ -777,17 +780,21 @@ function MahjongScorer() {
   }, [gHan, gFu, gParent, gTsumo]);
   const advanceAfterWin = useCallback((dealerWon, ns) => {
     const cfg = gameConfig || {};
-    const isOrlast = cfg.matchType === "tonpu" && dealerIdx === 3 || cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3;
+    const lastW = LAST_WIND(cfg.matchType);
+    const isOrlast = dealerIdx === 3 && roundWind === lastW;
     if (!dealerWon) {
       const next = (dealerIdx + 1) % 4;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
-      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+      } else if (next === 0 && roundWind === lastW) {
         setGameFinished(true);
       } else {
         setDealerIdx(next);
         setHonba(0);
-        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+        if (next === 0) {
+          const wi = WINDS.indexOf(roundWind);
+          if (wi >= 0 && wi < 3) setRoundWind(WINDS[wi + 1]);
+        }
       }
     } else {
       if (isOrlast) {
@@ -1056,7 +1063,8 @@ function MahjongScorer() {
     const dealerTenpai = drawTenpai[dealerIdx];
     let dealerRotates = false;
     const ruleSet = cfg.rules || {};
-    const isOrlast = cfg.matchType === "tonpu" && dealerIdx === 3 || cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3;
+    const lastW = LAST_WIND(cfg.matchType);
+    const isOrlast = dealerIdx === 3 && roundWind === lastW;
     if (ruleSet.agariRenchan) {
       dealerRotates = true;
     } else if (ruleSet.tenpaiRenchan) {
@@ -1066,11 +1074,14 @@ function MahjongScorer() {
       const next = (dealerIdx + 1) % 4;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
-      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+      } else if (next === 0 && roundWind === lastW) {
         setGameFinished(true);
       } else {
         setDealerIdx(next);
-        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+        if (next === 0) {
+          const wi = WINDS.indexOf(roundWind);
+          if (wi >= 0 && wi < 3) setRoundWind(WINDS[wi + 1]);
+        }
       }
     } else if (isOrlast) {
       const parentScore = ns[dealerIdx];
@@ -9231,7 +9242,7 @@ input, select { padding: 10px 14px; }
         lineHeight: 1
       },
       onClick: () => setShowRuleCheck(false)
-    }, "✕")), row("形式", gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"), row("持ち点 / 返し点", `${(rs.startPoints ?? 25000).toLocaleString()} / ${(rs.returnPoints ?? 30000).toLocaleString()}`, `オカ ${((rs.returnPoints ?? 0) - (rs.startPoints ?? 0)) * 4 / 1000}pt がトップへ`), row("流局したときの親", renchan, renchanHint), row("オーラス", rs.orasYame !== false ? "親トップで終了" : "やめなし", rs.orasYame !== false ? "アガリやめ・テンパイやめ" : "親がトップでも続行"), row("複数人が同時にロン", mr, rs.multiRon === "atamahane" ? "アガれるのは1人だけ" : "本場と供託は放銃者に近い人へ"), row("食いタン", rs.kuitan ? "あり" : "なし"), row("後付け", rs.atozuke ? "あり" : "なし"), row("切り上げ満貫", rs.kiriage ? "あり" : "なし", rs.kiriage ? "4翻30符・3翻60符を満貫扱い" : null), row("ダブル役満", rs.doubleYakuman ? "あり" : "なし", rs.doubleYakuman ? "役満の複合を2倍・3倍で計算" : null), lg && row("ウマ", lg.uma.map(u => (u > 0 ? "+" : "") + u).join(" / ")), React.createElement("div", {
+    }, "✕")), row("形式", MATCH_LABEL(gameConfig?.matchType)), row("持ち点 / 返し点", `${(rs.startPoints ?? 25000).toLocaleString()} / ${(rs.returnPoints ?? 30000).toLocaleString()}`, `オカ ${((rs.returnPoints ?? 0) - (rs.startPoints ?? 0)) * 4 / 1000}pt がトップへ`), row("流局したときの親", renchan, renchanHint), row("オーラス", rs.orasYame !== false ? "親トップで終了" : "やめなし", rs.orasYame !== false ? "アガリやめ・テンパイやめ" : "親がトップでも続行"), row("複数人が同時にロン", mr, rs.multiRon === "atamahane" ? "アガれるのは1人だけ" : "本場と供託は放銃者に近い人へ"), row("食いタン", rs.kuitan ? "あり" : "なし"), row("後付け", rs.atozuke ? "あり" : "なし"), row("切り上げ満貫", rs.kiriage ? "あり" : "なし", rs.kiriage ? "4翻30符・3翻60符を満貫扱い" : null), row("ダブル役満", rs.doubleYakuman ? "あり" : "なし", rs.doubleYakuman ? "役満の複合を2倍・3倍で計算" : null), lg && row("ウマ", lg.uma.map(u => (u > 0 ? "+" : "") + u).join(" / ")), React.createElement("div", {
       style: {
         fontSize: 11,
         color: "#94a3b8",
@@ -9552,7 +9563,7 @@ input, select { padding: 10px 14px; }
           color: t.dm,
           margin: 0
         }
-      }, "かんたん点数計算 & 対局管理")), suspendedGame && menuItem("⏸", "保留中の対局を再開", `${suspendedGame.config.date} ${suspendedGame.config.matchType === "tonpu" ? "東風" : "半荘"} — ${suspendedGame.players.join("・")}`, () => {
+      }, "かんたん点数計算 & 対局管理")), suspendedGame && menuItem("⏸", "保留中の対局を再開", `${suspendedGame.config.date} ${MATCH_LABEL_SHORT(suspendedGame.config.matchType)} — ${suspendedGame.players.join("・")}`, () => {
         setGameConfig(suspendedGame.config);
         setPlayers(suspendedGame.players);
         setScores(suspendedGame.scores);
@@ -11481,7 +11492,7 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         marginBottom: 7
       }
-    }, "第", lg.games.length - gi, "戦 ・ ", g.date, g.matchType && ` ・ ${g.matchType === "tonpu" ? "東風戦" : "半荘戦"}`), g.players.map((nm, i) => React.createElement("div", {
+    }, "第", lg.games.length - gi, "戦 ・ ", g.date, g.matchType && ` ・ ${MATCH_LABEL(g.matchType)}`), g.players.map((nm, i) => React.createElement("div", {
       key: i,
       style: {
         display: "flex",
@@ -11682,7 +11693,7 @@ input, select { padding: 10px 14px; }
         gap: 10,
         marginBottom: 20
       }
-    }, [["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東場＋南場"]].map(([k, lb, sub]) => React.createElement("button", {
+    }, [["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東場＋南場"], ["zenchan", "全荘戦", "東南西北場"]].map(([k, lb, sub]) => React.createElement("button", {
       key: k,
       onClick: () => setLgMatchType(k),
       style: {
@@ -13303,7 +13314,8 @@ input, select { padding: 10px 14px; }
     style: {
       display: "flex",
       gap: 10,
-      justifyContent: "center"
+      justifyContent: "center",
+      flexWrap: "wrap"
     }
   }, React.createElement("button", {
     style: bigBtn(matchType === "tonpu" ? t.ac : t.dm, matchType === "tonpu" ? t.acS : "transparent"),
@@ -13341,7 +13353,25 @@ input, select { padding: 10px 14px; }
       opacity: 0.7,
       fontWeight: 400
     }
-  }, "東場＋南場")))), setupStep === 3 && React.createElement("div", {
+  }, "東場＋南場")), React.createElement("button", {
+    style: bigBtn(matchType === "zenchan" ? t.ac : t.dm, matchType === "zenchan" ? t.acS : "transparent"),
+    onClick: () => {
+      setMatchType("zenchan");
+      setSetupStep(3);
+    }
+  }, React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600,
+      marginBottom: 4
+    }
+  }, "全荘戦"), React.createElement("div", {
+    style: {
+      fontSize: 11,
+      opacity: 0.7,
+      fontWeight: 400
+    }
+  }, "東南西北場")))), setupStep === 3 && React.createElement("div", {
     style: card
   }, React.createElement(Back, {
     onClick: () => setSetupStep(2)
@@ -13609,7 +13639,7 @@ input, select { padding: 10px 14px; }
       color: t.dm,
       marginBottom: 8
     }
-  }, matchType === "tonpu" ? "東4局" : "南4局", "で親がアガった、または流局で親が続く場合の扱い"), toggleRow("親がトップなら終了", rules.orasYame !== false, () => setRules(r => ({
+  }, matchType === "tonpu" ? "東4局" : matchType === "zenchan" ? "北4局" : "南4局", "で親がアガった、または流局で親が続く場合の扱い"), toggleRow("親がトップなら終了", rules.orasYame !== false, () => setRules(r => ({
     ...r,
     orasYame: r.orasYame === false
   }))), React.createElement("div", {
@@ -14082,7 +14112,7 @@ input, select { padding: 10px 14px; }
     style: {
       fontWeight: 600
     }
-  }, matchType === "tonpu" ? "東風戦" : "半荘戦")), React.createElement("div", {
+  }, MATCH_LABEL(matchType))), React.createElement("div", {
     style: {
       borderBottom: `1px solid ${t.bd}33`,
       padding: "6px 0 10px"
@@ -15333,7 +15363,7 @@ input, select { padding: 10px 14px; }
       fontSize: 12,
       color: t.dm
     }
-  }, React.createElement("span", null, gameConfig?.date, " / ", gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦")), React.createElement("div", {
+  }, React.createElement("span", null, gameConfig?.date, " / ", MATCH_LABEL(gameConfig?.matchType))), React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "baseline",
@@ -16597,7 +16627,7 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         margin: 0
       }
-    }, gameConfig?.date, " / ", gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦", " / ", rounds.length, "局")), React.createElement("div", {
+    }, gameConfig?.date, " / ", MATCH_LABEL(gameConfig?.matchType), " / ", rounds.length, "局")), React.createElement("div", {
       style: card
     }, React.createElement("div", {
       style: {
@@ -17345,7 +17375,7 @@ input, select { padding: 10px 14px; }
         background: t.sf,
         borderRadius: 6
       }
-    }, g.matchType === "tonpu" ? "東風" : "半荘")), React.createElement("div", {
+    }, MATCH_LABEL_SHORT(g.matchType))), React.createElement("div", {
       style: {
         display: "flex",
         gap: 4,
@@ -17397,7 +17427,7 @@ input, select { padding: 10px 14px; }
       background: t.sf,
       borderRadius: 6
     }
-  }, historyDetail.matchType === "tonpu" ? "東風戦" : "半荘戦")), React.createElement("div", {
+  }, MATCH_LABEL(historyDetail.matchType))), React.createElement("div", {
     style: {
       marginBottom: 16
     }
