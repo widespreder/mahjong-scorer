@@ -99,6 +99,7 @@ function MahjongScorer() {
   const [seatTurn, setSeatTurn] = useState(0);      // 今引く人（元の並び順のindex）
   const [seatDone, setSeatDone] = useState(false);
   const [showRuleCheck, setShowRuleCheck] = useState(false); // 対局中のルール確認
+  const [ronRuleWarn, setRonRuleWarn] = useState(false);     // 複数ロンがルールを超えたときの確認
   const [reviewing, setReviewing] = useState(false);         // 結果画面から修正に戻っている状態
   const [showScoreFix, setShowScoreFix] = useState(false);   // 点数の直接修正
 
@@ -3794,6 +3795,75 @@ input, select { padding: 10px 14px; }
     return log;
   };
 
+  // 複数ロンがルール設定を超えたときの確認モーダル
+  const RonRuleWarnModal = () => {
+    if (!ronRuleWarn) return null;
+    const rs = gameConfig?.rules || {};
+    const cur = rs.multiRon === "triple" ? "トリプルロンあり" : rs.multiRon === "double" ? "ダブロンあり" : "頭ハネ";
+    const curMax = rs.multiRon === "triple" ? 3 : rs.multiRon === "double" ? 2 : 1;
+    const need = ronPick.length;
+    const needKey = need >= 3 ? "triple" : "double";
+    const needLabel = need >= 3 ? "トリプルロンあり" : "ダブロンあり";
+    const lg = leagues.find(l => l.id === activeLeagueId);
+    const proceed = () => { setRonRuleWarn(false); setTmWinStep("how"); };
+
+    return (
+      <div style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 200,
+        display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 16px",
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 20px)",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
+        overflowY: "auto",
+      }}>
+        <div style={{ ...card, maxWidth: 380, width: "100%", margin: 0, border: `2px solid ${t.rd}88` }}>
+          <div style={{ fontSize: 17, fontWeight: 900, color: t.rd, textAlign: "center", marginBottom: 10 }}>
+            ⚠️ ルール設定と異なります
+          </div>
+          <div style={{
+            padding: 13, borderRadius: 10, background: t.sf, border: `1px solid ${t.bd}`,
+            fontSize: 13, color: t.tx, lineHeight: 1.95, marginBottom: 14,
+          }}>
+            この対局のルールは <span style={{ color: t.gd, fontWeight: 800 }}>「{cur}」</span>
+            （{curMax}人まで）です。<br />
+            いま <span style={{ color: t.rd, fontWeight: 800 }}>{need}人</span> のアガリを記録しようとしています。
+          </div>
+
+          <button onClick={() => {
+            setGameConfig(g => ({ ...g, rules: { ...(g.rules || {}), multiRon: needKey } }));
+            if (lg) {
+              saveLeagues(leagues.map(l => l.id === lg.id
+                ? { ...l, rules: { ...l.rules, multiRon: needKey } } : l));
+            }
+            proceed();
+          }} style={{
+            width: "100%", padding: "14px 10px", marginBottom: 9, borderRadius: 11, cursor: "pointer",
+            border: "none", background: t.ac, color: "#fff", fontSize: 14, fontWeight: 800, lineHeight: 1.5,
+          }}>
+            ルールを「{needLabel}」に変更して続ける
+            <span style={{ display: "block", fontSize: 10, fontWeight: 400, opacity: 0.85, marginTop: 3 }}>
+              {lg ? `${lg.name} の設定も更新されます` : "以降この対局に適用されます"}
+            </span>
+          </button>
+
+          <button onClick={proceed} style={{
+            width: "100%", padding: "13px 10px", marginBottom: 9, borderRadius: 11, cursor: "pointer",
+            border: `1px solid ${t.bd}`, background: "transparent", color: t.tx, fontSize: 13, fontWeight: 700, lineHeight: 1.5,
+          }}>
+            今回だけ例外として記録する
+            <span style={{ display: "block", fontSize: 10, fontWeight: 400, color: t.dm, marginTop: 3 }}>
+              ルール設定は変えません
+            </span>
+          </button>
+
+          <button onClick={() => setRonRuleWarn(false)} style={{
+            width: "100%", padding: "12px 10px", borderRadius: 11, cursor: "pointer",
+            border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 13, fontWeight: 700,
+          }}>選び直す</button>
+        </div>
+      </div>
+    );
+  };
+
   // 対局中のルール確認モーダル
   const RuleCheckModal = () => {
     if (!showRuleCheck) return null;
@@ -6235,23 +6305,8 @@ input, select { padding: 10px 14px; }
                     ? `${ronPick.length}人でロン。放銃者に近い人から順に手を入力します`
                     : "")}
             </div>
-            {/* ルール設定と食い違う人数を選んだときの警告 */}
-            {tmWinStep === "winner" && ronPick.length > multiRonMax && (
-              <div style={{
-                margin: "0 auto 8px", padding: "9px 12px", borderRadius: 9, maxWidth: 340,
-                border: `1px solid ${t.rd}77`, background: t.rdS, textAlign: "center",
-              }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: t.rd }}>
-                  ルール設定と異なります
-                </div>
-                <div style={{ fontSize: 10, color: t.dm, marginTop: 3, lineHeight: 1.6 }}>
-                  このリーグ・対局のルールは「{mrRule === "double" ? "ダブロンあり" : "頭ハネ"}」
-                  （{multiRonMax}人まで）です。{ronPick.length}人で確定するとルール外の記録になります。
-                </div>
-              </div>
-            )}
             <button style={smallBtn()} onClick={() => {
-              setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null);
+              setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null); setRonRuleWarn(false);
             }}>キャンセル</button>
           </>
         ) : (
@@ -6295,10 +6350,11 @@ input, select { padding: 10px 14px; }
         </div>
 
         <RuleCheckModal />
+        <RonRuleWarnModal />
         {actionRow(true)}
 
         <div style={{
-          position: "relative", width: "100%", flex: "1 1 auto", minHeight: 340,
+          position: "relative", width: "100%", flex: "1 1 auto", minHeight: 400,
           background: "linear-gradient(160deg, #16452f, #103526)",
           borderRadius: 20, border: "3px solid #24583f", overflow: "hidden",
         }}>
@@ -6332,6 +6388,7 @@ input, select { padding: 10px 14px; }
               ronPick.length > 0 ? (
                 <button onClick={(e) => {
                   e.stopPropagation();
+                  if (ronPick.length > multiRonMax) { setRonRuleWarn(true); return; }
                   if (ronPick.length === 1) { setGWinner(ronPick[0]); }
                   setTmWinStep("how");
                 }} style={{
