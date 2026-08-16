@@ -7783,6 +7783,8 @@ input, select { padding: 10px 14px; }
                 ) : (
                   <>
                     <Back onClick={() => {
+                      // 修正モード中は結果画面（サマリ）に戻る
+                      if (correctingIdx !== null && gHan !== null) { setGStep(7); return; }
                       // 卓上モードはこの画面から入るので、戻る＝入力をやめて卓に戻る
                       if (tableMode) {
                         resetGW(); setRonPick([]); setMultiRon(null); setTmWinStep(null);
@@ -7842,7 +7844,7 @@ input, select { padding: 10px 14px; }
             )}
             {gStep === 6 && (
               <div style={card}>
-                {!fuGuide && <><Back onClick={() => { setGStep(5); setGHan(null); resetFuGuide(); }} /><div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>符数</div></>}
+                {!fuGuide && <><Back onClick={() => { setGStep(5); if (correctingIdx === null) setGHan(null); resetFuGuide(); }} /><div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>符数</div></>}
 
                 {!fuGuide ? (
                   <>
@@ -7905,7 +7907,7 @@ input, select { padding: 10px 14px; }
                     };
                     return (
                       <>
-                        <button onClick={() => tableMode ? backToTable("winner") : setGStep(1)}
+                        <button onClick={() => (tableMode && correctingIdx === null) ? backToTable("winner") : setGStep(1)}
                           style={{ ...rowStyle, cursor: "pointer" }}>
                           <span style={{ fontSize: 12, color: t.dm }}>あがった人</span>
                           <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -7913,7 +7915,7 @@ input, select { padding: 10px 14px; }
                             <span style={editTag}>訂正</span>
                           </span>
                         </button>
-                        <button onClick={() => tableMode ? backToTable("how") : setGStep(2)}
+                        <button onClick={() => (tableMode && correctingIdx === null) ? backToTable("how") : setGStep(2)}
                           style={{ ...rowStyle, cursor: "pointer" }}>
                           <span style={{ fontSize: 12, color: t.dm }}>あがり方</span>
                           <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -7921,7 +7923,7 @@ input, select { padding: 10px 14px; }
                             <span style={editTag}>訂正</span>
                           </span>
                         </button>
-                        {tableMode ? (
+                        {(tableMode && correctingIdx === null) ? (
                           <div style={rowStyle}>
                             <span style={{ fontSize: 12, color: t.dm }}>リーチ棒</span>
                             <span style={{ fontSize: 13, fontWeight: 700, color: declaredRiichi.some(Boolean) ? t.gd : t.dm }}>
