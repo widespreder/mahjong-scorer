@@ -331,6 +331,13 @@ function MahjongScorer() {
     }
   };
   const [defaultRules, setDefaultRules] = useState(loadDefaultRules);
+  const [lastRules, setLastRules] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("mj_last_rules") || "null");
+    } catch {
+      return null;
+    }
+  });
   const saveDefaultRules = r => {
     setDefaultRules(r);
     try {
@@ -927,6 +934,12 @@ function MahjongScorer() {
   }, [scores, honba, dealerIdx, roundWind, gameConfig, drawTenpai, resetDrawWiz, correctingDrawIdx, rounds, declaredRiichi]);
   const startGame = useCallback(() => {
     const sp = rules.startPoints || 25000;
+    try {
+      localStorage.setItem("mj_last_rules", JSON.stringify(rules));
+    } catch {}
+    setLastRules({
+      ...rules
+    });
     const cfg = {
       date: gameDate,
       matchType,
@@ -12794,7 +12807,58 @@ input, select { padding: 10px 14px; }
     cur: 3
   }), React.createElement("div", {
     style: question
-  }, "\u30EB\u30FC\u30EB\u8A2D\u5B9A"), React.createElement("div", {
+  }, "\u30EB\u30FC\u30EB\u8A2D\u5B9A"), lastRules && (() => {
+    const same = JSON.stringify(rules) === JSON.stringify(lastRules);
+    const sum = [lastRules.agariRenchan ? "あがり連荘" : lastRules.tenpaiRenchan ? "テンパイ連荘" : "無条件連荘", lastRules.multiRon === "triple" ? "トリプルロン" : lastRules.multiRon === "double" ? "ダブロン" : "頭ハネ", lastRules.kuitan ? "食いタンあり" : "食いタンなし", `持ち点${(lastRules.startPoints || 0).toLocaleString()}`].join(" ・ ");
+    return React.createElement("div", {
+      style: {
+        padding: 14,
+        marginBottom: 18,
+        borderRadius: 12,
+        background: same ? t.gnS : t.acS,
+        border: `1px solid ${same ? t.gn : t.ac}55`
+      }
+    }, React.createElement("div", {
+      style: {
+        fontSize: 12,
+        fontWeight: 800,
+        color: same ? t.gn : t.ac,
+        marginBottom: 5
+      }
+    }, same ? "✓ 前回と同じルールです" : "前回のルール"), React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: t.dm,
+        lineHeight: 1.8,
+        marginBottom: 11
+      }
+    }, sum), React.createElement("button", {
+      onClick: () => {
+        setRules({
+          ...lastRules
+        });
+        setSetupStep(4);
+      },
+      style: {
+        width: "100%",
+        padding: "13px 10px",
+        borderRadius: 10,
+        cursor: "pointer",
+        border: "none",
+        background: same ? t.gn : t.ac,
+        color: "#fff",
+        fontSize: 14,
+        fontWeight: 800
+      }
+    }, same ? "このまま確認へ進む" : "前回と同じルールで始める"), React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: t.dm,
+        marginTop: 7,
+        textAlign: "center"
+      }
+    }, "\u5909\u66F4\u3057\u305F\u3044\u5834\u5408\u306F\u3001\u4E0B\u306E\u9805\u76EE\u3092\u305D\u306E\u307E\u307E\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044"));
+  })(), React.createElement("div", {
     style: {
       marginBottom: 8
     }
