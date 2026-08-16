@@ -7588,12 +7588,10 @@ input, select { padding: 10px 14px; }
       }}>
         {!(view === "game" && tableMode && gameStarted && !gameFinished) && !(view === "home" && homeCat === null) && (
         <div style={{ padding: "12px 14px 10px", borderBottom: `1px solid ${t.bd}`, display: "flex", alignItems: "center", gap: 8 }}>
-          {view !== "home" ? (
+          {/* 結果画面は記録前なので、うっかり離脱しないよう戻るを出さない */}
+          {view !== "home" && !(view === "game" && gameFinished) ? (
             <button
-              onClick={() => {
-                // 対局中はホームに戻る前に確認不要（保留機能は別途）
-                setView("home");
-              }}
+              onClick={() => setView("home")}
               style={{
                 background: t.card, border: `1px solid ${t.bd}`, borderRadius: 10,
                 padding: "7px 12px", color: t.ac, fontSize: 13, fontWeight: 700,
