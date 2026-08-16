@@ -3705,54 +3705,63 @@ input, select { padding: 10px 14px; }
     rounds.forEach(r => {
       const before = running;
       let delta = 0;
-      let desc = "";
 
       // リーチ棒を出した人は、その局で1,000点減る（アガリ・流局どちらでも）
       const paidRiichi = r.riichi && r.riichi[pi];
-      const riichiNote = paidRiichi ? "リーチ棒 -1,000" : "";
+      const parts = [];   // [{ label, amt }] 内訳。amt が null なら金額を出さない
 
       if (r.draw) {
         if (paidRiichi) delta -= 1000;
         const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
         if (tc > 0 && tc < 4) {
           const nc = 4 - tc;
-          if (r.tenpai[pi]) { delta += Math.floor(3000 / tc); desc = "流局・テンパイ"; }
-          else { delta -= Math.floor(3000 / nc); desc = "流局・ノーテン"; }
+          if (r.tenpai[pi]) { const g2 = Math.floor(3000 / tc); delta += g2; parts.push({ label: "流局・テンパイ", amt: g2 }); }
+          else { const p2 = Math.floor(3000 / nc); delta -= p2; parts.push({ label: "流局・ノーテン", amt: -p2 }); }
         } else {
-          desc = tc === 4 ? "流局（全員テンパイ）" : "流局（全員ノーテン）";
+          parts.push({ label: tc === 4 ? "流局（全員テンパイ）" : "流局（全員ノーテン）", amt: null });
         }
-        if (riichiNote) desc = desc ? `${desc}／${riichiNote}` : riichiNote;
+        if (paidRiichi) parts.push({ label: "リーチ", amt: -1000 });
       } else {
         const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
         const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
         // 受け取る供託。古い記録には pool が無いのでその場合だけ本数から求める
         const pool = (typeof r.pool === "number") ? r.pool : rc * 1000;
         const hb = r.honba * 300;
-        // リーチ棒
+        const handLabel = r.han >= 13 ? "役満" : r.fu ? `${r.han}飜${r.fu}符` : `${r.han}飜`;
         if (paidRiichi) { delta -= 1000; }
 
         if (r.winner === pi) {
           const gain = (r.tsumo && r.winner === r.dealer) ? res.each * 3 : res.total;
           delta += gain + hb + pool;
-          desc = `${r.tsumo ? "ツモ" : "ロン"} ${r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}`;
-          if (pool > 0) desc += `／供託 +${pool.toLocaleString()}`;
-          if (riichiNote) desc += `／${riichiNote}`;
+          parts.push({ label: `${r.tsumo ? "ツモ" : "ロン"}${handLabel}`, amt: gain });
+          if (paidRiichi) parts.push({ label: "リーチ", amt: -1000 });
+          if (pool > 0) parts.push({ label: "供託", amt: pool });
+          if (hb > 0) parts.push({ label: `${r.honba}本場`, amt: hb });
         } else if (r.tsumo) {
-          if (r.winner === r.dealer) delta -= res.each + Math.floor(hb / 3);
-          else if (pi === r.dealer) delta -= res.fromParent + Math.floor(hb / 3);
-          else delta -= res.fromChild + Math.floor(hb / 3);
-          desc = `${players[r.winner]}のツモ`;
-          if (riichiNote) desc += `／${riichiNote}`;
+          let pay;
+          if (r.winner === r.dealer) pay = res.each;
+          else if (pi === r.dealer) pay = res.fromParent;
+          else pay = res.fromChild;
+          const hbShare = Math.floor(hb / 3);
+          delta -= pay + hbShare;
+          parts.push({ label: `${players[r.winner]}のツモ`, amt: -pay });
+          if (paidRiichi) parts.push({ label: "リーチ", amt: -1000 });
+          if (hbShare > 0) parts.push({ label: `${r.honba}本場`, amt: -hbShare });
         } else if (r.loser === pi) {
           delta -= res.total + hb;
-          desc = `${players[r.winner]}へ放銃`;
-          if (riichiNote) desc += `／${riichiNote}`;
+          parts.push({ label: `${players[r.winner]}へ放銃`, amt: -res.total });
+          if (paidRiichi) parts.push({ label: "リーチ", amt: -1000 });
+          if (hb > 0) parts.push({ label: `${r.honba}本場`, amt: -hb });
         } else {
-          desc = riichiNote || "—";
+          if (paidRiichi) parts.push({ label: "リーチ", amt: -1000 });
+          else parts.push({ label: "—", amt: null });
         }
       }
+      const desc = parts.map(x => x.amt === null ? x.label
+        : `${x.label}(${x.amt > 0 ? "+" : ""}${x.amt.toLocaleString()})`).join("　");
       running = before + delta;
       log.push({
+        parts,
         label: `${r.wind}${r.dealer + 1}局${r.honba > 0 ? ` ${r.honba}本場` : ""}`,
         desc, delta, total: running,
       });
@@ -3870,8 +3879,20 @@ input, select { padding: 10px 14px; }
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: t.tx }}>{row.label}</div>
-                      {row.desc && row.desc !== "—" && (
-                        <div style={{ fontSize: 10, color: t.dm, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.desc}</div>
+                      {row.parts && row.parts.length > 0 && !(row.parts.length === 1 && row.parts[0].label === "—") && (
+                        <div style={{ fontSize: 11, marginTop: 3, display: "flex", flexWrap: "wrap", gap: "2px 10px" }}>
+                          {row.parts.map((pt, k) => (
+                            <span key={k} style={{ color: t.dm, whiteSpace: "nowrap" }}>
+                              {pt.label}
+                              {pt.amt !== null && (
+                                <span style={{
+                                  fontWeight: 700, fontVariantNumeric: "tabular-nums",
+                                  color: pt.amt < 0 ? t.rd : pt.amt > 0 ? t.gn : t.dm,
+                                }}>({pt.amt > 0 ? "+" : ""}{pt.amt.toLocaleString()})</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
                     <div style={{ textAlign: "right", marginLeft: 10 }}>
@@ -7023,9 +7044,14 @@ input, select { padding: 10px 14px; }
                 <span style={{ fontSize: 18, fontWeight: 900, color: rank === 0 ? t.gd : rank === 1 ? t.tx : t.dm, width: 24 }}>{rank + 1}</span>
                 <span style={{ fontSize: 15, fontWeight: 600 }}>{s.name}</span>
               </div>
-              <span style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: s.finalPt > 0 ? t.gn : s.finalPt < 0 ? t.rd : t.tx }}>
-                {s.finalPt > 0 ? "+" : ""}{s.finalPt.toLocaleString()}
-              </span>
+              <div style={{ textAlign: "right" }}>
+                <span style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: s.finalPt > 0 ? t.gn : s.finalPt < 0 ? t.rd : t.tx }}>
+                  {s.finalPt > 0 ? "+" : ""}{s.finalPt.toLocaleString()}
+                </span>
+                <div style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: s.rawScore < 0 ? t.rd : t.dm }}>
+                  素点 {s.rawScore.toLocaleString()}
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -7352,8 +7378,8 @@ input, select { padding: 10px 14px; }
                       <span key={si} style={{
                         fontSize: 12, padding: "3px 8px", borderRadius: 6,
                         background: si === 0 ? t.gdS : t.sf,
-                        color: si === 0 ? t.gd : t.tx,
-                        fontWeight: si === 0 ? 700 : 400,
+                        color: s.score < 0 ? t.rd : si === 0 ? t.gd : t.tx,
+                        fontWeight: si === 0 || s.score < 0 ? 700 : 400,
                         border: `1px solid ${si === 0 ? t.gd + "33" : t.bd}`,
                       }}>
                         {si === 0 && "🏆 "}{s.name} {s.score.toLocaleString()}
