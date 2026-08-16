@@ -3983,7 +3983,26 @@ input, select { padding: 10px 14px; }
             ノーテン罰符は場で3,000点、本場は1本につき300点です
           </div>
 
-          <button style={{ ...actionBtn(), marginTop: 14 }} onClick={() => setShowRuleCheck(false)}>閉じる</button>
+          <button style={{ ...actionBtn("p"), marginTop: 16 }} onClick={() => setShowRuleCheck(false)}>閉じる</button>
+
+          {/* 途中終了 */}
+          <div style={{ marginTop: 6, paddingTop: 14, borderTop: `1px solid ${t.bd}` }}>
+            <button
+              onClick={() => {
+                if (!window.confirm(
+                  `${roundWind}${dealerIdx + 1}局の時点で対局を終了します。\nここまでの点数で結果を確認できます。よろしいですか？`
+                )) return;
+                setShowRuleCheck(false);
+                setTmWinStep(null); setTmDrawMode(false);
+                setRonPick([]); setRonLoserPick(null); setMultiRon(null);
+                setGameFinished(true);
+              }}
+              style={{ ...actionBtn(), marginBottom: 0, color: t.rd, border: `1px solid ${t.rd}55` }}
+            >⏹ この対局を途中で終了する</button>
+            <div style={{ fontSize: 10, color: t.dm, marginTop: 7, lineHeight: 1.7, textAlign: "center" }}>
+              オーラスを待たずに終わります。結果画面で内容を確認してから記録できます
+            </div>
+          </div>
         </div>
       </div>
     );
