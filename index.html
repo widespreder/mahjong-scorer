@@ -6121,6 +6121,13 @@ input, select { padding: 10px 14px; }
     const diceSum = diceVals[0] + diceVals[1];
     const wallTargetIdx = diceSettled ? (dealerIdx + (diceSum - 1)) % 4 : -1;
 
+    // 名前の長さに合わせて文字サイズを自動調整（長い名前でも枠に収める）
+    const nameFont = (name, base) => {
+      const n = (name || "").length;
+      const scale = n <= 4 ? 1 : n <= 6 ? 0.88 : n <= 8 ? 0.76 : n <= 11 ? 0.66 : 0.58;
+      return `${(base * scale).toFixed(2)}cqmin`;
+    };
+
     const panelInner = (i) => {
       const isDealer = i === dealerIdx;
       const seatWind = WINDS[(i - dealerIdx + 4) % 4];
@@ -6159,10 +6166,10 @@ input, select { padding: 10px 14px; }
                 border: `1px solid ${isDealer ? t.gd : t.bd}`,
                 borderRadius: "1.6cqmin", padding: "1.2cqmin 2.2cqmin",
               }}>{seatWind}</div>
-              <div style={{ fontSize: "3.4cqmin", fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%" }}>
+              <div style={{ fontSize: nameFont(players[i], 3.9), fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%", lineHeight: 1.35, flexShrink: 0 }}>
                 {players[i]}
               </div>
-              <div style={{ fontSize: "3.8cqmin", fontWeight: 900, color: lockR ? t.gn : drawTenpai[i] ? t.gn : t.dm, whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: "3.8cqmin", fontWeight: 900, color: lockR ? t.gn : drawTenpai[i] ? t.gn : t.dm, whiteSpace: "nowrap", lineHeight: 1.25, flexShrink: 0 }}>
                 {lockR ? "✓ テンパイ" : drawTenpai[i] ? "✓ テンパイ" : "ノーテン"}
               </div>
               {lockR && <div style={{ fontSize: "2.4cqmin", color: t.rd, fontWeight: 700, whiteSpace: "nowrap" }}>🔴 リーチ済み</div>}
@@ -6192,10 +6199,10 @@ input, select { padding: 10px 14px; }
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
                     borderRadius: "1.6cqmin", padding: "1.1cqmin 2.2cqmin",
                   }}>{seatWind}</div>
-                  <div style={{ fontSize: "4.2cqmin", fontWeight: 900, color: picked ? t.gd : t.ac, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                  <div style={{ fontSize: nameFont(players[i], 4.6), fontWeight: 900, color: picked ? t.gd : t.ac, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%", lineHeight: 1.35, flexShrink: 0 }}>
                     {players[i]}
                   </div>
-                  <div style={{ fontSize: "2.7cqmin", color: picked ? t.gd : t.dm, whiteSpace: "nowrap" }}>
+                  <div style={{ fontSize: "2.7cqmin", color: picked ? t.gd : t.dm, whiteSpace: "nowrap", lineHeight: 1.3, flexShrink: 0 }}>
                     {picked ? "✓ アガリ" : "タップで選択"}
                   </div>
                 </button>
@@ -6210,11 +6217,11 @@ input, select { padding: 10px 14px; }
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.8cqmin",
                 padding: "2cqmin", boxSizing: "border-box", overflow: "hidden",
               }}>
-                <div style={{ fontSize: "5cqmin", lineHeight: 1 }}>🏆</div>
-                <div style={{ fontSize: "4cqmin", fontWeight: 900, color: t.gd, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                <div style={{ fontSize: "5cqmin", lineHeight: 1, flexShrink: 0 }}>🏆</div>
+                <div style={{ fontSize: nameFont(players[i], 4.4), fontWeight: 900, color: t.gd, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%", lineHeight: 1.35, flexShrink: 0 }}>
                   {players[i]}
                 </div>
-                <div style={{ fontSize: "2.7cqmin", color: t.dm }}>あがった人</div>
+                <div style={{ fontSize: "2.7cqmin", color: t.dm, lineHeight: 1.3, flexShrink: 0, whiteSpace: "nowrap" }}>あがった人</div>
               </div>
             ) : (
               /* 放銃者候補 */
@@ -6225,11 +6232,11 @@ input, select { padding: 10px 14px; }
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.8cqmin",
                 overflow: "hidden",
               }}>
-                <div style={{ fontSize: "4.6cqmin", fontWeight: 900, color: t.rd }}>ロン</div>
-                <div style={{ fontSize: "3.6cqmin", fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%" }}>
+                <div style={{ fontSize: "4.6cqmin", fontWeight: 900, color: t.rd, lineHeight: 1.2, flexShrink: 0 }}>ロン</div>
+                <div style={{ fontSize: nameFont(players[i], 4.1), fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "95%", lineHeight: 1.35, flexShrink: 0 }}>
                   {players[i]}
                 </div>
-                <div style={{ fontSize: "2.7cqmin", color: ronLoserPick === i ? t.rd : t.dm, fontWeight: ronLoserPick === i ? 800 : 400 }}>
+                <div style={{ fontSize: "2.7cqmin", color: ronLoserPick === i ? t.rd : t.dm, fontWeight: ronLoserPick === i ? 800 : 400, lineHeight: 1.3, flexShrink: 0, whiteSpace: "nowrap" }}>
                   {ronLoserPick === i ? "✓ 選択中" : "から出アガリ"}
                 </div>
               </button>
@@ -6252,7 +6259,13 @@ input, select { padding: 10px 14px; }
           ) : (
             <>
               <div {...longPressHandlers(i)} style={{ ...longPressHandlers(i).style, cursor: "pointer", padding: "0 2px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5cqmin" }}>
+                {/* 名前は横幅いっぱいを使う（長い名前でも切れないように） */}
+                <div style={{
+                  fontSize: nameFont(players[i], 4), fontWeight: 700, color: t.tx,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  lineHeight: 1.3, textAlign: "center", width: "100%", flexShrink: 0,
+                }}>{players[i]}</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "2cqmin", marginTop: "0.4cqmin" }}>
                   <span style={{
                     fontSize: "3.9cqmin", fontWeight: 900, lineHeight: 1,
                     color: isDealer ? "#1a1a1a" : t.tx,
@@ -6260,14 +6273,11 @@ input, select { padding: 10px 14px; }
                     border: `1px solid ${isDealer ? t.gd : t.bd}`,
                     borderRadius: "1.6cqmin", padding: "1.2cqmin 2cqmin", flexShrink: 0,
                   }}>{seatWind}</span>
-                  <span style={{ fontSize: "3.3cqmin", fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1, textAlign: "left" }}>
-                    {players[i]}
-                  </span>
+                  <span style={{
+                    fontSize: "5.3cqmin", fontWeight: 900, lineHeight: 1.2, flexShrink: 0,
+                    color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
+                  }}>{score.toLocaleString()}</span>
                 </div>
-                <div style={{
-                  fontSize: "5.3cqmin", fontWeight: 900, lineHeight: 1.15, marginTop: 0,
-                  color: score < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums",
-                }}>{score.toLocaleString()}</div>
               </div>
               {/* リーチボタン */}
               <button onClick={(e) => { e.stopPropagation(); toggleDeclaredRiichi(i); }} style={{
