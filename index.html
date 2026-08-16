@@ -413,6 +413,16 @@ function MahjongScorer() {
   // Score correction: which round index is being corrected
   const [correctingIdx, setCorrectingIdx] = useState(null);
 
+  // 流局の修正: その局のテンパイ内容を再入力させる（本場・供託は維持）
+  const openDrawCorrection = (idx) => {
+    const r = rounds[idx];
+    if (!r || !r.draw) return;
+    setCorrectingDrawIdx(idx);
+    setDrawTenpai([...(r.tenpai || [false, false, false, false])]);
+    if (tableMode) { setTmDrawMode(true); setShowDrawWiz(false); }
+    else setShowDrawWiz(true);
+  };
+
   const openCorrectionWizard = (idx) => {
     const r = rounds[idx];
     if (!r || r.draw) return;
@@ -432,6 +442,7 @@ function MahjongScorer() {
   // Draw (ryuukyoku) wizard
   const [showDrawWiz, setShowDrawWiz] = useState(false);
   const [drawTenpai, setDrawTenpai] = useState([false, false, false, false]); // who is tenpai
+  const [correctingDrawIdx, setCorrectingDrawIdx] = useState(null); // 修正中の流局の局番号
   const resetDrawWiz = useCallback(() => { setShowDrawWiz(false); setDrawTenpai([false, false, false, false]); }, []);
   const gParent = gWinner !== null ? gWinner === dealerIdx : false;
   const gLimit = gHan !== null ? getLimitName(gHan) : null;
@@ -599,6 +610,44 @@ function MahjongScorer() {
 
   // Handle ryuukyoku (draw) - called after tenpai selection
   const applyDraw = useCallback(() => {
+    const cfgAll = gameConfig || {};
+
+    // ── 流局の修正モード: テンパイの内容だけ差し替えて全体を再計算 ──
+    if (correctingDrawIdx !== null) {
+      const sp = cfgAll.rules?.startPoints || 30000;
+      const newRounds = [...rounds];
+      // 本場・供託（リーチ棒）はそのまま維持し、テンパイだけ上書きする
+      newRounds[correctingDrawIdx] = { ...newRounds[correctingDrawIdx], tenpai: [...drawTenpai] };
+      let newScores = [sp, sp, sp, sp];
+      newRounds.forEach(r => {
+        if (r.draw) {
+          if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
+          const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
+          const nc = 4 - tc;
+          if (tc > 0 && tc < 4) {
+            const nPay = Math.floor(3000 / nc), tGet = Math.floor(3000 / tc);
+            for (let i = 0; i < 4; i++) { if (r.tenpai[i]) newScores[i] += tGet; else newScores[i] -= nPay; }
+          }
+        } else {
+          const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfgAll.rules?.kiriage);
+          const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
+          const pool2 = (typeof r.pool === "number") ? r.pool : rc * 1000;
+          if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
+          const hb2 = r.honba * 300;
+          if (r.tsumo) {
+            if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.each * 3 + hb2 + pool2; else newScores[i] -= res.each + Math.floor(hb2 / 3); } }
+            else { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.total + hb2 + pool2; else if (i === r.dealer) newScores[i] -= res.fromParent + Math.floor(hb2 / 3); else newScores[i] -= res.fromChild + Math.floor(hb2 / 3); } }
+          } else { newScores[r.winner] += res.total + hb2 + pool2; newScores[r.loser] -= res.total + hb2; }
+        }
+      });
+      setRounds(newRounds);
+      setScores(newScores);
+      setCorrectingDrawIdx(null);
+      resetDrawWiz();
+      setTmDrawMode(false);
+      return;
+    }
+
     const ns = [...scores];
     const cfg = gameConfig || {};
     const tenpaiCount = drawTenpai.filter(Boolean).length;
@@ -653,7 +702,7 @@ function MahjongScorer() {
     }
 
     resetDrawWiz();
-  }, [scores, honba, dealerIdx, roundWind, gameConfig, drawTenpai, resetDrawWiz]);
+  }, [scores, honba, dealerIdx, roundWind, gameConfig, drawTenpai, resetDrawWiz, correctingDrawIdx, rounds, declaredRiichi]);
 
   const startGame = useCallback(() => {
     const sp = rules.startPoints || 25000;
@@ -6088,11 +6137,16 @@ input, select { padding: 10px 14px; }
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
           {tmDrawMode ? (
-            /* 流局: テンパイ/ノーテンをトグル */
-            <button disabled={isRiichi} onClick={() => { if (isRiichi) return; const n = [...drawTenpai]; n[i] = !n[i]; setDrawTenpai(n); }} style={{
-              width: "100%", height: "100%", borderRadius: 10, cursor: isRiichi ? "default" : "pointer", padding: "8px 6px",
-              border: `2px solid ${isRiichi ? t.rd : drawTenpai[i] ? t.gn : t.bd}`,
-              background: isRiichi ? "rgba(220,60,60,0.14)" : drawTenpai[i] ? t.gnS : t.card,
+            /* 流局: テンパイ/ノーテンをトグル。修正中はその局のリーチ者を参照する */
+            (() => {
+            const lockR = correctingDrawIdx !== null
+              ? !!(rounds[correctingDrawIdx]?.riichi || [])[i]
+              : isRiichi;
+            return (
+            <button disabled={lockR} onClick={() => { if (lockR) return; const n = [...drawTenpai]; n[i] = !n[i]; setDrawTenpai(n); }} style={{
+              width: "100%", height: "100%", borderRadius: 10, cursor: lockR ? "default" : "pointer", padding: "8px 6px",
+              border: `2px solid ${lockR ? t.rd : drawTenpai[i] ? t.gn : t.bd}`,
+              background: lockR ? "rgba(220,60,60,0.14)" : drawTenpai[i] ? t.gnS : t.card,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
             }}>
               <div style={{
@@ -6105,11 +6159,13 @@ input, select { padding: 10px 14px; }
               <div style={{ fontSize: 13, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "92%" }}>
                 {players[i]}
               </div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: isRiichi ? t.gn : drawTenpai[i] ? t.gn : t.dm }}>
-                {isRiichi ? "✓ テンパイ" : drawTenpai[i] ? "✓ テンパイ" : "ノーテン"}
+              <div style={{ fontSize: 16, fontWeight: 900, color: lockR ? t.gn : drawTenpai[i] ? t.gn : t.dm }}>
+                {lockR ? "✓ テンパイ" : drawTenpai[i] ? "✓ テンパイ" : "ノーテン"}
               </div>
-              {isRiichi && <div style={{ fontSize: 9, color: t.rd, fontWeight: 700 }}>🔴 リーチ済み</div>}
+              {lockR && <div style={{ fontSize: 9, color: t.rd, fontWeight: 700 }}>🔴 リーチ済み</div>}
             </button>
+            );
+            })()
           ) : tmWinStep === "winner" ? (
             /* 和了者を選ぶ（ダブロン可のときは複数選択） */
             (() => {
@@ -6274,11 +6330,13 @@ input, select { padding: 10px 14px; }
       }}>
         {tmDrawMode ? (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.gn, textAlign: "center", marginBottom: 4 }}>
-              流局 — テンパイの人をタップして「確定」
+            <div style={{ fontSize: 12, fontWeight: 700, color: correctingDrawIdx !== null ? t.gd : t.gn, textAlign: "center", marginBottom: 4 }}>
+              {correctingDrawIdx !== null
+                ? `✏️ ${rounds[correctingDrawIdx]?.wind}${(rounds[correctingDrawIdx]?.dealer ?? 0) + 1}局の修正 — テンパイの人をタップ`
+                : "流局 — テンパイの人をタップして「確定」"}
             </div>
             <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 6 }}>
-              {(() => {
+              {correctingDrawIdx !== null ? "本場と供託はそのまま、テンパイの内容だけ上書きします" : (() => {
                 const rs = (gameConfig || {}).rules || {};
                 const dealerTenpai = drawTenpai[dealerIdx];
                 const stays = rs.agariRenchan ? false : rs.tenpaiRenchan ? dealerTenpai : true;
@@ -6286,7 +6344,9 @@ input, select { padding: 10px 14px; }
                 return `${label}：この内容だと親（${players[dealerIdx]}）は${stays ? "続行（連荘）" : "流れます"}`;
               })()}
             </div>
-            <button style={smallBtn()} onClick={() => { setTmDrawMode(false); setDrawTenpai([false,false,false,false]); }}>キャンセル</button>
+            <button style={smallBtn()} onClick={() => {
+              setTmDrawMode(false); setDrawTenpai([false,false,false,false]); setCorrectingDrawIdx(null);
+            }}>キャンセル</button>
           </>
         ) : tmWinStep ? (
           <>
@@ -6552,8 +6612,8 @@ input, select { padding: 10px 14px; }
                           <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.ac}`, background: t.acS, color: t.ac, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                             onClick={() => { setShowRoundEdit(false); openCorrectionWizard(idx); }}>✏️ この局を修正</button>
                         ) : (
-                          <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                            onClick={() => { deleteRound(idx); setShowRoundEdit(false); }}>🗑 この局を取り消す</button>
+                          <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.ac}`, background: t.acS, color: t.ac, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                            onClick={() => { setShowRoundEdit(false); setEditingRoundIdx(null); openDrawCorrection(idx); }}>✏️ この局を修正</button>
                         )}
                         <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
                           onClick={() => setEditingRoundIdx(null)}>キャンセル</button>
@@ -7024,9 +7084,9 @@ input, select { padding: 10px 14px; }
                       ✏️ この局を修正
                     </button>
                   ) : (
-                    <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.rd}`, background: t.rdS, color: t.rd, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                      onClick={() => deleteRound(idx)}>
-                      🗑 この局を取り消す
+                    <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.ac}`, background: t.acS, color: t.ac, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      onClick={() => { setEditingRoundIdx(null); openDrawCorrection(idx); }}>
+                      ✏️ この局を修正
                     </button>
                   )}
                   <button style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${t.bd}`, background: t.sf, color: t.dm, fontSize: 12, cursor: "pointer" }}
