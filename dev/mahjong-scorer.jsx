@@ -15,8 +15,18 @@ function calcBasePoints(fu, han, kiriage) {
   return Math.min(fu * Math.pow(2, 2 + han), 2000);
 }
 function roundUp100(n) { return Math.ceil(n / 100) * 100; }
-function calcScore(fu, han, isParent, isTsumo, kiriage) {
+function calcScore(fu, han, isParent, isTsumo, kiriage, pc) {
   const base = calcBasePoints(fu, han, kiriage);
+  // ── 三人麻雀（日本プロ麻雀連盟ルール）──
+  // ツモアガリでもロンと同じ点数が動く。親かぶりなしで2者が均等に払う。
+  // 例) 子の満貫ツモ=4,000オール(計8,000) / 親の満貫ツモ=6,000オール(計12,000)
+  if (pc === 3) {
+    if (isTsumo) {
+      const e = roundUp100(base * (isParent ? 3 : 2));
+      return { total: e * 2, each: e, fromParent: e, fromChild: e };
+    }
+    return { total: roundUp100(base * (isParent ? 6 : 4)) };
+  }
   if (isParent) {
     if (isTsumo) { const e = roundUp100(base * 2); return { total: e * 3, each: e }; }
     else { return { total: roundUp100(base * 6) }; }
@@ -37,6 +47,26 @@ function getLimitName(han) {
 }
 
 const WINDS = ["東", "南", "西", "北"];
+// 人数に応じた席風（三麻は北家なし）
+const SEATS_OF = (pc) => pc === 3 ? ["東", "南", "西"] : WINDS;
+// 三人麻雀（連盟ルール）の既定値
+const SANMA_DEFAULT_RULES = {
+  startPoints: 40000, returnPoints: 40000,   // 40,000点持ちの40,000点返し
+  honbaUnit: 600,                            // 1本場は600点
+  kazoeYakuman: false,                       // 11翻から三倍満・数え役満なし
+  kiriage: true,                             // 30符4翻は満貫に切り上げ
+  doubleYakuman: true,                       // 役満の重複を認める
+  agariRenchan: true, tenpaiRenchan: false,  // アガリやめあり・テンパイやめなし
+  orasYame: true, multiRon: "atamahane",     // アガリは上家優先（ダブロンなし）
+  kuitan: true, atozuke: true, tobiEnd: true,
+  umaKey: "renmei3", uma: [10, 0, -10],      // 1着+10 / 2着±0 / 3着▲10
+};
+const UMA_PRESETS_3 = [
+  { key: "renmei3", label: "+10 / 0 / -10", note: "連盟三麻ルール", uma: [10, 0, -10] },
+  { key: "5-5", label: "+5 / 0 / -5", note: "小さめ", uma: [5, 0, -5] },
+  { key: "20-20", label: "+20 / 0 / -20", note: "大きめ", uma: [20, 0, -20] },
+  { key: "none3", label: "なし", note: "素点のみ", uma: [0, 0, 0] },
+];
 // 試合形式: tonpu=東風戦(東のみ) / hanchan=半荘戦(東南) / zenchan=全荘戦(東南西北)
 const MATCH_LABEL = (mt) => mt === "tonpu" ? "東風戦" : mt === "zenchan" ? "全荘戦" : "半荘戦";
 const MATCH_LABEL_SHORT = (mt) => mt === "tonpu" ? "東風" : mt === "zenchan" ? "全荘" : "半荘";
@@ -107,7 +137,7 @@ export default function MahjongScorer() {
       const y = ev.touches ? (ev.touches[0] ? ev.touches[0].clientY : m.lastY) : ev.clientY;
       m.lastY = y;
       const off = y - m.startY;
-      m.lastTarget = Math.max(0, Math.min(3, m.from + Math.round(off / m.rowH)));
+      m.lastTarget = Math.max(0, Math.min(PC - 1, m.from + Math.round(off / m.rowH)));
       m.lastOffset = off;
       if (!m.raf) m.raf = requestAnimationFrame(() => {
         m.raf = null;
@@ -151,6 +181,14 @@ export default function MahjongScorer() {
   };
   const seatTimer = React.useRef(null);
   // 席決め: 伏せた4枚の牌を1人ずつ引く
+  const [gameConfig, setGameConfig] = useState(null); // saved config after setup
+  const [gameStarted, setGameStarted] = useState(false);
+  const [playerCount, setPlayerCount] = useState(4);  // 4=四人麻雀 / 3=三人麻雀（セットアップ用）
+  // 対局中はその対局の人数（記録に人数がない古いデータは4人）、セットアップ中は選択中の人数
+  const PC = (gameStarted && gameConfig) ? (gameConfig.playerCount || 4) : playerCount;
+  const SEAT_WINDS = SEATS_OF(PC);
+  const HU = () => (gameConfig?.rules?.honbaUnit) || 300;   // 1本場の点数
+  const isSanma = PC === 3;
   const [seatTiles, setSeatTiles] = useState([]);   // [{wind, by}] by=引いた人のindex(元の並び順)
   const [seatTurn, setSeatTurn] = useState(0);      // 今引く人（元の並び順のindex）
   const [seatDone, setSeatDone] = useState(false);
@@ -163,9 +201,9 @@ export default function MahjongScorer() {
   const [reviewing, setReviewing] = useState(false);         // 結果画面から修正に戻っている状態
   const [showScoreFix, setShowScoreFix] = useState(false);   // 点数の直接修正
 
-  const WIND_ORDER = ["東", "南", "西", "北"];
+  const WIND_ORDER = SEATS_OF(PC);
   const resetSeatDraw = () => {
-    const winds = [...WIND_ORDER];
+    const winds = [...SEATS_OF(PC)];
     for (let i = winds.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [winds[i], winds[j]] = [winds[j], winds[i]];
@@ -179,11 +217,15 @@ export default function MahjongScorer() {
     const next = seatTiles.map((s, i) => i === pos ? { ...s, by: seatTurn } : s);
     setSeatTiles(next);
     try { if (navigator.vibrate) navigator.vibrate(10); } catch {}
-    if (seatTurn + 1 >= 4) {
-      // 全員引き終わり → 東南西北の順にプレイヤーを並べ替える
+    if (seatTurn + 1 >= PC) {
+      // 全員引き終わり → 席順にプレイヤーを並べ替える
       const byWind = {};
       next.forEach(s => { byWind[s.wind] = s.by; });
-      setPlayers(prev => WIND_ORDER.map(w => prev[byWind[w]]));
+      setPlayers(prev => {
+        const seated = WIND_ORDER.map(w => prev[byWind[w]]);
+        // 使っていない席（三麻の北）の名前はそのまま後ろに残す
+        return seated.concat(prev.slice(PC));
+      });
       setSeatDone(true);
     } else {
       setSeatTurn(seatTurn + 1);
@@ -235,8 +277,9 @@ export default function MahjongScorer() {
     const ranked = scores4
       .map((s, i) => ({ i, s, seat: seatOrder ? seatOrder[i] : i }))
       .sort((a, b) => (b.s - a.s) || (a.seat - b.seat));
-    const okaPool = (returnPt - startPt) * 4;
-    const out = new Array(4);
+    const pcN = scores4.length;
+    const okaPool = (returnPt - startPt) * pcN;
+    const out = new Array(pcN);
     ranked.forEach((r, rank) => {
       const raw = r.s - returnPt + (rank === 0 ? okaPool : 0);
       out[r.i] = { rank: rank + 1, pt: goshaRokunyu(raw / 1000) + uma[rank] };
@@ -314,6 +357,8 @@ export default function MahjongScorer() {
     atozuke: true,          // 後付け
     kiriage: false,         // 切り上げ満貫（4翻30符・3翻60符を満貫扱い）
     doubleYakuman: false,   // ダブル役満（役満の複合を2倍・3倍で計算）
+    honbaUnit: 300,         // 1本場の点数（三麻連盟ルールは600）
+    kazoeYakuman: true,     // 数え役満（OFFなら11翻以上は三倍満どまり）
     orasYame: true,         // オーラスで親がトップなら終了（アガリやめ・テンパイやめ）
     multiRon: "atamahane",  // 複数ロン: "atamahane"=頭ハネ / "double"=ダブロンまで / "triple"=トリプルロンまで
     startPoints: 30000,     // 持ち点
@@ -353,7 +398,6 @@ export default function MahjongScorer() {
   };
 
   // ── Game state ──
-  const [gameConfig, setGameConfig] = useState(null); // saved config after setup
   const [scores, setScores] = useState([25000, 25000, 25000, 25000]);
   const [rounds, setRounds] = useState([]);
   const [dealerIdx, setDealerIdx] = useState(0);
@@ -373,7 +417,6 @@ export default function MahjongScorer() {
       return next;
     });
   };
-  const [gameStarted, setGameStarted] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
   const [showExtendConfirm, setShowExtendConfirm] = useState(false); // tonpu → hanchan extension // natural game end
 
@@ -448,7 +491,9 @@ export default function MahjongScorer() {
       total += h;
     });
     if (yakumanCount > 0) return dbl ? 13 * yakumanCount : 13; // 役満はドラ・通常役を加算しない
-    return Math.min(total + pickerDora + pickerUra, 13);        // 数え役満は13翻止め
+    // 数え役満なしのルールでは、通常役の合計は三倍満（12翻）どまり
+    const cap = activePickerRules().kazoeYakuman === false ? 12 : 13;
+    return Math.min(total + pickerDora + pickerUra, cap);
   };
   const resetFuGuide = () => { setFuGuide(null); setFuGuideStep(0); };
   const initFuGuide = () => {
@@ -548,7 +593,7 @@ export default function MahjongScorer() {
   const gLimit = gHan !== null ? getLimitName(gHan) : null;
   const gResult = useMemo(() => {
     if (gHan === null || gTsumo === null) return null;
-    return calcScore(gHan >= 5 ? 30 : (gFu || 30), gHan, gParent, gTsumo, gameConfig?.rules?.kiriage);
+    return calcScore(gHan >= 5 ? 30 : (gFu || 30), gHan, gParent, gTsumo, gameConfig?.rules?.kiriage, PC);
   }, [gHan, gFu, gParent, gTsumo, gameConfig]);
 
   // 和了後の親の進行・終局判定（単独ロン/ツモとダブロンで共用）
@@ -556,9 +601,9 @@ export default function MahjongScorer() {
     const cfg = gameConfig || {};
     const lastWi = WINDS.indexOf(LAST_WIND(cfg.matchType));
     const curWi = WINDS.indexOf(roundWind);
-    const isOrlast = dealerIdx === 3 && curWi >= lastWi;
+    const isOrlast = dealerIdx === PC - 1 && curWi >= lastWi;
     if (!dealerWon) {
-      const next = (dealerIdx + 1) % 4;
+      const next = (dealerIdx + 1) % PC;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
       } else if (next === 0 && curWi >= lastWi) {
@@ -586,17 +631,17 @@ export default function MahjongScorer() {
     setDeclaredRiichi([false, false, false, false]);
     // 箱下（トビ）で終了
     if ((cfg.rules || {}).tobiEnd !== false && ns.some(s => s < 0)) setGameFinished(true);
-  }, [gameConfig, dealerIdx, roundWind]);
+  }, [gameConfig, dealerIdx, roundWind, PC]);
 
   // ダブロン／トリプルロンの確定処理
   const finalizeMultiRon = useCallback((entries, loser) => {
-    const ns = [...scores], hb = honba * 300;
+    const ns = [...scores], hb = honba * HU();
     const riichiThisRound = gRiichi.filter(Boolean).length;
-    for (let i = 0; i < 4; i++) { if (gRiichi[i]) ns[i] -= 1000; }
+    for (let i = 0; i < PC; i++) { if (gRiichi[i]) ns[i] -= 1000; }
     const pool = (riichiBets + riichiThisRound) * 1000;
     // 頭ハネ順（放銃者の下家から反時計回りに近い順）。本場と供託は頭の一人が総取り
     const sorted = [...entries].sort(
-      (a, b) => ((a.winner - loser + 4) % 4) - ((b.winner - loser + 4) % 4)
+      (a, b) => ((a.winner - loser + PC) % PC) - ((b.winner - loser + PC) % PC)
     );
     sorted.forEach((e, k) => {
       ns[e.winner] += e.result.total + (k === 0 ? hb + pool : 0);
@@ -628,28 +673,29 @@ export default function MahjongScorer() {
   // これにより修正でリーチの有無を変えても点棒の総量が狂わない。
   const recalcAllRounds = (roundList, cfg) => {
     const sp = cfg.rules?.startPoints || 30000;
-    const ns = [sp, sp, sp, sp];
+    const ns = Array(PC).fill(sp);
     let carry = 0; // 卓上に残っている供託（本数）
     const fixed = roundList.map(r => {
       const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
-      if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) ns[i] -= 1000; } }
+      if (r.riichi) { for (let i = 0; i < PC; i++) { if (r.riichi[i]) ns[i] -= 1000; } }
       if (r.draw) {
         carry += rc; // 流局のリーチ棒は次の和了へ持ち越し
         const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
-        const nc = 4 - tc;
-        if (tc > 0 && tc < 4) {
+        const nc = PC - tc;
+        if (tc > 0 && tc < PC) {
           const nPay = Math.floor(3000 / nc), tGet = Math.floor(3000 / tc);
-          for (let i = 0; i < 4; i++) { if (r.tenpai[i]) ns[i] += tGet; else ns[i] -= nPay; }
+          for (let i = 0; i < PC; i++) { if (r.tenpai[i]) ns[i] += tGet; else ns[i] -= nPay; }
         }
         return r;
       }
-      const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
+      const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage, PC);
       const pool2 = (carry + rc) * 1000; // ダブロンの2人目以降は riichi 空・carry 0 なので自然に 0 になる
       carry = 0;
-      const hb2 = r.honba * 300;
+      const hb2 = r.honba * ((cfg.rules && cfg.rules.honbaUnit) || 300);
+      const payers = PC - 1;
       if (r.tsumo) {
-        if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) ns[i] += res.each * 3 + hb2 + pool2; else ns[i] -= res.each + Math.floor(hb2 / 3); } }
-        else { for (let i = 0; i < 4; i++) { if (i === r.winner) ns[i] += res.total + hb2 + pool2; else if (i === r.dealer) ns[i] -= res.fromParent + Math.floor(hb2 / 3); else ns[i] -= res.fromChild + Math.floor(hb2 / 3); } }
+        if (isSanma || r.winner === r.dealer) { for (let i = 0; i < PC; i++) { if (i === r.winner) ns[i] += res.each * payers + hb2 + pool2; else ns[i] -= res.each + Math.floor(hb2 / payers); } }
+        else { for (let i = 0; i < PC; i++) { if (i === r.winner) ns[i] += res.total + hb2 + pool2; else if (i === r.dealer) ns[i] -= res.fromParent + Math.floor(hb2 / payers); else ns[i] -= res.fromChild + Math.floor(hb2 / payers); } }
       } else { ns[r.winner] += res.total + hb2 + pool2; ns[r.loser] -= res.total + hb2; }
       return { ...r, pool: pool2, score: res.total }; // 表示用のpool・scoreも導出値で上書き
     });
@@ -671,7 +717,7 @@ export default function MahjongScorer() {
       const newScores = [...recalced.scores];
       // 現在宣言中の実況リーチ分を復元（宣言時に既に-1000されている状態）
       let liveCount = 0;
-      for (let i = 0; i < 4; i++) { if (declaredRiichi[i]) { newScores[i] -= 1000; liveCount++; } }
+      for (let i = 0; i < PC; i++) { if (declaredRiichi[i]) { newScores[i] -= 1000; liveCount++; } }
       setRounds(recalced.rounds);
       setScores(newScores);
       setRiichiBets(recalced.carry + liveCount);
@@ -698,18 +744,20 @@ export default function MahjongScorer() {
     }
 
     // NORMAL MODE
-    const ns = [...scores], hb = honba * 300;
+    const ns = [...scores], hb = honba * HU();
     // Riichi: deduct 1000 from each riichi declarer
     const riichiThisRound = gRiichi.filter(Boolean).length;
-    for (let i = 0; i < 4; i++) { if (gRiichi[i]) ns[i] -= 1000; }
+    for (let i = 0; i < PC; i++) { if (gRiichi[i]) ns[i] -= 1000; }
     // Total riichi pool = previous supply + this round's riichi
     const totalRiichiPool = (riichiBets + riichiThisRound) * 1000;
 
+    const payers = PC - 1;
     if (gTsumo) {
-      if (gParent) {
-        for (let i = 0; i < 4; i++) { if (i === gWinner) ns[i] += gResult.each * 3 + hb + totalRiichiPool; else ns[i] -= gResult.each + Math.floor(hb / 3); }
+      if (isSanma || gParent) {
+        // 三麻は子のツモも均等払い（親かぶりなし）
+        for (let i = 0; i < PC; i++) { if (i === gWinner) ns[i] += gResult.each * payers + hb + totalRiichiPool; else ns[i] -= gResult.each + Math.floor(hb / payers); }
       } else {
-        for (let i = 0; i < 4; i++) { if (i === gWinner) ns[i] += gResult.total + hb + totalRiichiPool; else if (i === dealerIdx) ns[i] -= gResult.fromParent + Math.floor(hb / 3); else ns[i] -= gResult.fromChild + Math.floor(hb / 3); }
+        for (let i = 0; i < PC; i++) { if (i === gWinner) ns[i] += gResult.total + hb + totalRiichiPool; else if (i === dealerIdx) ns[i] -= gResult.fromParent + Math.floor(hb / payers); else ns[i] -= gResult.fromChild + Math.floor(hb / payers); }
       }
     } else {
       if (gLoser === null) return;
@@ -739,7 +787,7 @@ export default function MahjongScorer() {
       const recalced = recalcAllRounds(newRounds, cfgAll);
       const newScores = [...recalced.scores];
       let liveCount = 0;
-      for (let i = 0; i < 4; i++) { if (declaredRiichi[i]) { newScores[i] -= 1000; liveCount++; } }
+      for (let i = 0; i < PC; i++) { if (declaredRiichi[i]) { newScores[i] -= 1000; liveCount++; } }
       setRounds(recalced.rounds);
       setScores(newScores);
       setRiichiBets(recalced.carry + liveCount);
@@ -751,14 +799,14 @@ export default function MahjongScorer() {
 
     const ns = [...scores];
     const cfg = gameConfig || {};
-    const tenpaiCount = drawTenpai.filter(Boolean).length;
-    const notenCount = 4 - tenpaiCount;
+    const tenpaiCount = drawTenpai.slice(0, PC).filter(Boolean).length;
+    const notenCount = PC - tenpaiCount;
 
     // Noten penalty: 3000 points split from noten to tenpai players
-    if (tenpaiCount > 0 && tenpaiCount < 4) {
+    if (tenpaiCount > 0 && tenpaiCount < PC) {
       const notenPay = Math.floor(3000 / notenCount);
       const tenpaiGet = Math.floor(3000 / tenpaiCount);
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < PC; i++) {
         if (drawTenpai[i]) ns[i] += tenpaiGet;
         else ns[i] -= notenPay;
       }
@@ -775,7 +823,7 @@ export default function MahjongScorer() {
     const ruleSet = cfg.rules || {};
     const lastWi2 = WINDS.indexOf(LAST_WIND(cfg.matchType));
     const curWi2 = WINDS.indexOf(roundWind);
-    const isOrlast = dealerIdx === 3 && curWi2 >= lastWi2;
+    const isOrlast = dealerIdx === PC - 1 && curWi2 >= lastWi2;
 
     if (ruleSet.agariRenchan) {
       dealerRotates = true; // always rotate on draw
@@ -785,7 +833,7 @@ export default function MahjongScorer() {
     // else (both off): dealer always stays on draw, just honba increments
 
     if (dealerRotates) {
-      const next = (dealerIdx + 1) % 4;
+      const next = (dealerIdx + 1) % PC;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
       } else if (next === 0 && curWi2 >= lastWi2) {
@@ -814,9 +862,10 @@ export default function MahjongScorer() {
     // 次回「前回と同じ」で始められるよう控えておく
     try { localStorage.setItem("mj_last_rules", JSON.stringify(rules)); } catch {}
     setLastRules({ ...rules });
-    const cfg = { date: gameDate, matchType, players: [...players], rules: { ...rules } };
+    const pcNow = activeLeagueId ? 4 : playerCount;   // リーグ戦は四人麻雀のみ
+    const cfg = { date: gameDate, matchType, playerCount: pcNow, players: players.slice(0, pcNow), rules: { ...rules } };
     setGameConfig(cfg);
-    setScores([sp, sp, sp, sp]);
+    setScores(Array(pcNow).fill(sp));
     setDealerIdx(0);
     setRoundWind("東");
     setHonba(0);
@@ -828,7 +877,7 @@ export default function MahjongScorer() {
     setTableMode(true);   // 卓上モードで開始
     setTmWinStep(null);
     setTmDrawMode(false);
-  }, [gameDate, matchType, players, rules]);
+  }, [gameDate, matchType, players, rules, playerCount, activeLeagueId]);
 
   // ── Theme ──
   const t = { bg: "#0c1117", sf: "#161d27", card: "#1c2533", ac: "#3b82f6", acS: "rgba(59,130,246,0.12)", gn: "#22c55e", gnS: "rgba(34,197,94,0.12)", rd: "#ef4444", rdS: "rgba(239,68,68,0.12)", gd: "#eab308", gdS: "rgba(234,179,8,0.12)", tx: "#e2e8f0", dm: "#64748b", bd: "#2a3444" };
@@ -898,17 +947,18 @@ export default function MahjongScorer() {
   const UmaOkaSettings = ({ rules: r, onChange, compact }) => {
     const sp = r.startPoints ?? 25000;
     const rp = r.returnPoints ?? 30000;
-    const uma = r.uma || [0, 0, 0, 0];
-    const oka = (rp - sp) * 4 / 1000;
+    const pcU = (r.uma && r.uma.length === 3) || isSanma ? 3 : 4;
+    const uma = r.uma || (pcU === 3 ? [0, 0, 0] : [0, 0, 0, 0]);
+    const oka = (rp - sp) * pcU / 1000;
     const [open, setOpen] = React.useState(false);
 
     // 説明用の例（持ち点に合わせて合計が合うようにする）
-    const demo = [15000, 7000, -7000, -15000].map(o => sp + o);
+    const demo = (pcU === 3 ? [15000, 0, -15000] : [15000, 7000, -7000, -15000]).map(o => sp + o);
     const gosha = (v) => { const s = v < 0 ? -1 : 1, a = Math.abs(v), f = Math.floor(a); return s * (a - f > 0.5 ? f + 1 : f); };
     const ranked = demo.map((s, i) => ({ i, s })).sort((a, b) => (b.s - a.s) || (a.i - b.i));
-    const pts = new Array(4);
+    const pts = new Array(pcU);
     ranked.forEach((x, rank) => {
-      pts[x.i] = { rank: rank + 1, pt: gosha((x.s - rp + (rank === 0 ? (rp - sp) * 4 : 0)) / 1000) + uma[rank] };
+      pts[x.i] = { rank: rank + 1, pt: gosha((x.s - rp + (rank === 0 ? (rp - sp) * pcU : 0)) / 1000) + uma[rank] };
     });
 
     return (
@@ -921,7 +971,7 @@ export default function MahjongScorer() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
-          {UMA_PRESETS.map(u => {
+          {(pcU === 3 ? UMA_PRESETS_3 : UMA_PRESETS).map(u => {
             const on = (r.umaKey || "none") === u.key;
             return (
               <button key={u.key} onClick={() => onChange({ umaKey: u.key, uma: u.uma })} style={{
@@ -4199,8 +4249,10 @@ input, select { padding: 10px 14px; }
     if (!diceOpen) return null;
     const sum = diceVals[0] + diceVals[1];
     // 親から反時計回りに 1=親, 2=下家, 3=対面, 4=上家 と数える
-    const targetIdx = (dealerIdx + (sum - 1)) % 4;
-    const relLabel = ["自分（親）の山", "下家（右）の山", "対面の山", "上家（左）の山"][(sum - 1) % 4];
+    const targetIdx = (dealerIdx + (sum - 1)) % PC;
+    const relLabel = (PC === 3
+      ? ["自分（親）の山", "下家（右）の山", "上家（左）の山"]
+      : ["自分（親）の山", "下家（右）の山", "対面の山", "上家（左）の山"])[(sum - 1) % PC];
 
     return (
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, paddingTop: 'calc(env(safe-area-inset-top, 0px) + 20px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' }}
@@ -4272,26 +4324,28 @@ input, select { padding: 10px 14px; }
 
       if (r.draw) {
         if (paidRiichi) delta -= 1000;
-        const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
-        if (tc > 0 && tc < 4) {
-          const nc = 4 - tc;
+        const rpc = cfg.playerCount || 4;
+        const tc = r.tenpai ? r.tenpai.slice(0, rpc).filter(Boolean).length : 0;
+        if (tc > 0 && tc < rpc) {
+          const nc = rpc - tc;
           if (r.tenpai[pi]) { const g2 = Math.floor(3000 / tc); delta += g2; parts.push({ label: "流局・テンパイ", amt: g2 }); }
           else { const p2 = Math.floor(3000 / nc); delta -= p2; parts.push({ label: "流局・ノーテン", amt: -p2 }); }
         } else {
-          parts.push({ label: tc === 4 ? "流局（全員テンパイ）" : "流局（全員ノーテン）", amt: null });
+          parts.push({ label: tc > 0 ? "流局（全員テンパイ）" : "流局（全員ノーテン）", amt: null });
         }
         if (paidRiichi) parts.push({ label: "リーチ", amt: -1000 });
       } else {
-        const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
+        const rpc2 = cfg.playerCount || 4;
+        const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage, rpc2);
         const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
         // 受け取る供託。古い記録には pool が無いのでその場合だけ本数から求める
         const pool = (typeof r.pool === "number") ? r.pool : rc * 1000;
-        const hb = r.honba * 300;
+        const hb = r.honba * ((cfg.rules && cfg.rules.honbaUnit) || 300);
         const handLabel = r.han >= 13 ? getLimitName(r.han) : r.fu ? `${r.han}飜${r.fu}符` : `${r.han}飜`;
         if (paidRiichi) { delta -= 1000; }
 
         if (r.winner === pi) {
-          const gain = (r.tsumo && r.winner === r.dealer) ? res.each * 3 : res.total;
+          const gain = (r.tsumo && (rpc2 === 3 || r.winner === r.dealer)) ? res.each * (rpc2 - 1) : res.total;
           delta += gain + hb + pool;
           parts.push({ label: `${r.tsumo ? "ツモ" : "ロン"}${handLabel}`, amt: gain });
           if (paidRiichi) parts.push({ label: "リーチ", amt: -1000 });
@@ -4299,10 +4353,10 @@ input, select { padding: 10px 14px; }
           if (hb > 0) parts.push({ label: `${r.honba}本場`, amt: hb });
         } else if (r.tsumo) {
           let pay;
-          if (r.winner === r.dealer) pay = res.each;
+          if (rpc2 === 3 || r.winner === r.dealer) pay = res.each;
           else if (pi === r.dealer) pay = res.fromParent;
           else pay = res.fromChild;
-          const hbShare = Math.floor(hb / 3);
+          const hbShare = Math.floor(hb / (rpc2 - 1));
           delta -= pay + hbShare;
           parts.push({ label: `${players[r.winner]}のツモ`, amt: -pay });
           if (paidRiichi) parts.push({ label: "リーチ", amt: -1000 });
@@ -4646,24 +4700,25 @@ input, select { padding: 10px 14px; }
   const deleteRound = useCallback((idx) => {
     const cfg = gameConfig || {};
     const sp = cfg.rules?.startPoints || 30000;
-    let newScores = [sp, sp, sp, sp];
+    let newScores = Array(PC).fill(sp);
     const newRounds = rounds.filter((_, i) => i !== idx);
+    const payers = PC - 1;
     newRounds.forEach(r => {
       if (r.draw) {
-        const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
-        const nc = 4 - tc;
-        if (tc > 0 && tc < 4) {
+        const tc = r.tenpai ? r.tenpai.slice(0, PC).filter(Boolean).length : 0;
+        const nc = PC - tc;
+        if (tc > 0 && tc < PC) {
           const np = Math.floor(3000 / nc), tg = Math.floor(3000 / tc);
-          for (let i = 0; i < 4; i++) { if (r.tenpai[i]) newScores[i] += tg; else newScores[i] -= np; }
+          for (let i = 0; i < PC; i++) { if (r.tenpai[i]) newScores[i] += tg; else newScores[i] -= np; }
         }
       } else {
-        const result = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, gameConfig?.rules?.kiriage);
+        const result = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, gameConfig?.rules?.kiriage, PC);
         const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
-        if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
-        const hb = r.honba * 300;
+        if (r.riichi) { for (let i = 0; i < PC; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
+        const hb = r.honba * HU();
         if (r.tsumo) {
-          if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += result.each * 3 + hb + rc * 1000; else newScores[i] -= result.each + Math.floor(hb / 3); } }
-          else { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += result.total + hb + rc * 1000; else if (i === r.dealer) newScores[i] -= result.fromParent + Math.floor(hb / 3); else newScores[i] -= result.fromChild + Math.floor(hb / 3); } }
+          if (isSanma || r.winner === r.dealer) { for (let i = 0; i < PC; i++) { if (i === r.winner) newScores[i] += result.each * payers + hb + rc * 1000; else newScores[i] -= result.each + Math.floor(hb / payers); } }
+          else { for (let i = 0; i < PC; i++) { if (i === r.winner) newScores[i] += result.total + hb + rc * 1000; else if (i === r.dealer) newScores[i] -= result.fromParent + Math.floor(hb / payers); else newScores[i] -= result.fromChild + Math.floor(hb / payers); } }
         } else { newScores[r.winner] += result.total + hb + rc * 1000; newScores[r.loser] -= result.total + hb; }
       }
     });
@@ -4706,6 +4761,7 @@ input, select { padding: 10px 14px; }
             `${suspendedGame.config.date} ${MATCH_LABEL_SHORT(suspendedGame.config.matchType)} — ${suspendedGame.players.join("・")}`,
             () => {
               setGameConfig(suspendedGame.config);
+              setPlayerCount(suspendedGame.config.playerCount || 4);
               setPlayers(suspendedGame.players);
               setScores(suspendedGame.scores);
               setRounds(suspendedGame.rounds);
@@ -6581,7 +6637,7 @@ input, select { padding: 10px 14px; }
                 席順が決まりました
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
-                {players.map((nm, i) => (
+                {players.slice(0, PC).map((nm, i) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "center", gap: 7,
                     padding: "9px 10px", borderRadius: 9,
@@ -6626,7 +6682,7 @@ input, select { padding: 10px 14px; }
                 marginTop: 10, padding: 12, borderRadius: 12,
                 background: t.sf, border: `1px solid ${t.bd}`,
               }}>
-                {players.map((nm, i) => (
+                {players.slice(0, PC).map((nm, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <span style={{
                       fontSize: 16, fontWeight: 900, lineHeight: 1, flexShrink: 0,
@@ -6856,7 +6912,7 @@ input, select { padding: 10px 14px; }
           {/* グループ */}
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: t.dm, marginBottom: 3 }}>
-              グループ{groups.length > 0 ? "（タップで4人をまとめて選択）" : ""}
+              グループ{groups.length > 0 ? `（タップで${PC}人をまとめて選択）` : ""}
             </div>
             {groups.length === 0 && (
               <div style={{ fontSize: 10, color: t.dm, marginBottom: 7, lineHeight: 1.7 }}>
@@ -6919,21 +6975,44 @@ input, select { padding: 10px 14px; }
             ) : (
               <button
                 onClick={() => setShowGroupSave(true)}
-                disabled={!players.every(p => p.trim())}
+                disabled={!players.slice(0, PC).every(p => p.trim())}
                 style={{
                   width: "100%", padding: "10px 8px", borderRadius: 9, cursor: "pointer",
                   border: `1px dashed ${t.bd}`, background: "transparent", color: t.dm,
-                  fontSize: 12, fontWeight: 700, opacity: players.every(p => p.trim()) ? 1 : 0.4,
-                }}>＋ 今の4人をグループとして保存</button>
+                  fontSize: 12, fontWeight: 700, opacity: players.slice(0, PC).every(p => p.trim()) ? 1 : 0.4,
+                }}>＋ 今の{PC}人をグループとして保存</button>
             )}
           </div>
 
-          {/* 席（東南西北）の並べ替え: 行を長押し→ドラッグ */}
+          {/* 人数（四人麻雀 / 三人麻雀） */}
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>人数</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {[[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => (
+              <button key={n} onClick={() => {
+                if (n === playerCount) return;
+                setPlayerCount(n);
+                setSeatDone(false); setSeatTiles([]); setSeatTurn(0);
+                // 三人麻雀は連盟ルールを初期値にする（4人に戻すと元の既定へ）
+                if (n === 3) setRules(r => ({ ...r, ...SANMA_DEFAULT_RULES }));
+                else setRules(r => ({ ...r, ...FACTORY_RULES, startPoints: 25000, returnPoints: 30000 }));
+              }} style={{
+                flex: 1, padding: "13px 6px", borderRadius: 11, cursor: "pointer",
+                border: `2px solid ${playerCount === n ? t.ac : t.bd}`,
+                background: playerCount === n ? t.acS : "transparent",
+                color: playerCount === n ? t.ac : t.dm,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800 }}>{lb}</div>
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85 }}>{sub}</div>
+              </button>
+            ))}
+          </div>
+
+          {/* 席の並べ替え: 行を長押し→ドラッグ */}
           <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 10, lineHeight: 1.7 }}>
             並べ替えは行を<b style={{ color: t.tx }}>長押し</b>して、そのまま上下にドラッグ
           </div>
 
-          {players.map((p, i) => {
+          {players.slice(0, PC).map((p, i) => {
             const isCustom = playerMode[i]; // true = 直接入力モード
             const ds = dragSeat;
             const isDragging = ds && ds.from === i;
@@ -7157,7 +7236,7 @@ input, select { padding: 10px 14px; }
 
     // サイコロの結果で割る山の持ち主
     const diceSum = diceVals[0] + diceVals[1];
-    const wallTargetIdx = diceSettled ? (dealerIdx + (diceSum - 1)) % 4 : -1;
+    const wallTargetIdx = diceSettled ? (dealerIdx + (diceSum - 1)) % PC : -1;
 
     // 名前の長さに合わせて文字サイズを自動調整（長い名前でも枠に収める）
     const nameFont = (name, base) => {
@@ -7168,7 +7247,7 @@ input, select { padding: 10px 14px; }
 
     const panelInner = (i) => {
       const isDealer = i === dealerIdx;
-      const seatWind = WINDS[(i - dealerIdx + 4) % 4];
+      const seatWind = SEAT_WINDS[(i - dealerIdx + PC) % PC];
       const score = scores[i];
       const isRiichi = declaredRiichi[i];
       const isWallTarget = i === wallTargetIdx;
@@ -7435,7 +7514,7 @@ input, select { padding: 10px 14px; }
             <button aria-label="ルール確認" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
               onClick={() => setShowRuleCheck(flip ? "flip" : true)}>📋</button>
             <button aria-label="席順を回す" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
-              onClick={() => setSeatRot(r => (r + 3) % 4)}>🔄</button>
+              onClick={() => setSeatRot(r => (r + PC - 1) % PC)}>🔄</button>
           </div>
         )}
       </div>
@@ -7484,10 +7563,21 @@ input, select { padding: 10px 14px; }
           background: "linear-gradient(160deg, #16452f, #103526)",
           borderRadius: 24, border: "3px solid #24583f", overflow: "hidden",
         }}>
-          {hSlot((2 + seatRot) % 4, { top: PGAP, left: "50%" }, 180)}
-          {vSlot((1 + seatRot) % 4, "right", -90)}
-          {vSlot((3 + seatRot) % 4, "left", 90)}
-          {hSlot((0 + seatRot) % 4, { bottom: PGAP, left: "50%" }, 0)}
+          {PC === 3 ? (
+            <>
+              {/* 三人麻雀: 上家がいないので 下・右・左 の3席 */}
+              {vSlot((1 + seatRot) % 3, "right", -90)}
+              {vSlot((2 + seatRot) % 3, "left", 90)}
+              {hSlot((0 + seatRot) % 3, { bottom: PGAP, left: "50%" }, 0)}
+            </>
+          ) : (
+            <>
+              {hSlot((2 + seatRot) % 4, { top: PGAP, left: "50%" }, 180)}
+              {vSlot((1 + seatRot) % 4, "right", -90)}
+              {vSlot((3 + seatRot) % 4, "left", 90)}
+              {hSlot((0 + seatRot) % 4, { bottom: PGAP, left: "50%" }, 0)}
+            </>
+          )}
 
           {/* 中央: 局情報 + サイコロ */}
           <div style={{
@@ -7555,7 +7645,7 @@ input, select { padding: 10px 14px; }
                   setTmWinStep(null);
                   setGTsumo(false); setGLoser(i);
                   if (ronPick.length >= 2) {
-                    const order = [...ronPick].sort((x, y) => ((x - i + 4) % 4) - ((y - i + 4) % 4));
+                    const order = [...ronPick].sort((x, y) => ((x - i + PC) % PC) - ((y - i + PC) % PC));
                     setMultiRon({ loser: i, queue: order, done: [] });
                     setGWinner(order[0]);
                   } else {
@@ -7595,8 +7685,8 @@ input, select { padding: 10px 14px; }
             <div>
               {!tmWinStep && !tmDrawMode && (diceRolling || diceSettled) && (() => {
                 // 局・本場と同じ向き（親の方向）に揃える
-                const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
-                const rot = ROT[(dealerIdx - seatRot + 4) % 4] ?? 0;
+                const ROT = PC === 3 ? [0, -90, 90] : [0, -90, 180, 90]; // 手前/右/(向かい)/左
+                const rot = ROT[(dealerIdx - seatRot + PC) % PC] ?? 0;
                 return (
                   <div style={{ position: "relative", width: 72, height: 48, margin: "0 auto" }}>
                     <div style={{
@@ -7622,7 +7712,7 @@ input, select { padding: 10px 14px; }
                 <button onClick={rollDice} aria-label="サイコロを振る" style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   border: "none", background: "transparent", padding: 2, cursor: "pointer",
-                  transform: `rotate(${[0, -90, 180, 90][(dealerIdx - seatRot + 4) % 4] ?? 0}deg)`,
+                  transform: `rotate(${(PC === 3 ? [0, -90, 90] : [0, -90, 180, 90])[(dealerIdx - seatRot + PC) % PC] ?? 0}deg)`,
                   transition: "transform 0.4s cubic-bezier(.3,1.2,.4,1)",
                 }}>
                   <Die value={diceVals[0]} size={24} />
@@ -7633,8 +7723,8 @@ input, select { padding: 10px 14px; }
 
             {/* 局表示: 親の方を向いて配置。サイコロを振っている間は合計だけ見せる */}
             {!tmWinStep && !tmDrawMode && !(diceRolling || diceSettled) && (() => {
-              const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
-              const rot = ROT[(dealerIdx - seatRot + 4) % 4] ?? 0;
+              const ROT = PC === 3 ? [0, -90, 90] : [0, -90, 180, 90]; // 手前/右/(向かい)/左
+              const rot = ROT[(dealerIdx - seatRot + PC) % PC] ?? 0;
               const posBase = (offsetY) => ({
                 position: "absolute", top: "50%", left: "50%",
                 transform: `translate(-50%,-50%) rotate(${rot}deg) translateY(${offsetY}cqmin)`,
@@ -7742,8 +7832,8 @@ input, select { padding: 10px 14px; }
 
       {/* Scores */}
       <div style={card}>
-        {players.map((p, i) => {
-          const sw = WINDS[(i - dealerIdx + 4) % 4];
+        {players.slice(0, PC).map((p, i) => {
+          const sw = SEAT_WINDS[(i - dealerIdx + PC) % PC];
           const isD = i === dealerIdx;
           return (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: 10, marginBottom: 4,
@@ -7803,9 +7893,9 @@ input, select { padding: 10px 14px; }
                 </div>
                 <div style={question}>誰があがった？</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {players.map((p, i) => (
+                  {players.slice(0, PC).map((p, i) => (
                     <button key={i} style={pSelBtn(gWinner === i)} onClick={() => { setGWinner(i); setGStep(2); }}>
-                      <div style={{ fontSize: 11, color: t.dm }}>{WINDS[(i - dealerIdx + 4) % 4]}{i === dealerIdx ? " (親)" : ""}</div>
+                      <div style={{ fontSize: 11, color: t.dm }}>{SEAT_WINDS[(i - dealerIdx + PC) % PC]}{i === dealerIdx ? " (親)" : ""}</div>
                       <div>{p}</div>
                     </button>
                   ))}
@@ -7829,9 +7919,9 @@ input, select { padding: 10px 14px; }
                 <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>STEP 3</div>
                 <div style={question}>誰から？</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                  {players.map((p, i) => i !== gWinner && (
+                  {players.slice(0, PC).map((p, i) => i !== gWinner && (
                     <button key={i} style={pSelBtn(gLoser === i)} onClick={() => { setGLoser(i); setGStep(4); }}>
-                      <div style={{ fontSize: 11, color: t.dm }}>{WINDS[(i - dealerIdx + 4) % 4]}</div>
+                      <div style={{ fontSize: 11, color: t.dm }}>{SEAT_WINDS[(i - dealerIdx + PC) % PC]}</div>
                       <div style={{ fontSize: 13 }}>{p}</div>
                     </button>
                   ))}
@@ -7847,7 +7937,7 @@ input, select { padding: 10px 14px; }
                   {declaredRiichi.some(Boolean) ? "宣言済みの人は自動で反映されます" : "なければそのまま「次へ」"}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-                  {players.map((p, i) => {
+                  {players.slice(0, PC).map((p, i) => {
                     const already = declaredRiichi[i];
                     const isR = already || gRiichi[i];
                     return (
@@ -7857,7 +7947,7 @@ input, select { padding: 10px 14px; }
                         fontSize: 14, fontWeight: 700, cursor: already ? "default" : "pointer", textAlign: "center",
                         opacity: already ? 0.85 : 1,
                       }} onClick={() => { if (already) return; const n = [...gRiichi]; n[i] = !n[i]; setGRiichi(n); }}>
-                        <div style={{ fontSize: 11, color: isR ? t.gd : t.dm, marginBottom: 2 }}>{WINDS[(i - dealerIdx + 4) % 4]}</div>
+                        <div style={{ fontSize: 11, color: isR ? t.gd : t.dm, marginBottom: 2 }}>{SEAT_WINDS[(i - dealerIdx + PC) % PC]}</div>
                         <div>{p}</div>
                         <div style={{ fontSize: 10, marginTop: 4 }}>
                           {already ? "🔒 宣言済み" : gRiichi[i] ? "🔴 リーチ" : "—"}
@@ -8109,10 +8199,10 @@ input, select { padding: 10px 14px; }
               </div>
               <div style={question}>テンパイしている人は？</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-                {players.map((p, i) => {
+                {players.slice(0, PC).map((p, i) => {
                   const isTenpai = drawTenpai[i];
                   const lockedRiichi = declaredRiichi[i];
-                  const sw = WINDS[(i - dealerIdx + 4) % 4];
+                  const sw = SEAT_WINDS[(i - dealerIdx + PC) % PC];
                   return (
                     <button
                       key={i}
@@ -8149,9 +8239,9 @@ input, select { padding: 10px 14px; }
 
               {/* Preview payment */}
               {(() => {
-                const tc = drawTenpai.filter(Boolean).length;
-                const nc = 4 - tc;
-                if (tc === 0 || tc === 4) return (
+                const tc = drawTenpai.slice(0, PC).filter(Boolean).length;
+                const nc = PC - tc;
+                if (tc === 0 || tc === PC) return (
                   <div style={{ textAlign: "center", fontSize: 13, color: t.dm, marginBottom: 12 }}>
                     {tc === 0 ? "全員ノーテン — 罰符なし" : "全員テンパイ — 罰符なし"}
                   </div>
@@ -8161,7 +8251,7 @@ input, select { padding: 10px 14px; }
                 return (
                   <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 6 }}>ノーテン罰符</div>
-                    {players.map((p, i) => {
+                    {players.slice(0, PC).map((p, i) => {
                       const diff = drawTenpai[i] ? tenpaiGet : -notenPay;
                       return (
                         <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 13 }}>
@@ -8265,7 +8355,7 @@ input, select { padding: 10px 14px; }
               </div>
               {/* Current scores preview */}
               <div style={{ background: t.sf, borderRadius: 10, padding: 12, marginBottom: 16 }}>
-                {players.map((p, i) => (
+                {players.slice(0, PC).map((p, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13 }}>
                     <span>{p}</span>
                     <span style={{ fontWeight: 700, color: scores[i] < 0 ? t.rd : t.tx }}>{scores[i].toLocaleString()}</span>
@@ -8314,8 +8404,8 @@ input, select { padding: 10px 14px; }
     const returnPt = ruleSet.returnPoints || 30000;
     const startPt = ruleSet.startPoints || 25000;
     // Oka: (returnPt - startPt) * 4 goes to 1st place, everyone's score is relative to returnPt
-    const okaPool = (returnPt - startPt) * 4;
-    const adjusted = players.map((p, i) => {
+    const okaPool = (returnPt - startPt) * PC;
+    const adjusted = players.slice(0, PC).map((p, i) => {
       const diff = scores[i] - returnPt;
       return { name: p, rawScore: scores[i], diff, idx: i };
     });
@@ -8397,7 +8487,7 @@ input, select { padding: 10px 14px; }
           const uma = ruleSet.uma;
           const gosha = (v) => { const s = v < 0 ? -1 : 1, a = Math.abs(v), f = Math.floor(a); return s * (a - f > 0.5 ? f + 1 : f); };
           const rk = scores.map((s, i) => ({ i, s })).sort((a3, b3) => (b3.s - a3.s) || (a3.i - b3.i));
-          const res = new Array(4);
+          const res = new Array(PC);
           rk.forEach((x, rank) => {
             res[x.i] = { rank: rank + 1, pt: gosha((x.s - returnPt + (rank === 0 ? okaPool : 0)) / 1000) + uma[rank] };
           });
@@ -8462,13 +8552,13 @@ input, select { padding: 10px 14px; }
         {(() => {
           const lg = leagues.find(l => l.id === activeLeagueId);
           if (!lg) return null;
-          const res = calcGamePts(scores, [0, 1, 2, 3], lg);
+          const res = calcGamePts(scores, scores.map((_, i) => i), lg);
           return (
             <div style={{ ...card, border: `1px solid ${t.gd}55`, background: t.gdS }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: t.gd, marginBottom: 8, letterSpacing: "0.05em" }}>
                 🏆 {lg.name} の成績
               </div>
-              {players.map((nm, i) => (
+              {players.slice(0, PC).map((nm, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
                   <span style={{ width: 24, fontSize: 12, fontWeight: 800, color: res[i].rank === 1 ? t.gd : t.dm }}>
                     {res[i].rank}位
@@ -8514,7 +8604,7 @@ input, select { padding: 10px 14px; }
           // リーグ戦なら成績表にも記録する
           const lg = leagues.find(l => l.id === activeLeagueId);
           if (lg && rounds.length > 0) {
-            const res = calcGamePts(scores, [0, 1, 2, 3], lg);
+            const res = calcGamePts(scores, scores.map((_, i) => i), lg);
             const entry = {
               date: gameConfig?.date || "",
               matchType: gameConfig?.matchType || "hanchan",
@@ -8560,7 +8650,7 @@ input, select { padding: 10px 14px; }
               <div style={{ fontSize: 11, color: t.dm, marginBottom: 10, lineHeight: 1.7 }}>
                 チョンボや点棒の受け渡しミスなど、局の記録では直せない分を調整します
               </div>
-              {players.map((nm, i) => (
+              {players.slice(0, PC).map((nm, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span style={{
                     flex: 1, fontSize: 13, fontWeight: 700, color: t.tx,
