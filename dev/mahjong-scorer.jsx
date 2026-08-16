@@ -37,6 +37,10 @@ function getLimitName(han) {
 }
 
 const WINDS = ["東", "南", "西", "北"];
+// 試合形式: tonpu=東風戦(東のみ) / hanchan=半荘戦(東南) / zenchan=全荘戦(東南西北)
+const MATCH_LABEL = (mt) => mt === "tonpu" ? "東風戦" : mt === "zenchan" ? "全荘戦" : "半荘戦";
+const MATCH_LABEL_SHORT = (mt) => mt === "tonpu" ? "東風" : mt === "zenchan" ? "全荘" : "半荘";
+const LAST_WIND = (mt) => mt === "tonpu" ? "東" : mt === "zenchan" ? "北" : "南";
 const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 // 翻数とアガリ方から、実戦でありえない符を除く
 // 20符 = 平和ツモのみ（平和1翻＋ツモ1翻で最低2翻）
@@ -546,18 +550,18 @@ export default function MahjongScorer() {
   // 和了後の親の進行・終局判定（単独ロン/ツモとダブロンで共用）
   const advanceAfterWin = useCallback((dealerWon, ns) => {
     const cfg = gameConfig || {};
-    const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
-                     (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+    const lastW = LAST_WIND(cfg.matchType);
+    const isOrlast = dealerIdx === 3 && roundWind === lastW;
     if (!dealerWon) {
       const next = (dealerIdx + 1) % 4;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
-      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+      } else if (next === 0 && roundWind === lastW) {
         setGameFinished(true);
       } else {
         setDealerIdx(next);
         setHonba(0);
-        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+        if (next === 0) { const wi = WINDS.indexOf(roundWind); if (wi >= 0 && wi < 3) setRoundWind(WINDS[wi + 1]); }
       }
     } else {
       if (isOrlast) {
@@ -764,8 +768,8 @@ export default function MahjongScorer() {
     const dealerTenpai = drawTenpai[dealerIdx];
     let dealerRotates = false;
     const ruleSet = cfg.rules || {};
-    const isOrlast = (cfg.matchType === "tonpu" && dealerIdx === 3) ||
-                     (cfg.matchType === "hanchan" && roundWind === "南" && dealerIdx === 3);
+    const lastW = LAST_WIND(cfg.matchType);
+    const isOrlast = dealerIdx === 3 && roundWind === lastW;
 
     if (ruleSet.agariRenchan) {
       dealerRotates = true; // always rotate on draw
@@ -778,11 +782,11 @@ export default function MahjongScorer() {
       const next = (dealerIdx + 1) % 4;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
-      } else if (cfg.matchType === "hanchan" && roundWind === "南" && next === 0) {
+      } else if (next === 0 && roundWind === lastW) {
         setGameFinished(true);
       } else {
         setDealerIdx(next);
-        if (cfg.matchType === "hanchan" && next === 0 && roundWind === "東") setRoundWind("南");
+        if (next === 0) { const wi = WINDS.indexOf(roundWind); if (wi >= 0 && wi < 3) setRoundWind(WINDS[wi + 1]); }
       }
     } else if (isOrlast) {
       const parentScore = ns[dealerIdx];
@@ -4432,7 +4436,7 @@ input, select { padding: 10px 14px; }
               onClick={() => setShowRuleCheck(false)}>✕</button>
           </div>
 
-          {row("形式", gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦")}
+          {row("形式", MATCH_LABEL(gameConfig?.matchType))}
           {row("持ち点 / 返し点",
             `${(rs.startPoints ?? 25000).toLocaleString()} / ${(rs.returnPoints ?? 30000).toLocaleString()}`,
             `オカ ${(((rs.returnPoints ?? 0) - (rs.startPoints ?? 0)) * 4 / 1000)}pt がトップへ`)}
@@ -4615,7 +4619,7 @@ input, select { padding: 10px 14px; }
           </div>
 
           {suspendedGame && menuItem("⏸", "保留中の対局を再開",
-            `${suspendedGame.config.date} ${suspendedGame.config.matchType === "tonpu" ? "東風" : "半荘"} — ${suspendedGame.players.join("・")}`,
+            `${suspendedGame.config.date} ${MATCH_LABEL_SHORT(suspendedGame.config.matchType)} — ${suspendedGame.players.join("・")}`,
             () => {
               setGameConfig(suspendedGame.config);
               setPlayers(suspendedGame.players);
@@ -5585,7 +5589,7 @@ input, select { padding: 10px 14px; }
               <div key={gi} style={{ ...card, padding: 13, marginBottom: 9 }}>
                 <div style={{ fontSize: 11, color: t.dm, marginBottom: 7 }}>
                   第{lg.games.length - gi}戦 ・ {g.date}
-                  {g.matchType && ` ・ ${g.matchType === "tonpu" ? "東風戦" : "半荘戦"}`}
+                  {g.matchType && ` ・ ${MATCH_LABEL(g.matchType)}`}
                 </div>
                 {g.players.map((nm, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
@@ -5700,7 +5704,7 @@ input, select { padding: 10px 14px; }
         {/* 形式はこの対局ごとに決める */}
         <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>今回の形式</div>
         <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-          {[["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東場＋南場"]].map(([k, lb, sub]) => (
+          {[["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東場＋南場"], ["zenchan", "全荘戦", "東南西北場"]].map(([k, lb, sub]) => (
             <button key={k} onClick={() => setLgMatchType(k)} style={{
               flex: 1, padding: "15px 8px", borderRadius: 12, cursor: "pointer",
               border: `2px solid ${lgMatchType === k ? t.ac : t.bd}`,
@@ -6565,7 +6569,7 @@ input, select { padding: 10px 14px; }
           <Back onClick={() => setSetupStep(1)} />
           <Dots total={4} cur={2} />
           <div style={question}>試合形式は？</div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
             <button
               style={bigBtn(matchType === "tonpu" ? t.ac : t.dm, matchType === "tonpu" ? t.acS : "transparent")}
               onClick={() => { setMatchType("tonpu"); setSetupStep(3); }}
@@ -6579,6 +6583,13 @@ input, select { padding: 10px 14px; }
             >
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>半荘戦</div>
               <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場＋南場</div>
+            </button>
+            <button
+              style={bigBtn(matchType === "zenchan" ? t.ac : t.dm, matchType === "zenchan" ? t.acS : "transparent")}
+              onClick={() => { setMatchType("zenchan"); setSetupStep(3); }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>全荘戦</div>
+              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東南西北場</div>
             </button>
           </div>
         </div>
@@ -6700,7 +6711,7 @@ input, select { padding: 10px 14px; }
           <div style={{ marginBottom: 8, marginTop: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: t.dm, marginBottom: 4, letterSpacing: "0.05em" }}>オーラス（最終局）</div>
             <div style={{ fontSize: 10, color: t.dm, marginBottom: 8 }}>
-              {matchType === "tonpu" ? "東4局" : "南4局"}で親がアガった、または流局で親が続く場合の扱い
+              {matchType === "tonpu" ? "東4局" : matchType === "zenchan" ? "北4局" : "南4局"}で親がアガった、または流局で親が続く場合の扱い
             </div>
             {toggleRow("親がトップなら終了", rules.orasYame !== false, () => setRules(r => ({ ...r, orasYame: r.orasYame === false })))}
             <div style={{ fontSize: 10, color: t.dm, lineHeight: 1.7, marginTop: 6 }}>
@@ -6951,7 +6962,7 @@ input, select { padding: 10px 14px; }
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
                 <span style={{ color: t.dm }}>形式</span>
-                <span style={{ fontWeight: 600 }}>{matchType === "tonpu" ? "東風戦" : "半荘戦"}</span>
+                <span style={{ fontWeight: 600 }}>{MATCH_LABEL(matchType)}</span>
               </div>
               <div style={{ borderBottom: `1px solid ${t.bd}33`, padding: "6px 0 10px" }}>
                 <span style={{ color: t.dm }}>プレイヤー</span>
@@ -7633,7 +7644,7 @@ input, select { padding: 10px 14px; }
     <div style={body}>
       {/* Config summary */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: 12, color: t.dm }}>
-        <span>{gameConfig?.date} / {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"}</span>
+        <span>{gameConfig?.date} / {MATCH_LABEL(gameConfig?.matchType)}</span>
       </div>
 
       {/* Round info */}
@@ -8239,7 +8250,7 @@ input, select { padding: 10px 14px; }
           <div style={{ fontSize: 48, marginBottom: 8 }}>🏆</div>
           <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>対局終了</h2>
           <p style={{ fontSize: 13, color: t.dm, margin: 0 }}>
-            {gameConfig?.date} / {gameConfig?.matchType === "tonpu" ? "東風戦" : "半荘戦"} / {rounds.length}局
+            {gameConfig?.date} / {MATCH_LABEL(gameConfig?.matchType)} / {rounds.length}局
           </p>
         </div>
 
@@ -8651,7 +8662,7 @@ input, select { padding: 10px 14px; }
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                     <span style={{ fontSize: 14, fontWeight: 700 }}>{g.date}</span>
                     <span style={{ fontSize: 12, color: t.dm, padding: "2px 10px", background: t.sf, borderRadius: 6 }}>
-                      {g.matchType === "tonpu" ? "東風" : "半荘"}
+                      {MATCH_LABEL_SHORT(g.matchType)}
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -8680,7 +8691,7 @@ input, select { padding: 10px 14px; }
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>{historyDetail.date}</span>
               <span style={{ fontSize: 12, color: t.dm, padding: "2px 10px", background: t.sf, borderRadius: 6 }}>
-                {historyDetail.matchType === "tonpu" ? "東風戦" : "半荘戦"}
+                {MATCH_LABEL(historyDetail.matchType)}
               </span>
             </div>
 
