@@ -13880,22 +13880,13 @@ input, select { padding: 10px 14px; }
       style: {
         marginBottom: 10,
         position: "relative",
-        transform: isDragging ? `translateY(${ds.offset}px) scale(1.02)` : shiftY ? `translateY(${shiftY}px)` : "none",
-        transition: isDragging ? "none" : "transform 0.15s ease",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
         zIndex: isDragging ? 10 : 1,
         WebkitUserSelect: "none",
         userSelect: "none",
         WebkitTouchCallout: "none"
-      }
-    }, React.createElement("div", {
-      style: {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        borderRadius: 12,
-        background: isDragging ? t.sf : "transparent",
-        boxShadow: isDragging ? "0 8px 22px rgba(0,0,0,0.5)" : "none",
-        outline: isDragging ? `2px solid ${t.ac}88` : "none"
       }
     }, React.createElement("span", {
       style: {
@@ -13909,7 +13900,22 @@ input, select { padding: 10px 14px; }
         borderRadius: 6,
         padding: "5px 8px"
       }
-    }, WINDS[i]), isCustom ? React.createElement(React.Fragment, null, React.createElement("input", {
+    }, WINDS[i]), React.createElement("div", {
+      style: {
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        minWidth: 0,
+        position: "relative",
+        transform: isDragging ? `translateY(${ds.offset}px) scale(1.02)` : shiftY ? `translateY(${shiftY}px)` : "none",
+        transition: isDragging ? "none" : "transform 0.15s ease",
+        borderRadius: 12,
+        background: isDragging ? t.sf : "transparent",
+        boxShadow: isDragging ? "0 8px 22px rgba(0,0,0,0.5)" : "none",
+        outline: isDragging ? `2px solid ${t.ac}88` : "none"
+      }
+    }, "                  ", isCustom ? React.createElement(React.Fragment, null, React.createElement("input", {
       autoFocus: true,
       style: {
         ...inputStyle,
