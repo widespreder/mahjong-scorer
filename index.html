@@ -6684,7 +6684,7 @@ input, select { padding: 10px 14px; }
             <button aria-label="ルール確認" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
               onClick={() => setShowRuleCheck(flip ? "flip" : true)}>📋</button>
             <button aria-label="席順を回す" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
-              onClick={() => setSeatRot(r => (r + 1) % 4)}>🔄</button>
+              onClick={() => setSeatRot(r => (r + 3) % 4)}>🔄</button>
           </div>
         )}
       </div>
