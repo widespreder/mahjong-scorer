@@ -12576,7 +12576,12 @@ input, select { padding: 10px 14px; }
   }, setupStep === 1 && React.createElement("div", {
     style: card
   }, React.createElement(Back, {
-    onClick: () => setSetupStep(0)
+    onClick: () => {
+      if (activeLeagueId) {
+        resetSeatDraw();
+        setView("leaguestart");
+      } else setSetupStep(0);
+    }
   }), React.createElement(Dots, {
     total: activeLeagueId ? 2 : 4,
     cur: activeLeagueId ? 0 : 1
