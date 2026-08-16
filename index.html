@@ -8281,6 +8281,10 @@ input, select { padding: 10px 14px; }
   };
   const [groupNameInput, setGroupNameInput] = useState("");
   const [showGroupSave, setShowGroupSave] = useState(false);
+  const [gEditOpen, setGEditOpen] = useState(false);
+  const [gEditId, setGEditId] = useState(null);
+  const [gEditName, setGEditName] = useState("");
+  const [gEditMembers, setGEditMembers] = useState([]);
   const [editNameVal, setEditNameVal] = useState("");
   const [diceOpen, setDiceOpen] = useState(false);
   const [diceVals, setDiceVals] = useState([1, 1]);
@@ -9411,13 +9415,14 @@ input, select { padding: 10px 14px; }
         fontSize: 11,
         color: t.dm
       }
-    }, "\u3088\u304F\u6253\u30644\u4EBA\u306E\u7D44\u307F\u5408\u308F\u305B"))), groups.length === 0 ? React.createElement("div", {
+    }, "\u3088\u304F\u6253\u30644\u4EBA\u306E\u7D44\u307F\u5408\u308F\u305B"))), groups.length === 0 && !gEditOpen && React.createElement("div", {
       style: {
         fontSize: 12,
         color: t.dm,
-        lineHeight: 1.8
+        lineHeight: 1.8,
+        marginBottom: 12
       }
-    }, "\u307E\u3060\u767B\u9332\u304C\u3042\u308A\u307E\u305B\u3093\u3002", React.createElement("br", null), "\u5BFE\u5C40\u3092\u59CB\u3081\u308B\u3068\u304D\u306E\u300C\u53C2\u52A0\u8005\u306F\uFF1F\u300D\u306E\u753B\u9762\u3067\u30014\u4EBA\u3092\u9078\u3093\u3060\u3042\u3068\u306B\u4FDD\u5B58\u3067\u304D\u307E\u3059\u3002") : groups.map(g => React.createElement("div", {
+    }, "\u307E\u3060\u767B\u9332\u304C\u3042\u308A\u307E\u305B\u3093\u3002\u4E0B\u306E\u30DC\u30BF\u30F3\u304B\u3001\u5BFE\u5C40\u3092\u59CB\u3081\u308B\u3068\u304D\u306E\u300C\u53C2\u52A0\u8005\u306F\uFF1F\u300D\u306E\u753B\u9762\u304B\u3089\u4F5C\u308C\u307E\u3059\u3002"), groups.map(g => React.createElement("div", {
       key: g.id,
       style: {
         display: "flex",
@@ -9446,7 +9451,29 @@ input, select { padding: 10px 14px; }
         textOverflow: "ellipsis",
         whiteSpace: "nowrap"
       }
-    }, g.members.join("、"))), React.createElement("button", {
+    }, g.members.join("、"))), React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 6,
+        flexShrink: 0
+      }
+    }, React.createElement("button", {
+      onClick: () => {
+        setGEditId(g.id);
+        setGEditName(g.name);
+        setGEditMembers([...g.members]);
+        setGEditOpen(true);
+      },
+      style: {
+        background: "none",
+        border: `1px solid ${t.bd}`,
+        borderRadius: 8,
+        padding: "6px 11px",
+        color: t.ac,
+        fontSize: 11,
+        cursor: "pointer"
+      }
+    }, "\u7DE8\u96C6"), React.createElement("button", {
       onClick: () => {
         if (!window.confirm(`グループ「${g.name}」を削除しますか？`)) return;
         saveGroups(groups.filter(x => x.id !== g.id));
@@ -9458,10 +9485,152 @@ input, select { padding: 10px 14px; }
         padding: "6px 11px",
         color: t.rd,
         fontSize: 11,
-        cursor: "pointer",
-        flexShrink: 0
+        cursor: "pointer"
       }
-    }, "\u524A\u9664")))), React.createElement("div", {
+    }, "\u524A\u9664")))), gEditOpen ? React.createElement("div", {
+      style: {
+        marginTop: 14,
+        padding: 14,
+        borderRadius: 11,
+        background: t.sf,
+        border: `1px solid ${t.ac}44`
+      }
+    }, React.createElement("div", {
+      style: {
+        fontSize: 12,
+        fontWeight: 800,
+        color: t.ac,
+        marginBottom: 10
+      }
+    }, gEditId ? "グループを編集" : "新しいグループ"), React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: t.dm,
+        marginBottom: 5
+      }
+    }, "\u30B0\u30EB\u30FC\u30D7\u540D"), React.createElement("input", {
+      type: "text",
+      value: gEditName,
+      onChange: e => setGEditName(e.target.value),
+      placeholder: "\u4F8B: \u91D1\u66DC\u30E1\u30F3\u30D0\u30FC",
+      style: {
+        ...inputStyle,
+        fontSize: 15,
+        marginBottom: 12
+      }
+    }), React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: t.dm,
+        marginBottom: 5
+      }
+    }, "\u30E1\u30F3\u30D0\u30FC\u30924\u4EBA\u9078\u3076\uFF08", gEditMembers.length, "/4\uFF09"), React.createElement("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 7,
+        marginBottom: 12
+      }
+    }, presetNames.map(nm => {
+      const on = gEditMembers.includes(nm);
+      const full = gEditMembers.length >= 4 && !on;
+      return React.createElement("button", {
+        key: nm,
+        onClick: () => setGEditMembers(on ? gEditMembers.filter(x => x !== nm) : full ? gEditMembers : [...gEditMembers, nm]),
+        style: {
+          padding: "11px 6px",
+          borderRadius: 9,
+          cursor: full ? "default" : "pointer",
+          border: `2px solid ${on ? t.ac : t.bd}`,
+          background: on ? t.acS : "transparent",
+          color: on ? t.ac : t.tx,
+          fontSize: 13,
+          fontWeight: 700,
+          opacity: full ? 0.4 : 1,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap"
+        }
+      }, on ? "✓ " : "", nm);
+    })), presetNames.length < 4 && React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: t.rd,
+        marginBottom: 10,
+        lineHeight: 1.7
+      }
+    }, "\u767B\u9332\u3055\u308C\u3066\u3044\u308B\u540D\u524D\u304C", presetNames.length, "\u4EBA\u3076\u3093\u3057\u304B\u3042\u308A\u307E\u305B\u3093\u3002 \u4E0A\u306E\u300C\u30D7\u30EC\u30A4\u30E4\u30FC\u540D\u306E\u767B\u9332\u300D\u304B\u3089\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\u3002"), React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8
+      }
+    }, React.createElement("button", {
+      disabled: !gEditName.trim() || gEditMembers.length !== 4,
+      onClick: () => {
+        const entry = {
+          name: gEditName.trim(),
+          members: [...gEditMembers]
+        };
+        if (gEditId) saveGroups(groups.map(x => x.id === gEditId ? {
+          ...x,
+          ...entry
+        } : x));else saveGroups([...groups, {
+          id: "g_" + Date.now(),
+          ...entry
+        }]);
+        setGEditOpen(false);
+        setGEditId(null);
+        setGEditName("");
+        setGEditMembers([]);
+      },
+      style: {
+        flex: 1,
+        padding: "12px 8px",
+        borderRadius: 10,
+        border: "none",
+        cursor: "pointer",
+        background: t.ac,
+        color: "#fff",
+        fontSize: 14,
+        fontWeight: 800,
+        opacity: gEditName.trim() && gEditMembers.length === 4 ? 1 : 0.4
+      }
+    }, gEditId ? "更新する" : "保存する"), React.createElement("button", {
+      onClick: () => {
+        setGEditOpen(false);
+        setGEditId(null);
+        setGEditName("");
+        setGEditMembers([]);
+      },
+      style: {
+        padding: "12px 16px",
+        borderRadius: 10,
+        cursor: "pointer",
+        border: `1px solid ${t.bd}`,
+        background: "transparent",
+        color: t.dm,
+        fontSize: 13
+      }
+    }, "\u3084\u3081\u308B"))) : React.createElement("button", {
+      onClick: () => {
+        setGEditId(null);
+        setGEditName("");
+        setGEditMembers([]);
+        setGEditOpen(true);
+      },
+      style: {
+        width: "100%",
+        marginTop: 14,
+        padding: "12px 8px",
+        borderRadius: 10,
+        cursor: "pointer",
+        border: `1px dashed ${t.ac}77`,
+        background: "transparent",
+        color: t.ac,
+        fontSize: 13,
+        fontWeight: 700
+      }
+    }, "\uFF0B \u30B0\u30EB\u30FC\u30D7\u3092\u4F5C\u308B")), React.createElement("div", {
       style: {
         ...card,
         padding: 16,
