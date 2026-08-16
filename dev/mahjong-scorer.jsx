@@ -6841,27 +6841,30 @@ input, select { padding: 10px 14px; }
                 onContextMenu={(e) => { if (dragSeat || seatSuppressClick.current) e.preventDefault(); }}
                 style={{
                   marginBottom: 10, position: "relative",
-                  transform: isDragging ? `translateY(${ds.offset}px) scale(1.02)` : shiftY ? `translateY(${shiftY}px)` : "none",
-                  transition: isDragging ? "none" : "transform 0.15s ease",
+                  display: "flex", alignItems: "center", gap: 10,
                   zIndex: isDragging ? 10 : 1,
                   WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none",
                 }}>
+                {/* 風マークは席に固定（動かさない） */}
+                <span style={{
+                  fontSize: 18, fontWeight: 900, lineHeight: 1, flexShrink: 0,
+                  color: i === 0 ? "#1a1a1a" : t.tx,
+                  background: i === 0 ? t.gd : t.sf,
+                  border: `1px solid ${i === 0 ? t.gd : t.bd}`,
+                  borderRadius: 6, padding: "5px 8px",
+                }}>{WINDS[i]}</span>
+
+                {/* 名前の欄だけがドラッグで移動する */}
                 <div style={{
-                  display: "flex", alignItems: "center", gap: 10,
+                  flex: 1, display: "flex", alignItems: "center", gap: 10, minWidth: 0,
+                  position: "relative",
+                  transform: isDragging ? `translateY(${ds.offset}px) scale(1.02)` : shiftY ? `translateY(${shiftY}px)` : "none",
+                  transition: isDragging ? "none" : "transform 0.15s ease",
                   borderRadius: 12,
                   background: isDragging ? t.sf : "transparent",
                   boxShadow: isDragging ? "0 8px 22px rgba(0,0,0,0.5)" : "none",
                   outline: isDragging ? `2px solid ${t.ac}88` : "none",
-                }}>
-                  <span style={{
-                    fontSize: 18, fontWeight: 900, lineHeight: 1, flexShrink: 0,
-                    color: i === 0 ? "#1a1a1a" : t.tx,
-                    background: i === 0 ? t.gd : t.sf,
-                    border: `1px solid ${i === 0 ? t.gd : t.bd}`,
-                    borderRadius: 6, padding: "5px 8px",
-                  }}>{WINDS[i]}</span>
-
-                  {isCustom ? (
+                }}>                  {isCustom ? (
                     <>
                       <input
                         autoFocus
