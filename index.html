@@ -6526,9 +6526,18 @@ input, select { padding: 10px 14px; }
                     ? `${ronPick.length}人でロン。放銃者に近い人から順に手を入力します`
                     : "")}
             </div>
-            <button style={smallBtn()} onClick={() => {
-              setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null); setRonRuleWarn(false); setRonLoserPick(null);
-            }}>キャンセル</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              {tmWinStep === "how" && (
+                <button style={{ ...smallBtn(), flex: 1 }} onClick={() => {
+                  // あがった人の選択に戻る
+                  setRonLoserPick(null); setMultiRon(null); setGLoser(null); setGTsumo(null);
+                  setTmWinStep("winner");
+                }}>← 戻る</button>
+              )}
+              <button style={{ ...smallBtn(), flex: 1 }} onClick={() => {
+                setTmWinStep(null); setGWinner(null); setRonPick([]); setMultiRon(null); setRonRuleWarn(false); setRonLoserPick(null);
+              }}>キャンセル</button>
+            </div>
           </>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
