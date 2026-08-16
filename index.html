@@ -3724,7 +3724,11 @@ input, select { padding: 10px 14px; }
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
         overflowY: "auto",
       }} onClick={() => setShowRuleCheck(false)}>
-        <div style={{ ...card, maxWidth: 400, width: "100%", margin: 0 }} onClick={e => e.stopPropagation()}>
+        <div style={{
+          ...card, maxWidth: 400, width: "100%", margin: 0,
+          // 上側（対面向き）のボタンから開いたときは、向かいの人が読める向きにする
+          transform: showRuleCheck === "flip" ? "rotate(180deg)" : "none",
+        }} onClick={e => e.stopPropagation()}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 17, fontWeight: 800, color: t.tx }}>この対局のルール</div>
@@ -6147,7 +6151,7 @@ input, select { padding: 10px 14px; }
             <button style={{ ...smallBtn("p"), flex: 1 }} onClick={() => { resetGW(); setRonPick([]); setMultiRon(null); setTmWinStep("winner"); }}>アガリ入力</button>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => { setDrawTenpai([...declaredRiichi]); setTmDrawMode(true); }}>流局</button>
             <button aria-label="ルール確認" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
-              onClick={() => setShowRuleCheck(true)}>📋</button>
+              onClick={() => setShowRuleCheck(flip ? "flip" : true)}>📋</button>
             <button aria-label="席順を回す" style={{ ...smallBtn(), flex: "0 0 46px", fontSize: 19, padding: "10px 0" }}
               onClick={() => setSeatRot(r => (r + 1) % 4)}>🔄</button>
           </div>
