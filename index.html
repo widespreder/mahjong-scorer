@@ -3511,6 +3511,31 @@ input, select { padding: 10px 14px; }
   });
   const saveDiceHold = (v) => { setDiceHoldSec(v); try { localStorage.setItem("mj_dice_hold", String(v)); } catch {} };
 
+  // ── 卓上モード中は画面を固定し、ずれても中央に戻す ──
+  const tableLocked = tableMode && gameStarted && !gameFinished && view === "game";
+  React.useEffect(() => {
+    if (!tableLocked) return;
+    const snapBack = () => {
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    window.scrollTo(0, 0);
+    window.addEventListener("scroll", snapBack, { passive: true });
+    window.addEventListener("orientationchange", snapBack);
+    return () => {
+      window.removeEventListener("scroll", snapBack);
+      window.removeEventListener("orientationchange", snapBack);
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overscrollBehavior = prevOverscroll;
+    };
+  }, [tableLocked]);
+
   // ── 画面スリープ防止（Screen Wake Lock API） ──
   const wakeSupported = typeof navigator !== "undefined" && "wakeLock" in navigator;
   const [keepAwake, setKeepAwake] = useState(() => {
@@ -6249,9 +6274,11 @@ input, select { padding: 10px 14px; }
 
     return (
       <div style={{
-        padding: "10px 8px 20px",
+        padding: "6px 8px 10px",
         boxSizing: "border-box",
-        minHeight: "100dvh",
+        // ルート側のセーフエリア余白を引いて、画面ちょうどに収める
+        height: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 8px)",
+        overflow: "hidden",
         display: "flex", flexDirection: "column", justifyContent: "center",
       }}>
         {reviewing && (
@@ -6276,7 +6303,7 @@ input, select { padding: 10px 14px; }
         {actionRow(true)}
 
         <div style={{
-          position: "relative", width: "100%", height: "62vh", minHeight: 400,
+          position: "relative", width: "100%", flex: "1 1 auto", minHeight: 340,
           background: "linear-gradient(160deg, #16452f, #103526)",
           borderRadius: 20, border: "3px solid #24583f", overflow: "hidden",
         }}>
