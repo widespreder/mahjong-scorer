@@ -12578,8 +12578,8 @@ input, select { padding: 10px 14px; }
   }, React.createElement(Back, {
     onClick: () => setSetupStep(0)
   }), React.createElement(Dots, {
-    total: 4,
-    cur: 1
+    total: activeLeagueId ? 2 : 4,
+    cur: activeLeagueId ? 0 : 1
   }), React.createElement("div", {
     style: question
   }, "\u5E2D\u6C7A\u3081"), React.createElement("div", {
@@ -12725,7 +12725,7 @@ input, select { padding: 10px 14px; }
     }
   }, "\u6771\u306E ", players[0], " \u3055\u3093\u304C\u8D77\u5BB6\uFF08\u6700\u521D\u306E\u89AA\uFF09\u3067\u3059")), seatDone ? React.createElement(React.Fragment, null, React.createElement("button", {
     style: actionBtn("p"),
-    onClick: () => setSetupStep(2)
+    onClick: () => setSetupStep(activeLeagueId ? 4 : 2)
   }, "\u6B21\u3078"), React.createElement("button", {
     style: actionBtn(),
     onClick: resetSeatDraw
@@ -12738,7 +12738,7 @@ input, select { padding: 10px 14px; }
     }
   }, "\u597D\u304D\u306A\u724C\u3092\u30BF\u30C3\u30D7\u3057\u3066\u304F\u3060\u3055\u3044"), React.createElement("button", {
     style: actionBtn(),
-    onClick: () => setSetupStep(2)
+    onClick: () => setSetupStep(activeLeagueId ? 4 : 2)
   }, "\u5E2D\u6C7A\u3081\u3092\u30B9\u30AD\u30C3\u30D7\uFF08\u4ECA\u306E\u4E26\u3073\u306E\u307E\u307E\uFF09"), React.createElement("div", {
     style: {
       fontSize: 10,
@@ -13613,8 +13613,8 @@ input, select { padding: 10px 14px; }
     onClick: startGame
   }, "\u5BFE\u5C40\u958B\u59CB\uFF01"), React.createElement("button", {
     style: actionBtn(),
-    onClick: () => setSetupStep(3)
-  }, "\u8A2D\u5B9A\u3092\u4FEE\u6B63\u3059\u308B")));
+    onClick: () => setSetupStep(activeLeagueId ? 1 : 3)
+  }, activeLeagueId ? "席決めをやり直す" : "設定を修正する")));
   const renderTableMode = () => {
     const mrRule = (gameConfig || {}).rules?.multiRon || "atamahane";
     const multiRonMax = mrRule === "triple" ? 3 : mrRule === "double" ? 2 : 1;
