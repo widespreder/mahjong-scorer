@@ -733,6 +733,12 @@ function MahjongScorer() {
   const numBtn = (on) => ({ height: 62, padding: "0 2px", border: `2px solid ${on ? t.ac : t.bd}`, borderRadius: 12, background: on ? t.acS : "transparent", color: on ? t.ac : t.tx, fontSize: 19, fontWeight: 800, cursor: "pointer", textAlign: "center", transition: "all 0.1s", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box", whiteSpace: "nowrap", letterSpacing: "-0.03em" });
   const actionBtn = (v) => ({ width: "100%", padding: "15px 12px", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, boxSizing: "border-box", lineHeight: 1.5, ...(v === "p" ? { background: t.ac, color: "#fff" } : v === "d" ? { background: t.rd, color: "#fff" } : { background: t.sf, color: t.tx, border: `1px solid ${t.bd}` }) });
   const pSelBtn = (on) => ({ padding: "14px 8px", border: `2px solid ${on ? t.ac : t.bd}`, borderRadius: 12, background: on ? t.acS : "transparent", color: on ? t.ac : t.tx, fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center", flex: 1, transition: "all 0.1s" });
+  // 「タップで訂正できる」ことを示す小さなタグ
+  const editTag = {
+    fontSize: 10, fontWeight: 700, color: t.ac,
+    border: `1px solid ${t.ac}55`, background: t.acS,
+    borderRadius: 6, padding: "2px 7px", whiteSpace: "nowrap", flexShrink: 0,
+  };
   const backBtn = {
     background: t.card, border: `1px solid ${t.bd}`, borderRadius: 10,
     color: t.tx, fontSize: 15, fontWeight: 700, cursor: "pointer",
@@ -6915,10 +6921,20 @@ input, select { padding: 10px 14px; }
                   </div>
                 )}
                 <div style={card}>
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    padding: "9px 10px", marginBottom: 12, borderRadius: 9,
+                    background: t.acS, border: `1px solid ${t.ac}44`,
+                  }}>
+                    <span style={{ fontSize: 13 }}>✏️</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: t.ac }}>
+                      直したい項目をタップすると訂正できます
+                    </span>
+                  </div>
                   {/* Editable summary - tap each row to jump to that step */}
                   {(() => {
                     // 卓上モードでは、あがった人・あがり方は卓の画面で選び直す
-                    const rowStyle = { width: "100%", background: "transparent", border: "none", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" };
+                    const rowStyle = { width: "100%", background: "transparent", border: "none", padding: "11px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", alignItems: "center", textAlign: "left", gap: 10 };
                     const backToTable = (step) => {
                       resetGW(); setMultiRon(null);
                       if (step === "winner") setRonPick([]);
@@ -6929,12 +6945,18 @@ input, select { padding: 10px 14px; }
                         <button onClick={() => tableMode ? backToTable("winner") : setGStep(1)}
                           style={{ ...rowStyle, cursor: "pointer" }}>
                           <span style={{ fontSize: 12, color: t.dm }}>あがった人</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{players[gWinner]} ▸</span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{players[gWinner]}</span>
+                            <span style={editTag}>訂正</span>
+                          </span>
                         </button>
                         <button onClick={() => tableMode ? backToTable("how") : setGStep(2)}
                           style={{ ...rowStyle, cursor: "pointer" }}>
                           <span style={{ fontSize: 12, color: t.dm }}>あがり方</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: gTsumo ? t.gn : t.rd }}>{gTsumo ? "ツモ" : "ロン"}{!gTsumo && gLoser !== null ? ` ← ${players[gLoser]}` : ""} ▸</span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: gTsumo ? t.gn : t.rd }}>{gTsumo ? "ツモ" : "ロン"}{!gTsumo && gLoser !== null ? ` ← ${players[gLoser]}` : ""}</span>
+                            <span style={editTag}>訂正</span>
+                          </span>
                         </button>
                         {tableMode ? (
                           <div style={rowStyle}>
@@ -6946,7 +6968,10 @@ input, select { padding: 10px 14px; }
                         ) : (
                           <button onClick={() => setGStep(4)} style={{ ...rowStyle, cursor: "pointer" }}>
                             <span style={{ fontSize: 12, color: t.dm }}>リーチ棒</span>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: gRiichi.some(Boolean) ? t.gd : t.dm }}>{gRiichi.some(Boolean) ? `${gRiichi.filter(Boolean).length}本` : "なし"} ▸</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: gRiichi.some(Boolean) ? t.gd : t.dm }}>{gRiichi.some(Boolean) ? `${gRiichi.filter(Boolean).length}本` : "なし"}</span>
+                              <span style={editTag}>訂正</span>
+                            </span>
                           </button>
                         )}
                       </>
@@ -6954,12 +6979,18 @@ input, select { padding: 10px 14px; }
                   })()}
                   <button onClick={() => setGStep(5)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
                     <span style={{ fontSize: 12, color: t.dm }}>翻数</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gHan >= 13 ? "役満" : `${gHan}翻`} ▸</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gHan >= 13 ? "役満" : `${gHan}翻`}</span>
+                      <span style={editTag}>訂正</span>
+                    </span>
                   </button>
                   {gHan < 5 && (
                     <button onClick={() => setGStep(6)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
                       <span style={{ fontSize: 12, color: t.dm }}>符数</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gFu}符 ▸</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gFu}符</span>
+                        <span style={editTag}>訂正</span>
+                      </span>
                     </button>
                   )}
                 </div>
