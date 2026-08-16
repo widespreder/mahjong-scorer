@@ -484,7 +484,8 @@ function MahjongScorer() {
         honba: k === 0 ? honba : 0,          // 本場は頭の一人ぶんだけ記録（再計算の二重加算を防ぐ）
         winner: e.winner, loser, han: e.han, fu: e.fu,
         score: e.result.total, tsumo: false, limitName: e.limitName,
-        riichi: k === 0 ? [...gRiichi] : [false, false, false, false],
+        riichi: k === 0 ? [0, 1, 2, 3].map(i => !!(gRiichi[i] || declaredRiichi[i])) : [false, false, false, false],
+        pool: k === 0 ? pool : 0,
         multiRon: sorted.length, multiRonHead: k === 0,
       });
     });
@@ -510,6 +511,7 @@ function MahjongScorer() {
       let newScores = [sp, sp, sp, sp];
       newRounds.forEach(r => {
         if (r.draw) {
+          if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
           const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
           const nc = 4 - tc;
           if (tc > 0 && tc < 4) {
@@ -519,12 +521,13 @@ function MahjongScorer() {
         } else {
           const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
           const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
+          const pool2 = (typeof r.pool === "number") ? r.pool : rc * 1000;
           if (r.riichi) { for (let i = 0; i < 4; i++) { if (r.riichi[i]) newScores[i] -= 1000; } }
           const hb2 = r.honba * 300;
           if (r.tsumo) {
-            if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.each * 3 + hb2 + rc * 1000; else newScores[i] -= res.each + Math.floor(hb2 / 3); } }
-            else { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.total + hb2 + rc * 1000; else if (i === r.dealer) newScores[i] -= res.fromParent + Math.floor(hb2 / 3); else newScores[i] -= res.fromChild + Math.floor(hb2 / 3); } }
-          } else { newScores[r.winner] += res.total + hb2 + rc * 1000; newScores[r.loser] -= res.total + hb2; }
+            if (r.winner === r.dealer) { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.each * 3 + hb2 + pool2; else newScores[i] -= res.each + Math.floor(hb2 / 3); } }
+            else { for (let i = 0; i < 4; i++) { if (i === r.winner) newScores[i] += res.total + hb2 + pool2; else if (i === r.dealer) newScores[i] -= res.fromParent + Math.floor(hb2 / 3); else newScores[i] -= res.fromChild + Math.floor(hb2 / 3); } }
+          } else { newScores[r.winner] += res.total + hb2 + pool2; newScores[r.loser] -= res.total + hb2; }
         }
       });
       setRounds(newRounds);
@@ -571,7 +574,9 @@ function MahjongScorer() {
       ns[gLoser] -= gResult.total + hb;
     }
     setScores(ns);
-    const newRounds = [...rounds, { id: rounds.length + 1, wind: roundWind, dealer: dealerIdx, honba, winner: gWinner, loser: gLoser, han: gHan, fu: gHan >= 5 ? null : gFu, score: gResult.total, tsumo: gTsumo, limitName: gLimit, riichi: [...gRiichi] }];
+    // この局でリーチした人（ウィザードでの入力＋卓上で宣言済みの人）
+    const roundRiichi = [0, 1, 2, 3].map(i => !!(gRiichi[i] || declaredRiichi[i]));
+    const newRounds = [...rounds, { id: rounds.length + 1, wind: roundWind, dealer: dealerIdx, honba, winner: gWinner, loser: gLoser, han: gHan, fu: gHan >= 5 ? null : gFu, score: gResult.total, tsumo: gTsumo, limitName: gLimit, riichi: roundRiichi, pool: totalRiichiPool }];
     setRounds(newRounds);
 
     // Advance dealer / check game end
@@ -599,7 +604,7 @@ function MahjongScorer() {
     setScores(ns);
     setHonba(h => h + 1);
     setDeclaredRiichi([false, false, false, false]);
-    setRounds(prev => [...prev, { id: prev.length + 1, wind: roundWind, dealer: dealerIdx, honba, draw: true, tenpai: [...drawTenpai] }]);
+    setRounds(prev => [...prev, { id: prev.length + 1, wind: roundWind, dealer: dealerIdx, honba, draw: true, tenpai: [...drawTenpai], riichi: [...declaredRiichi] }]);
 
     // Renchan / game-end logic
     const dealerTenpai = drawTenpai[dealerIdx];
@@ -3653,36 +3658,48 @@ input, select { padding: 10px 14px; }
       let delta = 0;
       let desc = "";
 
+      // リーチ棒を出した人は、その局で1,000点減る（アガリ・流局どちらでも）
+      const paidRiichi = r.riichi && r.riichi[pi];
+      const riichiNote = paidRiichi ? "リーチ棒 -1,000" : "";
+
       if (r.draw) {
+        if (paidRiichi) delta -= 1000;
         const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
         if (tc > 0 && tc < 4) {
           const nc = 4 - tc;
-          if (r.tenpai[pi]) { delta = Math.floor(3000 / tc); desc = "流局・テンパイ"; }
-          else { delta = -Math.floor(3000 / nc); desc = "流局・ノーテン"; }
+          if (r.tenpai[pi]) { delta += Math.floor(3000 / tc); desc = "流局・テンパイ"; }
+          else { delta -= Math.floor(3000 / nc); desc = "流局・ノーテン"; }
         } else {
           desc = tc === 4 ? "流局（全員テンパイ）" : "流局（全員ノーテン）";
         }
+        if (riichiNote) desc = desc ? `${desc}／${riichiNote}` : riichiNote;
       } else {
         const res = calcScore(r.han >= 5 ? 30 : (r.fu || 30), r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
         const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
+        // 受け取る供託。古い記録には pool が無いのでその場合だけ本数から求める
+        const pool = (typeof r.pool === "number") ? r.pool : rc * 1000;
         const hb = r.honba * 300;
         // リーチ棒
-        if (r.riichi && r.riichi[pi]) { delta -= 1000; }
+        if (paidRiichi) { delta -= 1000; }
 
         if (r.winner === pi) {
           const gain = (r.tsumo && r.winner === r.dealer) ? res.each * 3 : res.total;
-          delta += gain + hb + rc * 1000;
+          delta += gain + hb + pool;
           desc = `${r.tsumo ? "ツモ" : "ロン"} ${r.han >= 13 ? "役満" : r.fu ? `${r.han}翻${r.fu}符` : `${r.han}翻`}`;
+          if (pool > 0) desc += `／供託 +${pool.toLocaleString()}`;
+          if (riichiNote) desc += `／${riichiNote}`;
         } else if (r.tsumo) {
           if (r.winner === r.dealer) delta -= res.each + Math.floor(hb / 3);
           else if (pi === r.dealer) delta -= res.fromParent + Math.floor(hb / 3);
           else delta -= res.fromChild + Math.floor(hb / 3);
           desc = `${players[r.winner]}のツモ`;
+          if (riichiNote) desc += `／${riichiNote}`;
         } else if (r.loser === pi) {
           delta -= res.total + hb;
           desc = `${players[r.winner]}へ放銃`;
+          if (riichiNote) desc += `／${riichiNote}`;
         } else {
-          desc = "—";
+          desc = riichiNote || "—";
         }
       }
       running = before + delta;
