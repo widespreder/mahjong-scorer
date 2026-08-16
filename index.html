@@ -6933,6 +6933,14 @@ input, select { padding: 10px 14px; }
             )}
             {gStep === 7 && gResult && (
               <>
+                {correctingIdx === null && (
+                  <Back onClick={() => {
+                    // 一つ前（符 or 翻数）に戻る
+                    if (gHan < 5) { setGStep(6); setGFu(null); }
+                    else { setGStep(5); setGHan(null); }
+                    resetFuGuide();
+                  }} />
+                )}
                 {correctingIdx !== null && (
                   <div style={{ textAlign: "center", padding: "6px 12px", marginBottom: 10, borderRadius: 8, background: t.gdS, border: `1px solid ${t.gd}44` }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: t.gd }}>✏️ 修正モード — 変更箇所をタップ</span>
