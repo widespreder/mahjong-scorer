@@ -6616,10 +6616,10 @@ input, select { padding: 10px 14px; }
                 好きな牌をタップしてください
               </div>
               <button style={actionBtn()} onClick={() => setSetupStep(activeLeagueId ? 4 : 2)}>
-                席決めをスキップ（今の並びのまま）
+                席決めをスキップ
               </button>
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginTop: 10, lineHeight: 1.7 }}>
-                スキップした場合、前の画面で選んだ順にこの席になります
+                スキップすると以下の席順でスタートします
               </div>
               <div style={{
                 display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8,
