@@ -10057,29 +10057,30 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         marginBottom: 6
       }
-    }, "\u4F55\u534A\u8358\u3067\u7D42\u308F\u308A\u306B\u3057\u307E\u3059\u304B"), React.createElement("div", {
-      style: {
-        display: "flex",
-        gap: 7,
-        flexWrap: "wrap"
-      }
-    }, [5, 10, 20, 30, 50].map(n => React.createElement("button", {
-      key: n,
-      onClick: () => set({
-        targetCount: n
+    }, "\u4F55\u534A\u8358\u3067\u7D42\u308F\u308A\u306B\u3057\u307E\u3059\u304B\uFF082\u301C100\uFF09"), React.createElement("select", {
+      value: d.targetCount,
+      onChange: e => set({
+        targetCount: parseInt(e.target.value, 10)
       }),
       style: {
-        flex: "1 1 60px",
-        padding: "11px 4px",
-        borderRadius: 9,
-        cursor: "pointer",
-        border: `2px solid ${d.targetCount === n ? t.ac : t.bd}`,
-        background: d.targetCount === n ? t.acS : "transparent",
-        color: d.targetCount === n ? t.ac : t.tx,
-        fontSize: 14,
-        fontWeight: 800
+        ...selectStyle,
+        fontSize: 17,
+        fontWeight: 800,
+        padding: "14px 12px",
+        textAlign: "center"
       }
-    }, n)))) : React.createElement("div", {
+    }, Array.from({
+      length: 99
+    }, (_, i) => i + 2).map(n => React.createElement("option", {
+      key: n,
+      value: n
+    }, n, " \u534A\u8358"))), React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: t.dm,
+        marginTop: 6
+      }
+    }, "\u3053\u306E\u56DE\u6570\u306B\u9054\u3059\u308B\u3068\u81EA\u52D5\u3067\u7D42\u4E86\u306B\u306A\u308A\u307E\u3059")) : React.createElement("div", {
       style: {
         display: "flex",
         gap: 10
