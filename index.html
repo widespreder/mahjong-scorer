@@ -192,6 +192,7 @@ function MahjongScorer() {
   const [activeLeagueId, setActiveLeagueId] = useState(null);
   const [lgDraft, setLgDraft] = useState(null);
   const [lgPick, setLgPick] = useState([]);
+  const [lgMatchType, setLgMatchType] = useState("hanchan");
   const [showUmaHelp, setShowUmaHelp] = useState(false);
   const curLeague = leagues.find(l => l.id === leagueId) || null;
   const goshaRokunyu = v => {
@@ -9887,7 +9888,7 @@ input, select { padding: 10px 14px; }
           color: t.dm,
           marginTop: 5
         }
-      }, lg.members.length, "\u4EBA \u30FB ", pr.played, "\u534A\u8358", lg.mode === "count" ? ` / 全${lg.targetCount}半荘` : ` ・ 〜${lg.endDate}`), leader && React.createElement("div", {
+      }, lg.members.length, "\u4EBA \u30FB ", pr.played, "\u56DE", lg.mode === "count" ? ` / 全${lg.targetCount}回` : ` ・ 〜${lg.endDate}`), leader && React.createElement("div", {
         style: {
           fontSize: 12,
           color: t.gd,
@@ -9913,7 +9914,7 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         marginBottom: 16
       }
-    }, "\u540C\u3058\u30E1\u30F3\u30D0\u30FC\u3067\u8907\u6570\u306E\u534A\u8358\u3092\u6226\u3044\u3001\u901A\u7B97\u6210\u7E3E\u3092\u8A18\u9332\u3057\u307E\u3059"), React.createElement("button", {
+    }, "\u540C\u3058\u30E1\u30F3\u30D0\u30FC\u3067\u4F55\u56DE\u304B\u5BFE\u5C40\u3057\u3001\u901A\u7B97\u6210\u7E3E\u3092\u8A18\u9332\u3057\u307E\u3059"), React.createElement("button", {
       onClick: () => {
         setLgDraft(newLeagueDraft());
         setView("leagueform");
@@ -10115,7 +10116,7 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         marginBottom: 6
       }
-    }, "\u4F55\u534A\u8358\u3067\u7D42\u308F\u308A\u306B\u3057\u307E\u3059\u304B\uFF082\u301C100\uFF09"), React.createElement("select", {
+    }, "\u4F55\u56DE\u3067\u7D42\u308F\u308A\u306B\u3057\u307E\u3059\u304B\uFF082\u301C100\uFF09"), React.createElement("select", {
       value: d.targetCount,
       onChange: e => set({
         targetCount: parseInt(e.target.value, 10)
@@ -10132,7 +10133,7 @@ input, select { padding: 10px 14px; }
     }, (_, i) => i + 2).map(n => React.createElement("option", {
       key: n,
       value: n
-    }, n, " \u534A\u8358"))), React.createElement("div", {
+    }, n, " \u56DE"))), React.createElement("div", {
       style: {
         fontSize: 10,
         color: t.dm,
@@ -10568,7 +10569,7 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         marginTop: 4
       }
-    }, lg.members.length, "\u4EBA \u30FB ", pr.played, "\u534A\u8358\u6D88\u5316", lg.mode === "count" ? ` / 全${lg.targetCount}半荘` : ` ・ ${lg.startDate}〜${lg.endDate}`, " ・ ウマ ", UMA_PRESETS.find(u => u.key === lg.umaKey)?.label || "10-20")), lg.mode === "count" && React.createElement("div", {
+    }, lg.members.length, "\u4EBA \u30FB ", pr.played, "\u56DE\u6D88\u5316", lg.mode === "count" ? ` / 全${lg.targetCount}回` : ` ・ ${lg.startDate}〜${lg.endDate}`, " ・ ウマ ", UMA_PRESETS.find(u => u.key === lg.umaKey)?.label || "10-20")), lg.mode === "count" && React.createElement("div", {
       style: {
         height: 6,
         borderRadius: 3,
@@ -10585,6 +10586,7 @@ input, select { padding: 10px 14px; }
     })), lg.status === "active" && React.createElement("button", {
       onClick: () => {
         setLgPick([]);
+        setLgMatchType("hanchan");
         setView("leaguestart");
       },
       style: {
@@ -10669,7 +10671,7 @@ input, select { padding: 10px 14px; }
         padding: "6px 4px",
         fontWeight: 600
       }
-    }, "\u534A\u8358"), React.createElement("th", {
+    }, "\u56DE\u6570"), React.createElement("th", {
       style: {
         textAlign: "right",
         padding: "6px 4px",
@@ -10757,7 +10759,7 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         marginBottom: 7
       }
-    }, "\u7B2C", lg.games.length - gi, "\u6226 \u30FB ", g.date), g.players.map((nm, i) => React.createElement("div", {
+    }, "\u7B2C", lg.games.length - gi, "\u6226 \u30FB ", g.date, g.matchType && ` ・ ${g.matchType === "tonpu" ? "東風戦" : "半荘戦"}`), g.players.map((nm, i) => React.createElement("div", {
       key: i,
       style: {
         display: "flex",
@@ -10833,7 +10835,7 @@ input, select { padding: 10px 14px; }
       style: {
         color: t.dm
       }
-    }, "\u7D42\u308F\u308A\u65B9: "), lg.mode === "count" ? `${lg.targetCount}半荘で終了` : `${lg.startDate} 〜 ${lg.endDate}`), React.createElement("div", null, React.createElement("span", {
+    }, "\u7D42\u308F\u308A\u65B9: "), lg.mode === "count" ? `${lg.targetCount}回で終了` : `${lg.startDate} 〜 ${lg.endDate}`), React.createElement("div", null, React.createElement("span", {
       style: {
         color: t.dm
       }
@@ -10888,7 +10890,7 @@ input, select { padding: 10px 14px; }
     if (!lg) return React.createElement("div", {
       style: body
     });
-    const ready = lgPick.length === 4;
+    const ready = lgPick.length === 4 && !!lgMatchType;
     return React.createElement("div", {
       style: body
     }, React.createElement("button", {
@@ -10911,7 +10913,7 @@ input, select { padding: 10px 14px; }
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
         gap: 8,
-        marginBottom: 18
+        marginBottom: 20
       }
     }, lg.members.map(nm => {
       const on = lgPick.includes(nm);
@@ -10934,7 +10936,42 @@ input, select { padding: 10px 14px; }
           whiteSpace: "nowrap"
         }
       }, on ? "✓ " : "", nm);
-    })), React.createElement("button", {
+    })), React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: t.dm,
+        marginBottom: 8
+      }
+    }, "\u4ECA\u56DE\u306E\u5F62\u5F0F"), React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 10,
+        marginBottom: 20
+      }
+    }, [["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東場＋南場"]].map(([k, lb, sub]) => React.createElement("button", {
+      key: k,
+      onClick: () => setLgMatchType(k),
+      style: {
+        flex: 1,
+        padding: "15px 8px",
+        borderRadius: 12,
+        cursor: "pointer",
+        border: `2px solid ${lgMatchType === k ? t.ac : t.bd}`,
+        background: lgMatchType === k ? t.acS : "transparent"
+      }
+    }, React.createElement("div", {
+      style: {
+        fontSize: 15,
+        fontWeight: 800,
+        color: lgMatchType === k ? t.ac : t.tx
+      }
+    }, lb), React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: t.dm,
+        marginTop: 3
+      }
+    }, sub)))), React.createElement("button", {
       style: {
         ...actionBtn("p"),
         opacity: ready ? 1 : 0.4
@@ -10948,7 +10985,7 @@ input, select { padding: 10px 14px; }
           ...defaultRules,
           ...lg.rules
         });
-        setMatchType("hanchan");
+        setMatchType(lgMatchType);
         setActiveLeagueId(lg.id);
         resetSeatDraw();
         setGameStarted(false);
@@ -15917,6 +15954,7 @@ input, select { padding: 10px 14px; }
           const res = calcGamePts(scores, [0, 1, 2, 3], lg);
           const entry = {
             date: gameConfig?.date || "",
+            matchType: gameConfig?.matchType || "hanchan",
             players: [...players],
             scores: [...scores],
             pts: res.map(r => r.pt),
