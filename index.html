@@ -677,16 +677,16 @@ function MahjongScorer() {
   const t = { bg: "#0c1117", sf: "#161d27", card: "#1c2533", ac: "#3b82f6", acS: "rgba(59,130,246,0.12)", gn: "#22c55e", gnS: "rgba(34,197,94,0.12)", rd: "#ef4444", rdS: "rgba(239,68,68,0.12)", gd: "#eab308", gdS: "rgba(234,179,8,0.12)", tx: "#e2e8f0", dm: "#64748b", bd: "#2a3444" };
 
   // ── Shared Styles ──
-  const card = { background: t.card, borderRadius: 14, padding: 20, marginBottom: 14, border: `1px solid ${t.bd}`, boxSizing: "border-box", maxWidth: "100%", overflow: "hidden" };
-  const question = { fontSize: 16, fontWeight: 700, marginBottom: 18, textAlign: "center" };
+  const card = { background: t.card, borderRadius: 14, padding: 22, marginBottom: 18, border: `1px solid ${t.bd}`, boxSizing: "border-box", maxWidth: "100%", overflow: "hidden", lineHeight: 1.7 };
+  const question = { fontSize: 16, fontWeight: 700, margin: "4px 0 20px", textAlign: "center", lineHeight: 1.6, letterSpacing: "0.02em" };
   const bigBtn = (c, s) => ({ flex: "1 1 140px", maxWidth: 200, padding: "20px 8px", border: `2px solid ${c}`, borderRadius: 14, background: s, color: c, fontSize: 20, fontWeight: 800, cursor: "pointer", textAlign: "center", transition: "all 0.12s" });
   const numBtn = (on) => ({ padding: "14px 0", border: `2px solid ${on ? t.ac : t.bd}`, borderRadius: 12, background: on ? t.acS : "transparent", color: on ? t.ac : t.tx, fontSize: 16, fontWeight: 700, cursor: "pointer", textAlign: "center", transition: "all 0.1s" });
-  const actionBtn = (v) => ({ width: "100%", padding: "14px 0", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 8, boxSizing: "border-box", ...(v === "p" ? { background: t.ac, color: "#fff" } : v === "d" ? { background: t.rd, color: "#fff" } : { background: t.sf, color: t.tx, border: `1px solid ${t.bd}` }) });
+  const actionBtn = (v) => ({ width: "100%", padding: "15px 12px", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, boxSizing: "border-box", lineHeight: 1.5, ...(v === "p" ? { background: t.ac, color: "#fff" } : v === "d" ? { background: t.rd, color: "#fff" } : { background: t.sf, color: t.tx, border: `1px solid ${t.bd}` }) });
   const pSelBtn = (on) => ({ padding: "14px 8px", border: `2px solid ${on ? t.ac : t.bd}`, borderRadius: 12, background: on ? t.acS : "transparent", color: on ? t.ac : t.tx, fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center", flex: 1, transition: "all 0.1s" });
   const backBtn = {
     background: t.card, border: `1px solid ${t.bd}`, borderRadius: 10,
     color: t.tx, fontSize: 15, fontWeight: 700, cursor: "pointer",
-    padding: "12px 18px", marginBottom: 14,
+    padding: "12px 18px", marginBottom: 18,
     display: "inline-flex", alignItems: "center", gap: 6,
   };
   const inputStyle = { background: t.sf, border: `1px solid ${t.bd}`, borderRadius: 10, padding: "10px 14px", color: t.tx, fontSize: 14, width: "100%", boxSizing: "border-box", outline: "none" };
@@ -1574,7 +1574,7 @@ function MahjongScorer() {
     </div>
   );
 
-  const body = { padding: "16px 20px 32px", boxSizing: "border-box", maxWidth: "100%", overflowX: "hidden" };
+  const body = { padding: "18px 20px 36px", boxSizing: "border-box", maxWidth: "100%", overflowX: "hidden", lineHeight: 1.7 };
 
   // Global box-sizing reset
   const globalStyle = `
@@ -4041,10 +4041,10 @@ input, select { padding: 10px 14px; }
       <button
         onClick={onClick}
         style={{
-          width: "100%", display: "flex", alignItems: "center", gap: 14,
-          padding: "16px 18px", background: highlight ? t.gdS : t.card,
+          width: "100%", display: "flex", alignItems: "center", gap: 15,
+          padding: "18px 18px", background: highlight ? t.gdS : t.card,
           border: `1px solid ${highlight ? t.gd + "55" : t.bd}`,
-          borderRadius: 14, cursor: "pointer", marginBottom: 10, textAlign: "left",
+          borderRadius: 14, cursor: "pointer", marginBottom: 12, textAlign: "left", lineHeight: 1.6,
         }}
       >
         <span style={{
@@ -6077,12 +6077,12 @@ input, select { padding: 10px 14px; }
       return (
         <div style={{
           width: PW, height: PH,
-          padding: (tmWinStep || tmDrawMode) ? 8 : "12px 14px", borderRadius: 14,
+          padding: (tmWinStep || tmDrawMode) ? 10 : "14px 16px", borderRadius: 14,
           // 親は外枠だけ黄色に。背景は他家と同じ
           background: (tmWinStep || tmDrawMode) ? "transparent" : isRiichi ? "rgba(220,60,60,0.16)" : t.card,
           border: (tmWinStep || tmDrawMode) ? "2px solid transparent" : `2px solid ${isRiichi ? t.rd : isDealer ? t.gd : t.bd}`,
           textAlign: "center", boxSizing: "border-box",
-          display: "flex", flexDirection: "column", justifyContent: "center", gap: 5,
+          display: "flex", flexDirection: "column", justifyContent: "center", gap: 7,
           position: "relative",
           animation: isWallTarget ? "wallBlink 0.9s ease-in-out infinite" : "none",
         }}>
@@ -6262,8 +6262,8 @@ input, select { padding: 10px 14px; }
 
     // 操作ボタン列（上段は対面向きに180度回転）
     const smallBtn = (v) => ({
-      width: "100%", padding: "10px 0", border: "none", borderRadius: 10,
-      fontSize: 13, fontWeight: 700, cursor: "pointer", boxSizing: "border-box",
+      width: "100%", padding: "11px 6px", border: "none", borderRadius: 10,
+      fontSize: 13, fontWeight: 700, cursor: "pointer", boxSizing: "border-box", lineHeight: 1.4,
       ...(v === "p" ? { background: t.ac, color: "#fff" } : { background: t.sf, color: t.tx, border: `1px solid ${t.bd}` }),
     });
     const actionRow = (flip) => (
