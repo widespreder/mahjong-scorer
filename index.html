@@ -44,8 +44,22 @@ function calcBasePoints(fu, han, kiriage) {
 function roundUp100(n) {
   return Math.ceil(n / 100) * 100;
 }
-function calcScore(fu, han, isParent, isTsumo, kiriage) {
+function calcScore(fu, han, isParent, isTsumo, kiriage, pc) {
   const base = calcBasePoints(fu, han, kiriage);
+  if (pc === 3) {
+    if (isTsumo) {
+      const e = roundUp100(base * (isParent ? 3 : 2));
+      return {
+        total: e * 2,
+        each: e,
+        fromParent: e,
+        fromChild: e
+      };
+    }
+    return {
+      total: roundUp100(base * (isParent ? 6 : 4))
+    };
+  }
   if (isParent) {
     if (isTsumo) {
       const e = roundUp100(base * 2);
@@ -85,6 +99,45 @@ function getLimitName(han) {
   return null;
 }
 const WINDS = ["東", "南", "西", "北"];
+const SEATS_OF = pc => pc === 3 ? ["東", "南", "西"] : WINDS;
+const SANMA_DEFAULT_RULES = {
+  startPoints: 40000,
+  returnPoints: 40000,
+  honbaUnit: 600,
+  kazoeYakuman: false,
+  kiriage: true,
+  doubleYakuman: true,
+  agariRenchan: true,
+  tenpaiRenchan: false,
+  orasYame: true,
+  multiRon: "atamahane",
+  kuitan: true,
+  atozuke: true,
+  tobiEnd: true,
+  umaKey: "renmei3",
+  uma: [10, 0, -10]
+};
+const UMA_PRESETS_3 = [{
+  key: "renmei3",
+  label: "+10 / 0 / -10",
+  note: "連盟三麻ルール",
+  uma: [10, 0, -10]
+}, {
+  key: "5-5",
+  label: "+5 / 0 / -5",
+  note: "小さめ",
+  uma: [5, 0, -5]
+}, {
+  key: "20-20",
+  label: "+20 / 0 / -20",
+  note: "大きめ",
+  uma: [20, 0, -20]
+}, {
+  key: "none3",
+  label: "なし",
+  note: "素点のみ",
+  uma: [0, 0, 0]
+}];
 const MATCH_LABEL = mt => mt === "tonpu" ? "東風戦" : mt === "zenchan" ? "全荘戦" : "半荘戦";
 const MATCH_LABEL_SHORT = mt => mt === "tonpu" ? "東風" : mt === "zenchan" ? "全荘" : "半荘";
 const LAST_WIND = mt => mt === "tonpu" ? "東" : mt === "zenchan" ? "北" : "南";
@@ -162,7 +215,7 @@ function MahjongScorer() {
       const y = ev.touches ? ev.touches[0] ? ev.touches[0].clientY : m.lastY : ev.clientY;
       m.lastY = y;
       const off = y - m.startY;
-      m.lastTarget = Math.max(0, Math.min(3, m.from + Math.round(off / m.rowH)));
+      m.lastTarget = Math.max(0, Math.min(PC - 1, m.from + Math.round(off / m.rowH)));
       m.lastOffset = off;
       if (!m.raf) m.raf = requestAnimationFrame(() => {
         m.raf = null;
@@ -239,6 +292,13 @@ function MahjongScorer() {
     }
   };
   const seatTimer = React.useRef(null);
+  const [gameConfig, setGameConfig] = useState(null);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [playerCount, setPlayerCount] = useState(4);
+  const PC = gameStarted && gameConfig ? gameConfig.playerCount || 4 : playerCount;
+  const SEAT_WINDS = SEATS_OF(PC);
+  const HU = () => gameConfig?.rules?.honbaUnit || 300;
+  const isSanma = PC === 3;
   const [seatTiles, setSeatTiles] = useState([]);
   const [seatTurn, setSeatTurn] = useState(0);
   const [seatDone, setSeatDone] = useState(false);
@@ -258,9 +318,9 @@ function MahjongScorer() {
   const [ronRuleWarn, setRonRuleWarn] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [showScoreFix, setShowScoreFix] = useState(false);
-  const WIND_ORDER = ["東", "南", "西", "北"];
+  const WIND_ORDER = SEATS_OF(PC);
   const resetSeatDraw = () => {
-    const winds = [...WIND_ORDER];
+    const winds = [...SEATS_OF(PC)];
     for (let i = winds.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [winds[i], winds[j]] = [winds[j], winds[i]];
@@ -282,12 +342,15 @@ function MahjongScorer() {
     try {
       if (navigator.vibrate) navigator.vibrate(10);
     } catch {}
-    if (seatTurn + 1 >= 4) {
+    if (seatTurn + 1 >= PC) {
       const byWind = {};
       next.forEach(s => {
         byWind[s.wind] = s.by;
       });
-      setPlayers(prev => WIND_ORDER.map(w => prev[byWind[w]]));
+      setPlayers(prev => {
+        const seated = WIND_ORDER.map(w => prev[byWind[w]]);
+        return seated.concat(prev.slice(PC));
+      });
       setSeatDone(true);
     } else {
       setSeatTurn(seatTurn + 1);
@@ -355,8 +418,9 @@ function MahjongScorer() {
       s,
       seat: seatOrder ? seatOrder[i] : i
     })).sort((a, b) => b.s - a.s || a.seat - b.seat);
-    const okaPool = (returnPt - startPt) * 4;
-    const out = new Array(4);
+    const pcN = scores4.length;
+    const okaPool = (returnPt - startPt) * pcN;
+    const out = new Array(pcN);
     ranked.forEach((r, rank) => {
       const raw = r.s - returnPt + (rank === 0 ? okaPool : 0);
       out[r.i] = {
@@ -451,6 +515,8 @@ function MahjongScorer() {
     atozuke: true,
     kiriage: false,
     doubleYakuman: false,
+    honbaUnit: 300,
+    kazoeYakuman: true,
     orasYame: true,
     multiRon: "atamahane",
     startPoints: 30000,
@@ -508,7 +574,6 @@ function MahjongScorer() {
     setRulesSaved(true);
     setTimeout(() => setRulesSaved(false), 2500);
   };
-  const [gameConfig, setGameConfig] = useState(null);
   const [scores, setScores] = useState([25000, 25000, 25000, 25000]);
   const [rounds, setRounds] = useState([]);
   const [dealerIdx, setDealerIdx] = useState(0);
@@ -530,7 +595,6 @@ function MahjongScorer() {
       return next;
     });
   };
-  const [gameStarted, setGameStarted] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
   const [showExtendConfirm, setShowExtendConfirm] = useState(false);
   const [kyotakuAward, setKyotakuAward] = useState(null);
@@ -617,7 +681,8 @@ function MahjongScorer() {
       total += h;
     });
     if (yakumanCount > 0) return dbl ? 13 * yakumanCount : 13;
-    return Math.min(total + pickerDora + pickerUra, 13);
+    const cap = activePickerRules().kazoeYakuman === false ? 12 : 13;
+    return Math.min(total + pickerDora + pickerUra, cap);
   };
   const resetFuGuide = () => {
     setFuGuide(null);
@@ -788,15 +853,15 @@ function MahjongScorer() {
   const gLimit = gHan !== null ? getLimitName(gHan) : null;
   const gResult = useMemo(() => {
     if (gHan === null || gTsumo === null) return null;
-    return calcScore(gHan >= 5 ? 30 : gFu || 30, gHan, gParent, gTsumo, gameConfig?.rules?.kiriage);
+    return calcScore(gHan >= 5 ? 30 : gFu || 30, gHan, gParent, gTsumo, gameConfig?.rules?.kiriage, PC);
   }, [gHan, gFu, gParent, gTsumo, gameConfig]);
   const advanceAfterWin = useCallback((dealerWon, ns) => {
     const cfg = gameConfig || {};
     const lastWi = WINDS.indexOf(LAST_WIND(cfg.matchType));
     const curWi = WINDS.indexOf(roundWind);
-    const isOrlast = dealerIdx === 3 && curWi >= lastWi;
+    const isOrlast = dealerIdx === PC - 1 && curWi >= lastWi;
     if (!dealerWon) {
-      const next = (dealerIdx + 1) % 4;
+      const next = (dealerIdx + 1) % PC;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
       } else if (next === 0 && curWi >= lastWi) {
@@ -825,16 +890,16 @@ function MahjongScorer() {
     setRiichiBets(0);
     setDeclaredRiichi([false, false, false, false]);
     if ((cfg.rules || {}).tobiEnd !== false && ns.some(s => s < 0)) setGameFinished(true);
-  }, [gameConfig, dealerIdx, roundWind]);
+  }, [gameConfig, dealerIdx, roundWind, PC]);
   const finalizeMultiRon = useCallback((entries, loser) => {
     const ns = [...scores],
-      hb = honba * 300;
+      hb = honba * HU();
     const riichiThisRound = gRiichi.filter(Boolean).length;
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < PC; i++) {
       if (gRiichi[i]) ns[i] -= 1000;
     }
     const pool = (riichiBets + riichiThisRound) * 1000;
-    const sorted = [...entries].sort((a, b) => (a.winner - loser + 4) % 4 - (b.winner - loser + 4) % 4);
+    const sorted = [...entries].sort((a, b) => (a.winner - loser + PC) % PC - (b.winner - loser + PC) % PC);
     sorted.forEach((e, k) => {
       ns[e.winner] += e.result.total + (k === 0 ? hb + pool : 0);
       ns[loser] -= e.result.total + (k === 0 ? hb : 0);
@@ -868,40 +933,41 @@ function MahjongScorer() {
   }, [scores, honba, gRiichi, riichiBets, rounds, roundWind, dealerIdx, advanceAfterWin, resetGW]);
   const recalcAllRounds = (roundList, cfg) => {
     const sp = cfg.rules?.startPoints || 30000;
-    const ns = [sp, sp, sp, sp];
+    const ns = Array(PC).fill(sp);
     let carry = 0;
     const fixed = roundList.map(r => {
       const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
       if (r.riichi) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < PC; i++) {
           if (r.riichi[i]) ns[i] -= 1000;
         }
       }
       if (r.draw) {
         carry += rc;
         const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
-        const nc = 4 - tc;
-        if (tc > 0 && tc < 4) {
+        const nc = PC - tc;
+        if (tc > 0 && tc < PC) {
           const nPay = Math.floor(3000 / nc),
             tGet = Math.floor(3000 / tc);
-          for (let i = 0; i < 4; i++) {
+          for (let i = 0; i < PC; i++) {
             if (r.tenpai[i]) ns[i] += tGet;else ns[i] -= nPay;
           }
         }
         return r;
       }
-      const res = calcScore(r.han >= 5 ? 30 : r.fu || 30, r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
+      const res = calcScore(r.han >= 5 ? 30 : r.fu || 30, r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage, PC);
       const pool2 = (carry + rc) * 1000;
       carry = 0;
-      const hb2 = r.honba * 300;
+      const hb2 = r.honba * (cfg.rules && cfg.rules.honbaUnit || 300);
+      const payers = PC - 1;
       if (r.tsumo) {
-        if (r.winner === r.dealer) {
-          for (let i = 0; i < 4; i++) {
-            if (i === r.winner) ns[i] += res.each * 3 + hb2 + pool2;else ns[i] -= res.each + Math.floor(hb2 / 3);
+        if (isSanma || r.winner === r.dealer) {
+          for (let i = 0; i < PC; i++) {
+            if (i === r.winner) ns[i] += res.each * payers + hb2 + pool2;else ns[i] -= res.each + Math.floor(hb2 / payers);
           }
         } else {
-          for (let i = 0; i < 4; i++) {
-            if (i === r.winner) ns[i] += res.total + hb2 + pool2;else if (i === r.dealer) ns[i] -= res.fromParent + Math.floor(hb2 / 3);else ns[i] -= res.fromChild + Math.floor(hb2 / 3);
+          for (let i = 0; i < PC; i++) {
+            if (i === r.winner) ns[i] += res.total + hb2 + pool2;else if (i === r.dealer) ns[i] -= res.fromParent + Math.floor(hb2 / payers);else ns[i] -= res.fromChild + Math.floor(hb2 / payers);
           }
         }
       } else {
@@ -940,7 +1006,7 @@ function MahjongScorer() {
       const recalced = recalcAllRounds(newRounds, cfg);
       const newScores = [...recalced.scores];
       let liveCount = 0;
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < PC; i++) {
         if (declaredRiichi[i]) {
           newScores[i] -= 1000;
           liveCount++;
@@ -983,20 +1049,21 @@ function MahjongScorer() {
       return;
     }
     const ns = [...scores],
-      hb = honba * 300;
+      hb = honba * HU();
     const riichiThisRound = gRiichi.filter(Boolean).length;
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < PC; i++) {
       if (gRiichi[i]) ns[i] -= 1000;
     }
     const totalRiichiPool = (riichiBets + riichiThisRound) * 1000;
+    const payers = PC - 1;
     if (gTsumo) {
-      if (gParent) {
-        for (let i = 0; i < 4; i++) {
-          if (i === gWinner) ns[i] += gResult.each * 3 + hb + totalRiichiPool;else ns[i] -= gResult.each + Math.floor(hb / 3);
+      if (isSanma || gParent) {
+        for (let i = 0; i < PC; i++) {
+          if (i === gWinner) ns[i] += gResult.each * payers + hb + totalRiichiPool;else ns[i] -= gResult.each + Math.floor(hb / payers);
         }
       } else {
-        for (let i = 0; i < 4; i++) {
-          if (i === gWinner) ns[i] += gResult.total + hb + totalRiichiPool;else if (i === dealerIdx) ns[i] -= gResult.fromParent + Math.floor(hb / 3);else ns[i] -= gResult.fromChild + Math.floor(hb / 3);
+        for (let i = 0; i < PC; i++) {
+          if (i === gWinner) ns[i] += gResult.total + hb + totalRiichiPool;else if (i === dealerIdx) ns[i] -= gResult.fromParent + Math.floor(hb / payers);else ns[i] -= gResult.fromChild + Math.floor(hb / payers);
         }
       }
     } else {
@@ -1036,7 +1103,7 @@ function MahjongScorer() {
       const recalced = recalcAllRounds(newRounds, cfgAll);
       const newScores = [...recalced.scores];
       let liveCount = 0;
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < PC; i++) {
         if (declaredRiichi[i]) {
           newScores[i] -= 1000;
           liveCount++;
@@ -1052,12 +1119,12 @@ function MahjongScorer() {
     }
     const ns = [...scores];
     const cfg = gameConfig || {};
-    const tenpaiCount = drawTenpai.filter(Boolean).length;
-    const notenCount = 4 - tenpaiCount;
-    if (tenpaiCount > 0 && tenpaiCount < 4) {
+    const tenpaiCount = drawTenpai.slice(0, PC).filter(Boolean).length;
+    const notenCount = PC - tenpaiCount;
+    if (tenpaiCount > 0 && tenpaiCount < PC) {
       const notenPay = Math.floor(3000 / notenCount);
       const tenpaiGet = Math.floor(3000 / tenpaiCount);
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < PC; i++) {
         if (drawTenpai[i]) ns[i] += tenpaiGet;else ns[i] -= notenPay;
       }
     }
@@ -1078,14 +1145,14 @@ function MahjongScorer() {
     const ruleSet = cfg.rules || {};
     const lastWi2 = WINDS.indexOf(LAST_WIND(cfg.matchType));
     const curWi2 = WINDS.indexOf(roundWind);
-    const isOrlast = dealerIdx === 3 && curWi2 >= lastWi2;
+    const isOrlast = dealerIdx === PC - 1 && curWi2 >= lastWi2;
     if (ruleSet.agariRenchan) {
       dealerRotates = true;
     } else if (ruleSet.tenpaiRenchan) {
       dealerRotates = !dealerTenpai;
     }
     if (dealerRotates) {
-      const next = (dealerIdx + 1) % 4;
+      const next = (dealerIdx + 1) % PC;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
       } else if (next === 0 && curWi2 >= lastWi2) {
@@ -1115,16 +1182,18 @@ function MahjongScorer() {
     setLastRules({
       ...rules
     });
+    const pcNow = activeLeagueId ? 4 : playerCount;
     const cfg = {
       date: gameDate,
       matchType,
-      players: [...players],
+      playerCount: pcNow,
+      players: players.slice(0, pcNow),
       rules: {
         ...rules
       }
     };
     setGameConfig(cfg);
-    setScores([sp, sp, sp, sp]);
+    setScores(Array(pcNow).fill(sp));
     setDealerIdx(0);
     setRoundWind("東");
     setHonba(0);
@@ -1136,7 +1205,7 @@ function MahjongScorer() {
     setTableMode(true);
     setTmWinStep(null);
     setTmDrawMode(false);
-  }, [gameDate, matchType, players, rules]);
+  }, [gameDate, matchType, players, rules, playerCount, activeLeagueId]);
   const t = {
     bg: "#0c1117",
     sf: "#161d27",
@@ -1303,10 +1372,11 @@ function MahjongScorer() {
   }) => {
     const sp = r.startPoints ?? 25000;
     const rp = r.returnPoints ?? 30000;
-    const uma = r.uma || [0, 0, 0, 0];
-    const oka = (rp - sp) * 4 / 1000;
+    const pcU = r.uma && r.uma.length === 3 || isSanma ? 3 : 4;
+    const uma = r.uma || (pcU === 3 ? [0, 0, 0] : [0, 0, 0, 0]);
+    const oka = (rp - sp) * pcU / 1000;
     const [open, setOpen] = React.useState(false);
-    const demo = [15000, 7000, -7000, -15000].map(o => sp + o);
+    const demo = (pcU === 3 ? [15000, 0, -15000] : [15000, 7000, -7000, -15000]).map(o => sp + o);
     const gosha = v => {
       const s = v < 0 ? -1 : 1,
         a = Math.abs(v),
@@ -1317,11 +1387,11 @@ function MahjongScorer() {
       i,
       s
     })).sort((a, b) => b.s - a.s || a.i - b.i);
-    const pts = new Array(4);
+    const pts = new Array(pcU);
     ranked.forEach((x, rank) => {
       pts[x.i] = {
         rank: rank + 1,
-        pt: gosha((x.s - rp + (rank === 0 ? (rp - sp) * 4 : 0)) / 1000) + uma[rank]
+        pt: gosha((x.s - rp + (rank === 0 ? (rp - sp) * pcU : 0)) / 1000) + uma[rank]
       };
     });
     return React.createElement("div", null, React.createElement("div", {
@@ -1345,7 +1415,7 @@ function MahjongScorer() {
         gap: 7,
         marginBottom: 10
       }
-    }, UMA_PRESETS.map(u => {
+    }, (pcU === 3 ? UMA_PRESETS_3 : UMA_PRESETS).map(u => {
       const on = (r.umaKey || "none") === u.key;
       return React.createElement("button", {
         key: u.key,
@@ -8769,8 +8839,8 @@ input, select { padding: 10px 14px; }
   const DiceModal = () => {
     if (!diceOpen) return null;
     const sum = diceVals[0] + diceVals[1];
-    const targetIdx = (dealerIdx + (sum - 1)) % 4;
-    const relLabel = ["自分（親）の山", "下家（右）の山", "対面の山", "上家（左）の山"][(sum - 1) % 4];
+    const targetIdx = (dealerIdx + (sum - 1)) % PC;
+    const relLabel = (PC === 3 ? ["自分（親）の山", "下家（右）の山", "上家（左）の山"] : ["自分（親）の山", "下家（右）の山", "対面の山", "上家（左）の山"])[(sum - 1) % PC];
     return React.createElement("div", {
       style: {
         position: "fixed",
@@ -8910,9 +8980,10 @@ input, select { padding: 10px 14px; }
       const parts = [];
       if (r.draw) {
         if (paidRiichi) delta -= 1000;
-        const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
-        if (tc > 0 && tc < 4) {
-          const nc = 4 - tc;
+        const rpc = cfg.playerCount || 4;
+        const tc = r.tenpai ? r.tenpai.slice(0, rpc).filter(Boolean).length : 0;
+        if (tc > 0 && tc < rpc) {
+          const nc = rpc - tc;
           if (r.tenpai[pi]) {
             const g2 = Math.floor(3000 / tc);
             delta += g2;
@@ -8930,7 +9001,7 @@ input, select { padding: 10px 14px; }
           }
         } else {
           parts.push({
-            label: tc === 4 ? "流局（全員テンパイ）" : "流局（全員ノーテン）",
+            label: tc > 0 ? "流局（全員テンパイ）" : "流局（全員ノーテン）",
             amt: null
           });
         }
@@ -8939,16 +9010,17 @@ input, select { padding: 10px 14px; }
           amt: -1000
         });
       } else {
-        const res = calcScore(r.han >= 5 ? 30 : r.fu || 30, r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage);
+        const rpc2 = cfg.playerCount || 4;
+        const res = calcScore(r.han >= 5 ? 30 : r.fu || 30, r.han, r.winner === r.dealer, r.tsumo, cfg.rules?.kiriage, rpc2);
         const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
         const pool = typeof r.pool === "number" ? r.pool : rc * 1000;
-        const hb = r.honba * 300;
+        const hb = r.honba * (cfg.rules && cfg.rules.honbaUnit || 300);
         const handLabel = r.han >= 13 ? getLimitName(r.han) : r.fu ? `${r.han}飜${r.fu}符` : `${r.han}飜`;
         if (paidRiichi) {
           delta -= 1000;
         }
         if (r.winner === pi) {
-          const gain = r.tsumo && r.winner === r.dealer ? res.each * 3 : res.total;
+          const gain = r.tsumo && (rpc2 === 3 || r.winner === r.dealer) ? res.each * (rpc2 - 1) : res.total;
           delta += gain + hb + pool;
           parts.push({
             label: `${r.tsumo ? "ツモ" : "ロン"}${handLabel}`,
@@ -8968,8 +9040,8 @@ input, select { padding: 10px 14px; }
           });
         } else if (r.tsumo) {
           let pay;
-          if (r.winner === r.dealer) pay = res.each;else if (pi === r.dealer) pay = res.fromParent;else pay = res.fromChild;
-          const hbShare = Math.floor(hb / 3);
+          if (rpc2 === 3 || r.winner === r.dealer) pay = res.each;else if (pi === r.dealer) pay = res.fromParent;else pay = res.fromChild;
+          const hbShare = Math.floor(hb / (rpc2 - 1));
           delta -= pay + hbShare;
           parts.push({
             label: `${players[r.winner]}のツモ`,
@@ -9608,36 +9680,37 @@ input, select { padding: 10px 14px; }
   const deleteRound = useCallback(idx => {
     const cfg = gameConfig || {};
     const sp = cfg.rules?.startPoints || 30000;
-    let newScores = [sp, sp, sp, sp];
+    let newScores = Array(PC).fill(sp);
     const newRounds = rounds.filter((_, i) => i !== idx);
+    const payers = PC - 1;
     newRounds.forEach(r => {
       if (r.draw) {
-        const tc = r.tenpai ? r.tenpai.filter(Boolean).length : 0;
-        const nc = 4 - tc;
-        if (tc > 0 && tc < 4) {
+        const tc = r.tenpai ? r.tenpai.slice(0, PC).filter(Boolean).length : 0;
+        const nc = PC - tc;
+        if (tc > 0 && tc < PC) {
           const np = Math.floor(3000 / nc),
             tg = Math.floor(3000 / tc);
-          for (let i = 0; i < 4; i++) {
+          for (let i = 0; i < PC; i++) {
             if (r.tenpai[i]) newScores[i] += tg;else newScores[i] -= np;
           }
         }
       } else {
-        const result = calcScore(r.han >= 5 ? 30 : r.fu || 30, r.han, r.winner === r.dealer, r.tsumo, gameConfig?.rules?.kiriage);
+        const result = calcScore(r.han >= 5 ? 30 : r.fu || 30, r.han, r.winner === r.dealer, r.tsumo, gameConfig?.rules?.kiriage, PC);
         const rc = r.riichi ? r.riichi.filter(Boolean).length : 0;
         if (r.riichi) {
-          for (let i = 0; i < 4; i++) {
+          for (let i = 0; i < PC; i++) {
             if (r.riichi[i]) newScores[i] -= 1000;
           }
         }
-        const hb = r.honba * 300;
+        const hb = r.honba * HU();
         if (r.tsumo) {
-          if (r.winner === r.dealer) {
-            for (let i = 0; i < 4; i++) {
-              if (i === r.winner) newScores[i] += result.each * 3 + hb + rc * 1000;else newScores[i] -= result.each + Math.floor(hb / 3);
+          if (isSanma || r.winner === r.dealer) {
+            for (let i = 0; i < PC; i++) {
+              if (i === r.winner) newScores[i] += result.each * payers + hb + rc * 1000;else newScores[i] -= result.each + Math.floor(hb / payers);
             }
           } else {
-            for (let i = 0; i < 4; i++) {
-              if (i === r.winner) newScores[i] += result.total + hb + rc * 1000;else if (i === r.dealer) newScores[i] -= result.fromParent + Math.floor(hb / 3);else newScores[i] -= result.fromChild + Math.floor(hb / 3);
+            for (let i = 0; i < PC; i++) {
+              if (i === r.winner) newScores[i] += result.total + hb + rc * 1000;else if (i === r.dealer) newScores[i] -= result.fromParent + Math.floor(hb / payers);else newScores[i] -= result.fromChild + Math.floor(hb / payers);
             }
           }
         } else {
@@ -9726,6 +9799,7 @@ input, select { padding: 10px 14px; }
         }
       }, "かんたん点数計算 & 対局管理")), suspendedGame && menuItem("⏸", "保留中の対局を再開", `${suspendedGame.config.date} ${MATCH_LABEL_SHORT(suspendedGame.config.matchType)} — ${suspendedGame.players.join("・")}`, () => {
         setGameConfig(suspendedGame.config);
+        setPlayerCount(suspendedGame.config.playerCount || 4);
         setPlayers(suspendedGame.players);
         setScores(suspendedGame.scores);
         setRounds(suspendedGame.rounds);
@@ -13363,7 +13437,7 @@ input, select { padding: 10px 14px; }
       gridTemplateColumns: "1fr 1fr",
       gap: 7
     }
-  }, players.map((nm, i) => React.createElement("div", {
+  }, players.slice(0, PC).map((nm, i) => React.createElement("div", {
     key: i,
     style: {
       display: "flex",
@@ -13433,7 +13507,7 @@ input, select { padding: 10px 14px; }
       background: t.sf,
       border: `1px solid ${t.bd}`
     }
-  }, players.map((nm, i) => React.createElement("div", {
+  }, players.slice(0, PC).map((nm, i) => React.createElement("div", {
     key: i,
     style: {
       display: "flex",
@@ -13942,7 +14016,7 @@ input, select { padding: 10px 14px; }
       color: t.dm,
       marginBottom: 3
     }
-  }, "グループ", groups.length > 0 ? "（タップで4人をまとめて選択）" : ""), groups.length === 0 && React.createElement("div", {
+  }, "グループ", groups.length > 0 ? `（タップで${PC}人をまとめて選択）` : ""), groups.length === 0 && React.createElement("div", {
     style: {
       fontSize: 10,
       color: t.dm,
@@ -14054,7 +14128,7 @@ input, select { padding: 10px 14px; }
     }
   }, "✕")) : React.createElement("button", {
     onClick: () => setShowGroupSave(true),
-    disabled: !players.every(p => p.trim()),
+    disabled: !players.slice(0, PC).every(p => p.trim()),
     style: {
       width: "100%",
       padding: "10px 8px",
@@ -14065,9 +14139,59 @@ input, select { padding: 10px 14px; }
       color: t.dm,
       fontSize: 12,
       fontWeight: 700,
-      opacity: players.every(p => p.trim()) ? 1 : 0.4
+      opacity: players.slice(0, PC).every(p => p.trim()) ? 1 : 0.4
     }
-  }, "＋ 今の4人をグループとして保存")), React.createElement("div", {
+  }, "＋ 今の", PC, "人をグループとして保存")), React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: t.dm,
+      marginBottom: 8
+    }
+  }, "人数"), React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 14
+    }
+  }, [[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => React.createElement("button", {
+    key: n,
+    onClick: () => {
+      if (n === playerCount) return;
+      setPlayerCount(n);
+      setSeatDone(false);
+      setSeatTiles([]);
+      setSeatTurn(0);
+      if (n === 3) setRules(r => ({
+        ...r,
+        ...SANMA_DEFAULT_RULES
+      }));else setRules(r => ({
+        ...r,
+        ...FACTORY_RULES,
+        startPoints: 25000,
+        returnPoints: 30000
+      }));
+    },
+    style: {
+      flex: 1,
+      padding: "13px 6px",
+      borderRadius: 11,
+      cursor: "pointer",
+      border: `2px solid ${playerCount === n ? t.ac : t.bd}`,
+      background: playerCount === n ? t.acS : "transparent",
+      color: playerCount === n ? t.ac : t.dm
+    }
+  }, React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 800
+    }
+  }, lb), React.createElement("div", {
+    style: {
+      fontSize: 10,
+      marginTop: 3,
+      opacity: 0.85
+    }
+  }, sub)))), React.createElement("div", {
     style: {
       fontSize: 11,
       color: t.dm,
@@ -14079,7 +14203,7 @@ input, select { padding: 10px 14px; }
     style: {
       color: t.tx
     }
-  }, "長押し"), "して、そのまま上下にドラッグ"), players.map((p, i) => {
+  }, "長押し"), "して、そのまま上下にドラッグ"), players.slice(0, PC).map((p, i) => {
     const isCustom = playerMode[i];
     const ds = dragSeat;
     const isDragging = ds && ds.from === i;
@@ -14440,7 +14564,7 @@ input, select { padding: 10px 14px; }
     const PH = "26cqmin";
     const PGAP = "3cqmin";
     const diceSum = diceVals[0] + diceVals[1];
-    const wallTargetIdx = diceSettled ? (dealerIdx + (diceSum - 1)) % 4 : -1;
+    const wallTargetIdx = diceSettled ? (dealerIdx + (diceSum - 1)) % PC : -1;
     const nameFont = (name, base) => {
       const n = (name || "").length;
       const scale = n <= 4 ? 1 : n <= 6 ? 0.88 : n <= 8 ? 0.76 : n <= 11 ? 0.66 : 0.58;
@@ -14448,7 +14572,7 @@ input, select { padding: 10px 14px; }
     };
     const panelInner = i => {
       const isDealer = i === dealerIdx;
-      const seatWind = WINDS[(i - dealerIdx + 4) % 4];
+      const seatWind = SEAT_WINDS[(i - dealerIdx + PC) % PC];
       const score = scores[i];
       const isRiichi = declaredRiichi[i];
       const isWallTarget = i === wallTargetIdx;
@@ -14954,7 +15078,7 @@ input, select { padding: 10px 14px; }
         fontSize: 19,
         padding: "10px 0"
       },
-      onClick: () => setSeatRot(r => (r + 3) % 4)
+      onClick: () => setSeatRot(r => (r + PC - 1) % PC)
     }, "🔄")));
     return React.createElement("div", {
       style: {
@@ -15050,13 +15174,16 @@ input, select { padding: 10px 14px; }
         border: "3px solid #24583f",
         overflow: "hidden"
       }
-    }, hSlot((2 + seatRot) % 4, {
+    }, PC === 3 ? React.createElement(React.Fragment, null, vSlot((1 + seatRot) % 3, "right", -90), vSlot((2 + seatRot) % 3, "left", 90), hSlot((0 + seatRot) % 3, {
+      bottom: PGAP,
+      left: "50%"
+    }, 0)) : React.createElement(React.Fragment, null, hSlot((2 + seatRot) % 4, {
       top: PGAP,
       left: "50%"
     }, 180), vSlot((1 + seatRot) % 4, "right", -90), vSlot((3 + seatRot) % 4, "left", 90), hSlot((0 + seatRot) % 4, {
       bottom: PGAP,
       left: "50%"
-    }, 0), React.createElement("div", {
+    }, 0)), React.createElement("div", {
       style: {
         position: "absolute",
         top: "50%",
@@ -15180,7 +15307,7 @@ input, select { padding: 10px 14px; }
         setGTsumo(false);
         setGLoser(i);
         if (ronPick.length >= 2) {
-          const order = [...ronPick].sort((x, y) => (x - i + 4) % 4 - (y - i + 4) % 4);
+          const order = [...ronPick].sort((x, y) => (x - i + PC) % PC - (y - i + PC) % PC);
           setMultiRon({
             loser: i,
             queue: order,
@@ -15255,8 +15382,8 @@ input, select { padding: 10px 14px; }
         whiteSpace: "nowrap"
       }
     }, "ツモ"))), React.createElement("div", null, !tmWinStep && !tmDrawMode && (diceRolling || diceSettled) && (() => {
-      const ROT = [0, -90, 180, 90];
-      const rot = ROT[(dealerIdx - seatRot + 4) % 4] ?? 0;
+      const ROT = PC === 3 ? [0, -90, 90] : [0, -90, 180, 90];
+      const rot = ROT[(dealerIdx - seatRot + PC) % PC] ?? 0;
       return React.createElement("div", {
         style: {
           position: "relative",
@@ -15308,7 +15435,7 @@ input, select { padding: 10px 14px; }
         background: "transparent",
         padding: 2,
         cursor: "pointer",
-        transform: `rotate(${[0, -90, 180, 90][(dealerIdx - seatRot + 4) % 4] ?? 0}deg)`,
+        transform: `rotate(${(PC === 3 ? [0, -90, 90] : [0, -90, 180, 90])[(dealerIdx - seatRot + PC) % PC] ?? 0}deg)`,
         transition: "transform 0.4s cubic-bezier(.3,1.2,.4,1)"
       }
     }, React.createElement(Die, {
@@ -15318,8 +15445,8 @@ input, select { padding: 10px 14px; }
       value: diceVals[1],
       size: 24
     }))), !tmWinStep && !tmDrawMode && !(diceRolling || diceSettled) && (() => {
-      const ROT = [0, -90, 180, 90];
-      const rot = ROT[(dealerIdx - seatRot + 4) % 4] ?? 0;
+      const ROT = PC === 3 ? [0, -90, 90] : [0, -90, 180, 90];
+      const rot = ROT[(dealerIdx - seatRot + PC) % PC] ?? 0;
       const posBase = offsetY => ({
         position: "absolute",
         top: "50%",
@@ -15549,8 +15676,8 @@ input, select { padding: 10px 14px; }
     }
   }, "供託", riichiBets, "本")), React.createElement("div", {
     style: card
-  }, players.map((p, i) => {
-    const sw = WINDS[(i - dealerIdx + 4) % 4];
+  }, players.slice(0, PC).map((p, i) => {
+    const sw = SEAT_WINDS[(i - dealerIdx + PC) % PC];
     const isD = i === dealerIdx;
     return React.createElement("div", {
       key: i,
@@ -15723,7 +15850,7 @@ input, select { padding: 10px 14px; }
       gridTemplateColumns: "1fr 1fr",
       gap: 8
     }
-  }, players.map((p, i) => React.createElement("button", {
+  }, players.slice(0, PC).map((p, i) => React.createElement("button", {
     key: i,
     style: pSelBtn(gWinner === i),
     onClick: () => {
@@ -15735,7 +15862,7 @@ input, select { padding: 10px 14px; }
       fontSize: 11,
       color: t.dm
     }
-  }, WINDS[(i - dealerIdx + 4) % 4], i === dealerIdx ? " (親)" : ""), React.createElement("div", null, p))))), gStep === 2 && React.createElement("div", {
+  }, SEAT_WINDS[(i - dealerIdx + PC) % PC], i === dealerIdx ? " (親)" : ""), React.createElement("div", null, p))))), gStep === 2 && React.createElement("div", {
     style: card
   }, React.createElement(Back, {
     onClick: () => {
@@ -15789,7 +15916,7 @@ input, select { padding: 10px 14px; }
       gridTemplateColumns: "1fr 1fr 1fr",
       gap: 8
     }
-  }, players.map((p, i) => i !== gWinner && React.createElement("button", {
+  }, players.slice(0, PC).map((p, i) => i !== gWinner && React.createElement("button", {
     key: i,
     style: pSelBtn(gLoser === i),
     onClick: () => {
@@ -15801,7 +15928,7 @@ input, select { padding: 10px 14px; }
       fontSize: 11,
       color: t.dm
     }
-  }, WINDS[(i - dealerIdx + 4) % 4]), React.createElement("div", {
+  }, SEAT_WINDS[(i - dealerIdx + PC) % PC]), React.createElement("div", {
     style: {
       fontSize: 13
     }
@@ -15839,7 +15966,7 @@ input, select { padding: 10px 14px; }
       gap: 8,
       marginBottom: 16
     }
-  }, players.map((p, i) => {
+  }, players.slice(0, PC).map((p, i) => {
     const already = declaredRiichi[i];
     const isR = already || gRiichi[i];
     return React.createElement("button", {
@@ -15869,7 +15996,7 @@ input, select { padding: 10px 14px; }
         color: isR ? t.gd : t.dm,
         marginBottom: 2
       }
-    }, WINDS[(i - dealerIdx + 4) % 4]), React.createElement("div", null, p), React.createElement("div", {
+    }, SEAT_WINDS[(i - dealerIdx + PC) % PC]), React.createElement("div", null, p), React.createElement("div", {
       style: {
         fontSize: 10,
         marginTop: 4
@@ -16405,10 +16532,10 @@ input, select { padding: 10px 14px; }
       gap: 8,
       marginBottom: 16
     }
-  }, players.map((p, i) => {
+  }, players.slice(0, PC).map((p, i) => {
     const isTenpai = drawTenpai[i];
     const lockedRiichi = declaredRiichi[i];
-    const sw = WINDS[(i - dealerIdx + 4) % 4];
+    const sw = SEAT_WINDS[(i - dealerIdx + PC) % PC];
     return React.createElement("button", {
       key: i,
       disabled: lockedRiichi,
@@ -16451,9 +16578,9 @@ input, select { padding: 10px 14px; }
       }
     }, isTenpai ? "テンパイ" : "ノーテン"));
   })), (() => {
-    const tc = drawTenpai.filter(Boolean).length;
-    const nc = 4 - tc;
-    if (tc === 0 || tc === 4) return React.createElement("div", {
+    const tc = drawTenpai.slice(0, PC).filter(Boolean).length;
+    const nc = PC - tc;
+    if (tc === 0 || tc === PC) return React.createElement("div", {
       style: {
         textAlign: "center",
         fontSize: 13,
@@ -16477,7 +16604,7 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         marginBottom: 6
       }
-    }, "ノーテン罰符"), players.map((p, i) => {
+    }, "ノーテン罰符"), players.slice(0, PC).map((p, i) => {
       const diff = drawTenpai[i] ? tenpaiGet : -notenPay;
       return React.createElement("div", {
         key: i,
@@ -16689,7 +16816,7 @@ input, select { padding: 10px 14px; }
       padding: 12,
       marginBottom: 16
     }
-  }, players.map((p, i) => React.createElement("div", {
+  }, players.slice(0, PC).map((p, i) => React.createElement("div", {
     key: i,
     style: {
       display: "flex",
@@ -16744,8 +16871,8 @@ input, select { padding: 10px 14px; }
     const ruleSet = gameConfig?.rules || {};
     const returnPt = ruleSet.returnPoints || 30000;
     const startPt = ruleSet.startPoints || 25000;
-    const okaPool = (returnPt - startPt) * 4;
-    const adjusted = players.map((p, i) => {
+    const okaPool = (returnPt - startPt) * PC;
+    const adjusted = players.slice(0, PC).map((p, i) => {
       const diff = scores[i] - returnPt;
       return {
         name: p,
@@ -16921,7 +17048,7 @@ input, select { padding: 10px 14px; }
         i,
         s
       })).sort((a3, b3) => b3.s - a3.s || a3.i - b3.i);
-      const res = new Array(4);
+      const res = new Array(PC);
       rk.forEach((x, rank) => {
         res[x.i] = {
           rank: rank + 1,
@@ -17039,7 +17166,7 @@ input, select { padding: 10px 14px; }
     }, r.limitName))))), (() => {
       const lg = leagues.find(l => l.id === activeLeagueId);
       if (!lg) return null;
-      const res = calcGamePts(scores, [0, 1, 2, 3], lg);
+      const res = calcGamePts(scores, scores.map((_, i) => i), lg);
       return React.createElement("div", {
         style: {
           ...card,
@@ -17054,7 +17181,7 @@ input, select { padding: 10px 14px; }
           marginBottom: 8,
           letterSpacing: "0.05em"
         }
-      }, "🏆 ", lg.name, " の成績"), players.map((nm, i) => React.createElement("div", {
+      }, "🏆 ", lg.name, " の成績"), players.slice(0, PC).map((nm, i) => React.createElement("div", {
         key: i,
         style: {
           display: "flex",
@@ -17126,7 +17253,7 @@ input, select { padding: 10px 14px; }
         }
         const lg = leagues.find(l => l.id === activeLeagueId);
         if (lg && rounds.length > 0) {
-          const res = calcGamePts(scores, [0, 1, 2, 3], lg);
+          const res = calcGamePts(scores, scores.map((_, i) => i), lg);
           const entry = {
             date: gameConfig?.date || "",
             matchType: gameConfig?.matchType || "hanchan",
@@ -17204,7 +17331,7 @@ input, select { padding: 10px 14px; }
         marginBottom: 10,
         lineHeight: 1.7
       }
-    }, "チョンボや点棒の受け渡しミスなど、局の記録では直せない分を調整します"), players.map((nm, i) => React.createElement("div", {
+    }, "チョンボや点棒の受け渡しミスなど、局の記録では直せない分を調整します"), players.slice(0, PC).map((nm, i) => React.createElement("div", {
       key: i,
       style: {
         display: "flex",
