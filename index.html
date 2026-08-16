@@ -243,6 +243,18 @@ function MahjongScorer() {
   const [seatTurn, setSeatTurn] = useState(0);
   const [seatDone, setSeatDone] = useState(false);
   const [showRuleCheck, setShowRuleCheck] = useState(false);
+  const [ruleEditMode, setRuleEditMode] = useState(false);
+  const patchGameRules = patch => setGameConfig(g => g ? {
+    ...g,
+    rules: {
+      ...(g.rules || {}),
+      ...patch
+    }
+  } : g);
+  const patchMatchType = mt => setGameConfig(g => g ? {
+    ...g,
+    matchType: mt
+  } : g);
   const [ronRuleWarn, setRonRuleWarn] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [showScoreFix, setShowScoreFix] = useState(false);
@@ -777,16 +789,17 @@ function MahjongScorer() {
   const gResult = useMemo(() => {
     if (gHan === null || gTsumo === null) return null;
     return calcScore(gHan >= 5 ? 30 : gFu || 30, gHan, gParent, gTsumo, gameConfig?.rules?.kiriage);
-  }, [gHan, gFu, gParent, gTsumo]);
+  }, [gHan, gFu, gParent, gTsumo, gameConfig]);
   const advanceAfterWin = useCallback((dealerWon, ns) => {
     const cfg = gameConfig || {};
-    const lastW = LAST_WIND(cfg.matchType);
-    const isOrlast = dealerIdx === 3 && roundWind === lastW;
+    const lastWi = WINDS.indexOf(LAST_WIND(cfg.matchType));
+    const curWi = WINDS.indexOf(roundWind);
+    const isOrlast = dealerIdx === 3 && curWi >= lastWi;
     if (!dealerWon) {
       const next = (dealerIdx + 1) % 4;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
-      } else if (next === 0 && roundWind === lastW) {
+      } else if (next === 0 && curWi >= lastWi) {
         setGameFinished(true);
       } else {
         setDealerIdx(next);
@@ -1063,8 +1076,9 @@ function MahjongScorer() {
     const dealerTenpai = drawTenpai[dealerIdx];
     let dealerRotates = false;
     const ruleSet = cfg.rules || {};
-    const lastW = LAST_WIND(cfg.matchType);
-    const isOrlast = dealerIdx === 3 && roundWind === lastW;
+    const lastWi2 = WINDS.indexOf(LAST_WIND(cfg.matchType));
+    const curWi2 = WINDS.indexOf(roundWind);
+    const isOrlast = dealerIdx === 3 && curWi2 >= lastWi2;
     if (ruleSet.agariRenchan) {
       dealerRotates = true;
     } else if (ruleSet.tenpaiRenchan) {
@@ -1074,7 +1088,7 @@ function MahjongScorer() {
       const next = (dealerIdx + 1) % 4;
       if (cfg.matchType === "tonpu" && next === 0) {
         setShowExtendConfirm(true);
-      } else if (next === 0 && roundWind === lastW) {
+      } else if (next === 0 && curWi2 >= lastWi2) {
         setGameFinished(true);
       } else {
         setDealerIdx(next);
@@ -9203,7 +9217,10 @@ input, select { padding: 10px 14px; }
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
         overflowY: "auto"
       },
-      onClick: () => setShowRuleCheck(false)
+      onClick: () => {
+        setShowRuleCheck(false);
+        setRuleEditMode(false);
+      }
     }, React.createElement("div", {
       style: {
         ...card,
@@ -9241,8 +9258,149 @@ input, select { padding: 10px 14px; }
         cursor: "pointer",
         lineHeight: 1
       },
-      onClick: () => setShowRuleCheck(false)
-    }, "✕")), row("形式", MATCH_LABEL(gameConfig?.matchType)), row("持ち点 / 返し点", `${(rs.startPoints ?? 25000).toLocaleString()} / ${(rs.returnPoints ?? 30000).toLocaleString()}`, `オカ ${((rs.returnPoints ?? 0) - (rs.startPoints ?? 0)) * 4 / 1000}pt がトップへ`), row("流局したときの親", renchan, renchanHint), row("オーラス", rs.orasYame !== false ? "親トップで終了" : "やめなし", rs.orasYame !== false ? "アガリやめ・テンパイやめ" : "親がトップでも続行"), row("複数人が同時にロン", mr, rs.multiRon === "atamahane" ? "アガれるのは1人だけ" : "本場と供託は放銃者に近い人へ"), row("食いタン", rs.kuitan ? "あり" : "なし"), row("後付け", rs.atozuke ? "あり" : "なし"), row("切り上げ満貫", rs.kiriage ? "あり" : "なし", rs.kiriage ? "4翻30符・3翻60符を満貫扱い" : null), row("ダブル役満", rs.doubleYakuman ? "あり" : "なし", rs.doubleYakuman ? "役満の複合を2倍・3倍で計算" : null), lg && row("ウマ", lg.uma.map(u => (u > 0 ? "+" : "") + u).join(" / ")), React.createElement("div", {
+      onClick: () => {
+        setShowRuleCheck(false);
+        setRuleEditMode(false);
+      }
+    }, "✕")), !ruleEditMode ? React.createElement(React.Fragment, null, row("形式", MATCH_LABEL(gameConfig?.matchType)), row("持ち点 / 返し点", `${(rs.startPoints ?? 25000).toLocaleString()} / ${(rs.returnPoints ?? 30000).toLocaleString()}`, `オカ ${((rs.returnPoints ?? 0) - (rs.startPoints ?? 0)) * 4 / 1000}pt がトップへ`), row("流局したときの親", renchan, renchanHint), row("オーラス", rs.orasYame !== false ? "親トップで終了" : "やめなし", rs.orasYame !== false ? "アガリやめ・テンパイやめ" : "親がトップでも続行"), row("複数人が同時にロン", mr, rs.multiRon === "atamahane" ? "アガれるのは1人だけ" : "本場と供託は放銃者に近い人へ"), row("食いタン", rs.kuitan ? "あり" : "なし"), row("後付け", rs.atozuke ? "あり" : "なし"), row("切り上げ満貫", rs.kiriage ? "あり" : "なし", rs.kiriage ? "4翻30符・3翻60符を満貫扱い" : null), row("ダブル役満", rs.doubleYakuman ? "あり" : "なし", rs.doubleYakuman ? "役満の複合を2倍・3倍で計算" : null), row("トビで終了", rs.tobiEnd !== false ? "あり" : "なし"), lg && row("ウマ", lg.uma.map(u => (u > 0 ? "+" : "") + u).join(" / "))) : (() => {
+      const seg = (opts, cur, onPick) => React.createElement("div", {
+        style: {
+          display: "flex",
+          gap: 6,
+          marginTop: 8,
+          flexWrap: "wrap"
+        }
+      }, opts.map(([k, lb]) => React.createElement("button", {
+        key: k,
+        onClick: () => onPick(k),
+        style: {
+          flex: "1 1 30%",
+          padding: "10px 4px",
+          borderRadius: 9,
+          cursor: "pointer",
+          border: `1.5px solid ${cur === k ? t.ac : t.bd}`,
+          background: cur === k ? t.acS : "transparent",
+          color: cur === k ? t.ac : t.dm,
+          fontSize: 12,
+          fontWeight: 700,
+          whiteSpace: "nowrap"
+        }
+      }, lb)));
+      const editRow = (label, body, hint) => React.createElement("div", {
+        style: {
+          padding: "10px 0",
+          borderBottom: `1px solid ${t.bd}33`
+        }
+      }, React.createElement("div", {
+        style: {
+          fontSize: 14,
+          fontWeight: 600,
+          color: t.tx
+        }
+      }, label), body, hint && React.createElement("div", {
+        style: {
+          fontSize: 11,
+          color: "#94a3b8",
+          marginTop: 5,
+          lineHeight: 1.6
+        }
+      }, hint));
+      const tgl = (label, on, onToggle, hint) => React.createElement("div", {
+        style: {
+          padding: "10px 0",
+          borderBottom: `1px solid ${t.bd}33`
+        }
+      }, React.createElement("div", {
+        style: {
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }
+      }, React.createElement("span", {
+        style: {
+          fontSize: 14,
+          fontWeight: 600,
+          color: t.tx
+        }
+      }, label), React.createElement("button", {
+        onClick: onToggle,
+        style: {
+          width: 48,
+          height: 28,
+          borderRadius: 14,
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          background: on ? t.ac : t.bd,
+          position: "relative",
+          transition: "background 0.15s",
+          flexShrink: 0
+        }
+      }, React.createElement("span", {
+        style: {
+          position: "absolute",
+          top: 3,
+          left: on ? 23 : 3,
+          width: 22,
+          height: 22,
+          borderRadius: "50%",
+          background: "#fff",
+          transition: "left 0.15s"
+        }
+      }))), hint && React.createElement("div", {
+        style: {
+          fontSize: 11,
+          color: "#94a3b8",
+          marginTop: 4,
+          lineHeight: 1.6
+        }
+      }, hint));
+      const renchanKey = rs.agariRenchan ? "agari" : rs.tenpaiRenchan ? "tenpai" : "none";
+      return React.createElement(React.Fragment, null, React.createElement("div", {
+        style: {
+          fontSize: 11,
+          color: t.gd,
+          padding: "8px 10px",
+          borderRadius: 8,
+          background: t.gdS,
+          border: `1px solid ${t.gd}33`,
+          lineHeight: 1.7,
+          marginBottom: 4
+        }
+      }, "変更はこの対局にすぐ反映されます（リーグや次回対局の既定ルールは変わりません）"), editRow("形式", seg([["tonpu", "東風戦"], ["hanchan", "半荘戦"], ["zenchan", "全荘戦"]], gameConfig?.matchType, k => patchMatchType(k)), "延長・短縮はここで切り替えられます。すでに過ぎた場には戻れません"), row("持ち点 / 返し点", `${(rs.startPoints ?? 25000).toLocaleString()} / ${(rs.returnPoints ?? 30000).toLocaleString()}`, "対局中は変更できません"), editRow("流局したときの親", seg([["agari", "あがり連荘"], ["tenpai", "テンパイ連荘"], ["none", "無条件連荘"]], renchanKey, k => patchGameRules(k === "agari" ? {
+        agariRenchan: true,
+        tenpaiRenchan: false
+      } : k === "tenpai" ? {
+        agariRenchan: false,
+        tenpaiRenchan: true
+      } : {
+        agariRenchan: false,
+        tenpaiRenchan: false
+      }))), tgl("オーラスは親トップで終了", rs.orasYame !== false, () => patchGameRules({
+        orasYame: rs.orasYame === false
+      }), "アガリやめ・テンパイやめ"), editRow("複数人が同時にロン", seg([["atamahane", "頭ハネ"], ["double", "ダブロン"], ["triple", "トリプル"]], rs.multiRon || "atamahane", k => patchGameRules({
+        multiRon: k
+      }))), tgl("食いタンあり", rs.kuitan !== false, () => patchGameRules({
+        kuitan: rs.kuitan === false
+      })), tgl("後付けあり", rs.atozuke !== false, () => patchGameRules({
+        atozuke: rs.atozuke === false
+      })), tgl("切り上げ満貫", rs.kiriage === true, () => patchGameRules({
+        kiriage: !rs.kiriage
+      }), "4翻30符・3翻60符を満貫扱い（これ以降の入力と局の修正に適用）"), tgl("ダブル役満あり", rs.doubleYakuman === true, () => patchGameRules({
+        doubleYakuman: !rs.doubleYakuman
+      }), "役満の複合を2倍・3倍で計算"), tgl("トビで終了", rs.tobiEnd !== false, () => patchGameRules({
+        tobiEnd: rs.tobiEnd === false
+      })));
+    })(), React.createElement("button", {
+      style: {
+        ...actionBtn(),
+        marginTop: 14,
+        marginBottom: 0,
+        color: ruleEditMode ? t.gn : t.ac,
+        border: `1px solid ${ruleEditMode ? t.gn : t.ac}55`
+      },
+      onClick: () => setRuleEditMode(v => !v)
+    }, ruleEditMode ? "✓ 変更を終える" : "✏️ ルールを変更する"), React.createElement("div", {
       style: {
         fontSize: 11,
         color: "#94a3b8",
@@ -9252,9 +9410,12 @@ input, select { padding: 10px 14px; }
     }, "ノーテン罰符は場で3,000点、本場は1本につき300点です"), React.createElement("button", {
       style: {
         ...actionBtn("p"),
-        marginTop: 16
+        marginTop: 10
       },
-      onClick: () => setShowRuleCheck(false)
+      onClick: () => {
+        setShowRuleCheck(false);
+        setRuleEditMode(false);
+      }
     }, "閉じる"), React.createElement("div", {
       style: {
         marginTop: 6,
