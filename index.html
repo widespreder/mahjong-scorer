@@ -3553,6 +3553,17 @@ input, select { padding: 10px 14px; }
   };
   const [newNameInput, setNewNameInput] = useState("");
   const [editNameIdx, setEditNameIdx] = useState(null);
+
+  // ── よく打つ4人の組み合わせ（グループ） ──
+  const [groups, setGroups] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("mj_groups") || "[]"); } catch { return []; }
+  });
+  const saveGroups = (arr) => {
+    setGroups(arr);
+    try { localStorage.setItem("mj_groups", JSON.stringify(arr)); } catch {}
+  };
+  const [groupNameInput, setGroupNameInput] = useState("");
+  const [showGroupSave, setShowGroupSave] = useState(false);
   const [editNameVal, setEditNameVal] = useState("");
 
   // ══════════════════════════════════
@@ -4234,6 +4245,49 @@ input, select { padding: 10px 14px; }
             {menuItem("👤", "プレイヤー名の登録", `${presetNames.length}人を登録中`, () => {
               setView("names"); setNewNameInput(""); setEditNameIdx(null);
             })}
+
+            {/* グループ */}
+            <div style={{ ...card, padding: 16, marginTop: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <span style={{
+                  fontSize: 20, width: 40, height: 40, borderRadius: 11, background: t.acS,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>👥</span>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: t.tx }}>グループ</div>
+                  <div style={{ fontSize: 11, color: t.dm }}>よく打つ4人の組み合わせ</div>
+                </div>
+              </div>
+              {groups.length === 0 ? (
+                <div style={{ fontSize: 12, color: t.dm, lineHeight: 1.8 }}>
+                  まだ登録がありません。<br />
+                  対局を始めるときの「参加者は？」の画面で、4人を選んだあとに保存できます。
+                </div>
+              ) : (
+                groups.map(g => (
+                  <div key={g.id} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                    padding: "11px 0", borderBottom: `1px solid ${t.bd}33`,
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: t.tx }}>{g.name}</div>
+                      <div style={{
+                        fontSize: 11, color: t.dm, marginTop: 2,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>{g.members.join("、")}</div>
+                    </div>
+                    <button onClick={() => {
+                      if (!window.confirm(`グループ「${g.name}」を削除しますか？`)) return;
+                      saveGroups(groups.filter(x => x.id !== g.id));
+                    }} style={{
+                      background: "none", border: `1px solid ${t.bd}`, borderRadius: 8,
+                      padding: "6px 11px", color: t.rd, fontSize: 11, cursor: "pointer", flexShrink: 0,
+                    }}>削除</button>
+                  </div>
+                ))
+              )}
+            </div>
+
             {/* ルールのデフォルト */}
             <div style={{ ...card, padding: 16, marginTop: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -5985,6 +6039,76 @@ input, select { padding: 10px 14px; }
             <button onClick={() => { setView("names"); setNewNameInput(""); setEditNameIdx(null); }} style={{
               background: "none", border: "none", color: t.ac, fontSize: 11, cursor: "pointer", textDecoration: "underline",
             }}>👤 リストの名前を編集</button>
+          </div>
+
+          {/* グループ */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: t.dm, marginBottom: 7 }}>
+              グループ{groups.length > 0 ? "（タップで4人をまとめて選択）" : ""}
+            </div>
+            {groups.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 9 }}>
+                {groups.map(g => {
+                  const active = g.members.every((m, k) => players[k] === m);
+                  return (
+                    <span key={g.id} style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      border: `1px solid ${active ? t.ac : t.bd}`,
+                      background: active ? t.acS : "transparent",
+                      borderRadius: 9, padding: "7px 8px 7px 11px",
+                    }}>
+                      <button onClick={() => { setPlayers([...g.members]); setPlayerMode([false, false, false, false]); }}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer", padding: 0,
+                          fontSize: 13, fontWeight: 700, color: active ? t.ac : t.tx,
+                        }}>{g.name}</button>
+                      <button onClick={() => {
+                        if (!window.confirm(`グループ「${g.name}」を削除しますか？`)) return;
+                        saveGroups(groups.filter(x => x.id !== g.id));
+                      }} style={{
+                        background: "none", border: "none", cursor: "pointer", padding: "0 2px",
+                        color: t.dm, fontSize: 13, lineHeight: 1,
+                      }}>✕</button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {showGroupSave ? (
+              <div style={{ display: "flex", gap: 7 }}>
+                <input
+                  type="text" value={groupNameInput} autoFocus
+                  onChange={e => setGroupNameInput(e.target.value)}
+                  placeholder="グループ名（例: 金曜メンバー）"
+                  style={{ ...inputStyle, fontSize: 14, flex: 1 }}
+                />
+                <button
+                  disabled={!groupNameInput.trim()}
+                  onClick={() => {
+                    saveGroups([...groups, { id: "g_" + Date.now(), name: groupNameInput.trim(), members: [...players] }]);
+                    setGroupNameInput(""); setShowGroupSave(false);
+                  }}
+                  style={{
+                    padding: "0 16px", borderRadius: 9, border: "none", cursor: "pointer",
+                    background: t.ac, color: "#fff", fontSize: 13, fontWeight: 700,
+                    opacity: groupNameInput.trim() ? 1 : 0.4, flexShrink: 0,
+                  }}>保存</button>
+                <button onClick={() => { setShowGroupSave(false); setGroupNameInput(""); }} style={{
+                  padding: "0 12px", borderRadius: 9, border: `1px solid ${t.bd}`, cursor: "pointer",
+                  background: "transparent", color: t.dm, fontSize: 13, flexShrink: 0,
+                }}>✕</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowGroupSave(true)}
+                disabled={!players.every(p => p.trim())}
+                style={{
+                  width: "100%", padding: "10px 8px", borderRadius: 9, cursor: "pointer",
+                  border: `1px dashed ${t.bd}`, background: "transparent", color: t.dm,
+                  fontSize: 12, fontWeight: 700, opacity: players.every(p => p.trim()) ? 1 : 0.4,
+                }}>＋ 今の4人をグループとして保存</button>
+            )}
           </div>
 
           {players.map((p, i) => {
