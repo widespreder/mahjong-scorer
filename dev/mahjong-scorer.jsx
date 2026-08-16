@@ -65,6 +65,86 @@ export default function MahjongScorer() {
   const [matchType, setMatchType] = useState(null); // "tonpu" | "hanchan"
   const [players, setPlayers] = useState(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
   const [playerMode, setPlayerMode] = useState([false, false, false, false]); // false=text display, true=editing
+
+  // ── 席の並べ替え: 行を長押し→そのままドラッグ ──
+  const [dragSeat, setDragSeat] = useState(null); // { from, offset, target, rowH }
+  const seatRowRefs = React.useRef([]);
+  const seatDragMeta = React.useRef(null); // 進行中ドラッグの一時情報
+  const seatSuppressClick = React.useRef(false); // ドラッグ直後のselect誤タップ防止
+
+  const moveSeatOrder = (from, to) => {
+    if (from === to) return;
+    setPlayers(prev => { const a = [...prev]; const [x] = a.splice(from, 1); a.splice(to, 0, x); return a; });
+    setPlayerMode(prev => { const a = [...prev]; const [x] = a.splice(from, 1); a.splice(to, 0, x); return a; });
+  };
+
+  const seatDragCleanup = () => {
+    const m = seatDragMeta.current;
+    if (m) {
+      if (m.timer) clearTimeout(m.timer);
+      if (m.raf) cancelAnimationFrame(m.raf);
+      if (m.moveH) { document.removeEventListener("touchmove", m.moveH); document.removeEventListener("mousemove", m.moveH); }
+      if (m.endH) { document.removeEventListener("touchend", m.endH); document.removeEventListener("touchcancel", m.endH); document.removeEventListener("mouseup", m.endH); }
+    }
+    seatDragMeta.current = null;
+    setDragSeat(null);
+  };
+
+  const seatDragActivate = () => {
+    const m = seatDragMeta.current;
+    if (!m || m.active) return;
+    m.active = true;
+    seatSuppressClick.current = true;
+    try { if (navigator.vibrate) navigator.vibrate(30); } catch {}
+    const r0 = seatRowRefs.current[0], r1 = seatRowRefs.current[1];
+    m.rowH = (r0 && r1) ? Math.max(40, r1.getBoundingClientRect().top - r0.getBoundingClientRect().top) : 62;
+    const moveH = (ev) => {
+      if (ev.cancelable) ev.preventDefault(); // ドラッグ中は画面スクロールを止める
+      const y = ev.touches ? (ev.touches[0] ? ev.touches[0].clientY : m.lastY) : ev.clientY;
+      m.lastY = y;
+      const off = y - m.startY;
+      m.lastTarget = Math.max(0, Math.min(3, m.from + Math.round(off / m.rowH)));
+      m.lastOffset = off;
+      if (!m.raf) m.raf = requestAnimationFrame(() => {
+        m.raf = null;
+        setDragSeat({ from: m.from, offset: m.lastOffset, target: m.lastTarget, rowH: m.rowH });
+      });
+    };
+    const endH = (ev) => {
+      if (ev && ev.cancelable && ev.type === "touchend") ev.preventDefault(); // selectが開くのを防ぐ
+      const from = m.from, to = m.lastTarget;
+      seatDragCleanup();
+      moveSeatOrder(from, to);
+      setTimeout(() => { seatSuppressClick.current = false; }, 400);
+    };
+    m.moveH = moveH; m.endH = endH;
+    document.addEventListener("touchmove", moveH, { passive: false });
+    document.addEventListener("mousemove", moveH);
+    document.addEventListener("touchend", endH, { passive: false });
+    document.addEventListener("touchcancel", endH);
+    document.addEventListener("mouseup", endH);
+    setDragSeat({ from: m.from, offset: 0, target: m.from, rowH: m.rowH });
+  };
+
+  const seatDragStart = (e, i) => {
+    const tag = (e.target && e.target.tagName ? e.target.tagName : "").toUpperCase();
+    if (tag === "INPUT" || tag === "BUTTON") return; // 入力欄・ボタンは通常操作を優先
+    if (seatDragMeta.current) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    seatDragMeta.current = { startY: y, lastY: y, from: i, rowH: 62, timer: null, raf: null, active: false, lastTarget: i, lastOffset: 0, moveH: null, endH: null };
+    seatDragMeta.current.timer = setTimeout(seatDragActivate, 350);
+  };
+  // 長押し前に指が動いたら通常のスクロールとみなしてキャンセル
+  const seatDragPreMove = (e) => {
+    const m = seatDragMeta.current;
+    if (!m || m.active) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    if (Math.abs(y - m.startY) > 10) { clearTimeout(m.timer); seatDragMeta.current = null; }
+  };
+  const seatDragCancelIfPending = () => {
+    const m = seatDragMeta.current;
+    if (m && !m.active) { clearTimeout(m.timer); seatDragMeta.current = null; }
+  };
   const seatTimer = React.useRef(null);
   // 席決め: 伏せた4枚の牌を1人ずつ引く
   const [seatTiles, setSeatTiles] = useState([]);   // [{wind, by}] by=引いた人のindex(元の並び順)
@@ -6733,36 +6813,46 @@ input, select { padding: 10px 14px; }
             )}
           </div>
 
-          {/* 席（東南西北）の並べ替え */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <button onClick={() => {
-              setPlayers(prev => [prev[3], prev[0], prev[1], prev[2]]);
-              setPlayerMode([false, false, false, false]);
-            }} style={{
-              flex: 1, padding: "11px 6px", borderRadius: 10, cursor: "pointer",
-              border: `1px solid ${t.bd}`, background: t.sf, color: t.tx,
-              fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
-            }}>席を1つずらす</button>
-            <button onClick={() => {
-              const arr = [...players];
-              for (let k = arr.length - 1; k > 0; k--) {
-                const j = Math.floor(Math.random() * (k + 1));
-                const tmp = arr[k]; arr[k] = arr[j]; arr[j] = tmp;
-              }
-              setPlayers(arr);
-              setPlayerMode([false, false, false, false]);
-            }} style={{
-              flex: 1, padding: "11px 6px", borderRadius: 10, cursor: "pointer",
-              border: `1px solid ${t.bd}`, background: t.sf, color: t.tx,
-              fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
-            }}>ランダムに並べ替え</button>
+          {/* 席（東南西北）の並べ替え: 行を長押し→ドラッグ */}
+          <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 10, lineHeight: 1.7 }}>
+            並べ替えは行を<b style={{ color: t.tx }}>長押し</b>して、そのまま上下にドラッグ
           </div>
 
           {players.map((p, i) => {
             const isCustom = playerMode[i]; // true = 直接入力モード
+            const ds = dragSeat;
+            const isDragging = ds && ds.from === i;
+            let shiftY = 0;
+            if (ds && !isDragging) {
+              if (ds.from < ds.target && i > ds.from && i <= ds.target) shiftY = -ds.rowH;
+              else if (ds.from > ds.target && i >= ds.target && i < ds.from) shiftY = ds.rowH;
+            }
             return (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div key={i}
+                ref={el => { seatRowRefs.current[i] = el; }}
+                onTouchStart={(e) => seatDragStart(e, i)}
+                onTouchMove={seatDragPreMove}
+                onTouchEnd={seatDragCancelIfPending}
+                onMouseDown={(e) => seatDragStart(e, i)}
+                onMouseMove={seatDragPreMove}
+                onMouseUp={seatDragCancelIfPending}
+                onMouseLeave={seatDragCancelIfPending}
+                onClickCapture={(e) => { if (seatSuppressClick.current) { e.preventDefault(); e.stopPropagation(); } }}
+                onContextMenu={(e) => { if (dragSeat || seatSuppressClick.current) e.preventDefault(); }}
+                style={{
+                  marginBottom: 10, position: "relative",
+                  transform: isDragging ? `translateY(${ds.offset}px) scale(1.02)` : shiftY ? `translateY(${shiftY}px)` : "none",
+                  transition: isDragging ? "none" : "transform 0.15s ease",
+                  zIndex: isDragging ? 10 : 1,
+                  WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none",
+                }}>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  borderRadius: 12,
+                  background: isDragging ? t.sf : "transparent",
+                  boxShadow: isDragging ? "0 8px 22px rgba(0,0,0,0.5)" : "none",
+                  outline: isDragging ? `2px solid ${t.ac}88` : "none",
+                }}>
                   <span style={{
                     fontSize: 18, fontWeight: 900, lineHeight: 1, flexShrink: 0,
                     color: i === 0 ? "#1a1a1a" : t.tx,
@@ -6775,7 +6865,7 @@ input, select { padding: 10px 14px; }
                     <>
                       <input
                         autoFocus
-                        style={{ ...inputStyle, flex: 1 }}
+                        style={{ ...inputStyle, flex: 1, WebkitUserSelect: "text", userSelect: "text" }}
                         placeholder="名前を入力"
                         value={p}
                         onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
@@ -6807,6 +6897,7 @@ input, select { padding: 10px 14px; }
                       <option value="__custom__">✏️ 直接入力…</option>
                     </select>
                   )}
+                  <span style={{ flexShrink: 0, color: t.dm, fontSize: 20, lineHeight: 1, padding: "0 2px", touchAction: "none", cursor: "grab" }}>≡</span>
                 </div>
               </div>
             );
