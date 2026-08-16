@@ -349,7 +349,7 @@ function MahjongScorer() {
     return total + pickerDora;
   };
   const resetFuGuide = () => { setFuGuide(null); setFuGuideStep(0); };
-  const initFuGuide = () => { setFuGuide({ naki: null, mentsu: [], machi: "ryanmen", jantou: "suuhai", pinfu: false, chiitoi: false }); setFuGuideStep(0); };
+  const initFuGuide = () => { setFuGuide({ naki: null, mentsu: [], machi: "ryanmen", jantou: "suuhai", pinfu: false, chiitoi: false, kuipin: false }); setFuGuideStep(0); };
   const [showFuHelp, setShowFuHelp] = useState(false);
   const MENTSU_OPTIONS = [
     { id: "minko_c", label: "明刻(中張)", fu: 2, desc: "ポンした2〜8の牌の3枚組" },
@@ -376,6 +376,8 @@ function MahjongScorer() {
     if (!guide) return 30;
     // 七対子は25符固定
     if (guide.chiitoi) return 25;
+    // クイピン形（鳴き＋順子のみ＋両面待ち＋雀頭が役牌以外）= 副底20符ちょうど → 30符に繰り上げ
+    if (guide.kuipin) return 30;
     const hasNaki = guide.naki === true || guide.mentsu.some(m => m.startsWith("minko_") || m.startsWith("minkan_"));
     // 平和の特例
     if (guide.pinfu) {
@@ -1113,17 +1115,31 @@ function MahjongScorer() {
             {g.naki ? "特別な形ですか？" : "平和や七対子ですか？"}
           </div>
           {g.naki ? (
-            <div style={{
-              padding: 14, borderRadius: 11, marginBottom: 10,
-              background: t.sf, border: `1px solid ${t.bd}`,
-            }}>
-              <div style={{ fontSize: 13, color: t.tx, lineHeight: 1.9 }}>
-                鳴いているので、平和も七対子も成立しません。<br />
-                <span style={{ fontSize: 11, color: t.dm }}>
-                  どちらも門前限定です。順子だけの形（クイピン形）なら、このあとの符計算で自動的に30符になります。
-                </span>
+            <>
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 12, lineHeight: 1.7 }}>
+                鳴いているので、平和と七対子は成立しません
               </div>
-            </div>
+              <button onClick={() => { setFuGuide(gg => ({ ...gg, kuipin: true, pinfu: false, chiitoi: false })); setFuGuideStep(6); }}
+                style={{ width: "100%", padding: "14px 10px", marginBottom: 8, borderRadius: 12, cursor: "pointer", border: `2px solid ${g.kuipin ? t.gn : t.bd}`, background: g.kuipin ? t.gnS : "transparent", color: g.kuipin ? t.gn : t.tx, textAlign: "center" }}>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>クイピン形（順子だけの形）</div>
+                <div style={{ display: "flex", gap: 1.5, justifyContent: "center", marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <Tile label="2" sub="萬" size={17} /><Tile label="3" sub="萬" size={17} /><Tile label="4" sub="萬" size={17} />
+                  <span style={{ width: 5 }} />
+                  <Tile label="5" sub="筒" size={17} /><Tile label="6" sub="筒" size={17} /><Tile label="7" sub="筒" size={17} />
+                  <span style={{ width: 5 }} />
+                  <Tile label="3" sub="索" size={17} /><Tile label="4" sub="索" size={17} /><Tile label="5" sub="索" size={17} />
+                  <span style={{ width: 5 }} />
+                  <Tile label="6" sub="索" size={17} /><Tile label="7" sub="索" size={17} /><Tile label="8" sub="索" size={17} />
+                  <span style={{ width: 5 }} />
+                  <Tile label="9" sub="萬" size={17} /><Tile label="9" sub="萬" size={17} />
+                </div>
+                <div style={{ fontSize: 10, color: t.dm, marginTop: 6, lineHeight: 1.6 }}>
+                  刻子・槓子なし・両面待ち・雀頭が役牌以外
+                </div>
+                <div style={{ fontSize: 15, color: t.gd, marginTop: 5, fontWeight: 800 }}>30符固定</div>
+                <div style={{ fontSize: 9, color: t.dm, marginTop: 3 }}>選ぶと刻子・槓子・待ち・雀頭の入力を省けます</div>
+              </button>
+            </>
           ) : (
           <>
           <button onClick={() => { setFuGuide(gg => ({ ...gg, pinfu: true, chiitoi: false })); setFuGuideStep(6); }}
@@ -1166,7 +1182,7 @@ function MahjongScorer() {
           </button>
           </>
           )}
-          {bigChoice(g.naki ? "次へ進む" : "どちらでもない", "通常の符計算に進む", !g.pinfu && !g.chiitoi, () => { setFuGuide(gg => ({ ...gg, pinfu: false, chiitoi: false })); setFuGuideStep(2); })}
+          {bigChoice(g.naki ? "クイピン形ではない" : "どちらでもない", "通常の符計算に進む", !g.pinfu && !g.chiitoi && !g.kuipin, () => { setFuGuide(gg => ({ ...gg, pinfu: false, chiitoi: false, kuipin: false })); setFuGuideStep(2); })}
         </div>
       );
     }
@@ -1264,7 +1280,7 @@ function MahjongScorer() {
       const jantouFu = JANTOU_OPTIONS.find(o => o.id === g.jantou)?.fu || 0;
       return (
         <div>
-          <button style={backBtn} onClick={() => { if (g.pinfu || g.chiitoi) setFuGuideStep(1); else setFuGuideStep(5); }}>← 戻る</button>
+          <button style={backBtn} onClick={() => { if (g.pinfu || g.chiitoi || g.kuipin) setFuGuideStep(1); else setFuGuideStep(5); }}>← 戻る</button>
           <StepLabel n={7} total={7} label="計算結果" />
           <div style={{ background: `linear-gradient(135deg, ${t.card}, ${t.sf})`, borderRadius: 16, padding: 24, textAlign: "center", border: `1px solid ${t.ac}44`, marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: t.dm, marginBottom: 6 }}>符数</div>
@@ -1275,6 +1291,11 @@ function MahjongScorer() {
             <div style={{ fontSize: 11, fontWeight: 700, color: t.dm, marginBottom: 8 }}>内訳</div>
             {g.chiitoi ? (
               <div style={{ fontSize: 13, color: t.tx }}>七対子 → 25符固定</div>
+            ) : g.kuipin ? (
+              <div style={{ fontSize: 13, color: t.tx, lineHeight: 1.9 }}>
+                副底20符のみ（刻子・槓子・待ち・雀頭の加符なし）<br />
+                <span style={{ color: t.gd, fontWeight: 700 }}>鳴きの20符ちょうど → 30符に繰り上げ</span>
+              </div>
             ) : g.pinfu ? (
               <div style={{ fontSize: 13, color: t.tx }}>平和 {gTsumo ? "ツモ → 20符固定" : "ロン → 30符固定"}</div>
             ) : (
