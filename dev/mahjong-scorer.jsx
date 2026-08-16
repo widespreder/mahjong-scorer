@@ -4743,7 +4743,7 @@ input, select { padding: 10px 14px; }
 
         {homeCat === "play" && (
           <>
-            {menuItem("▶", "東風戦・半荘戦", "1回きりの対局。成績は履歴に残ります", () => {
+            {menuItem("▶", "東風戦・半荘戦・全荘戦", "1回きりの対局。成績は履歴に残ります", () => {
               setView("game"); setGameStarted(false); setGameFinished(false); setSetupStep(0);
               setActiveLeagueId(null); setReviewing(false); setShowScoreFix(false);
               // 対局日は自動で今日にする
@@ -4755,7 +4755,7 @@ input, select { padding: 10px 14px; }
               setPlayers(["Aプレーヤー", "Bプレーヤー", "Cプレーヤー", "Dプレーヤー"]);
               setTableMode(true);
             })}
-            {menuItem("🏆", "リーグ戦", "複数の半荘戦・東風戦を通して順位を争う", () => { setView("league"); })}
+            {menuItem("🏆", "リーグ戦", "複数の対局を通して順位を争う", () => { setView("league"); })}
             {menuItem("🔢", "1局戦", "翻・符から点数をすぐ計算", () => {
               setView("calc"); setCalcStep(0); setCTsumo(null); setCParent(null); setCHan(null); setCFu(null); resetFuGuide();
             })}
