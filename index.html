@@ -7155,7 +7155,8 @@ input, select { padding: 10px 14px; }
       },
       placeholder: "\u540D\u524D\u3092\u5165\u529B",
       style: {
-        flex: 1,
+        flex: "1 1 auto",
+        minWidth: 0,
         padding: "12px 14px",
         fontSize: 15,
         background: t.sf,
@@ -7169,6 +7170,7 @@ input, select { padding: 10px 14px; }
       onClick: addName,
       disabled: !newNameInput.trim(),
       style: {
+        flexShrink: 0,
         padding: "12px 18px",
         borderRadius: 10,
         cursor: "pointer",
