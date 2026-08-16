@@ -6729,7 +6729,14 @@ input, select { padding: 10px 14px; }
                   />
                 ) : (
                   <>
-                    <Back onClick={() => { setGStep(4); }} />
+                    <Back onClick={() => {
+                      // 卓上モードはこの画面から入るので、戻る＝入力をやめて卓に戻る
+                      if (tableMode) {
+                        resetGW(); setRonPick([]); setMultiRon(null); setTmWinStep(null);
+                      } else {
+                        setGStep(4);
+                      }
+                    }} />
                     {multiRon && (
                       <div style={{
                         padding: "9px 12px", borderRadius: 10, marginBottom: 10,
@@ -6803,18 +6810,42 @@ input, select { padding: 10px 14px; }
                 )}
                 <div style={card}>
                   {/* Editable summary - tap each row to jump to that step */}
-                  <button onClick={() => setGStep(1)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
-                    <span style={{ fontSize: 12, color: t.dm }}>アガリ者</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{players[gWinner]} ▸</span>
-                  </button>
-                  <button onClick={() => setGStep(2)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
-                    <span style={{ fontSize: 12, color: t.dm }}>あがり方</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: gTsumo ? t.gn : t.rd }}>{gTsumo ? "ツモ" : "ロン"}{!gTsumo && gLoser !== null ? ` ← ${players[gLoser]}` : ""} ▸</span>
-                  </button>
-                  <button onClick={() => setGStep(4)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
-                    <span style={{ fontSize: 12, color: t.dm }}>リーチ棒</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: gRiichi.some(Boolean) ? t.gd : t.dm }}>{gRiichi.some(Boolean) ? `${gRiichi.filter(Boolean).length}本` : "なし"} ▸</span>
-                  </button>
+                  {(() => {
+                    // 卓上モードでは、あがった人・あがり方は卓の画面で選び直す
+                    const rowStyle = { width: "100%", background: "transparent", border: "none", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" };
+                    const backToTable = (step) => {
+                      resetGW(); setMultiRon(null);
+                      if (step === "winner") setRonPick([]);
+                      setTmWinStep(step);
+                    };
+                    return (
+                      <>
+                        <button onClick={() => tableMode ? backToTable("winner") : setGStep(1)}
+                          style={{ ...rowStyle, cursor: "pointer" }}>
+                          <span style={{ fontSize: 12, color: t.dm }}>あがった人</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{players[gWinner]} ▸</span>
+                        </button>
+                        <button onClick={() => tableMode ? backToTable("how") : setGStep(2)}
+                          style={{ ...rowStyle, cursor: "pointer" }}>
+                          <span style={{ fontSize: 12, color: t.dm }}>あがり方</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: gTsumo ? t.gn : t.rd }}>{gTsumo ? "ツモ" : "ロン"}{!gTsumo && gLoser !== null ? ` ← ${players[gLoser]}` : ""} ▸</span>
+                        </button>
+                        {tableMode ? (
+                          <div style={rowStyle}>
+                            <span style={{ fontSize: 12, color: t.dm }}>リーチ棒</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: declaredRiichi.some(Boolean) ? t.gd : t.dm }}>
+                              {declaredRiichi.some(Boolean) ? `${declaredRiichi.filter(Boolean).length}本` : "なし"}
+                            </span>
+                          </div>
+                        ) : (
+                          <button onClick={() => setGStep(4)} style={{ ...rowStyle, cursor: "pointer" }}>
+                            <span style={{ fontSize: 12, color: t.dm }}>リーチ棒</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: gRiichi.some(Boolean) ? t.gd : t.dm }}>{gRiichi.some(Boolean) ? `${gRiichi.filter(Boolean).length}本` : "なし"} ▸</span>
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                   <button onClick={() => setGStep(5)} style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: `1px solid ${t.bd}33`, display: "flex", justifyContent: "space-between", textAlign: "left" }}>
                     <span style={{ fontSize: 12, color: t.dm }}>翻数</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{gHan >= 13 ? "役満" : `${gHan}翻`} ▸</span>
