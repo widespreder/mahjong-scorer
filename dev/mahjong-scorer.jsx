@@ -6530,9 +6530,29 @@ input, select { padding: 10px 14px; }
               <button style={actionBtn()} onClick={() => setSetupStep(activeLeagueId ? 4 : 2)}>
                 席決めをスキップ（今の並びのまま）
               </button>
-              <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 6, lineHeight: 1.7 }}>
-                前の画面で選んだ順に、東・南・西・北 になります<br />
-                （{players.map((nm, i) => `${WIND_ORDER[i]}${nm}`).join("　")}）
+              <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginTop: 10, lineHeight: 1.7 }}>
+                スキップした場合、前の画面で選んだ順にこの席になります
+              </div>
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8,
+                marginTop: 10, padding: 12, borderRadius: 12,
+                background: t.sf, border: `1px solid ${t.bd}`,
+              }}>
+                {players.map((nm, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <span style={{
+                      fontSize: 16, fontWeight: 900, lineHeight: 1, flexShrink: 0,
+                      color: i === 0 ? "#1a1a1a" : t.tx,
+                      background: i === 0 ? t.gd : t.card,
+                      border: `1px solid ${i === 0 ? t.gd : t.bd}`,
+                      borderRadius: 6, padding: "5px 8px",
+                    }}>{WIND_ORDER[i]}</span>
+                    <span style={{
+                      fontSize: 15, fontWeight: 700, color: t.tx,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>{nm}</span>
+                  </div>
+                ))}
               </div>
             </>
           )}
