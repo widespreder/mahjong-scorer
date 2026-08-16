@@ -6605,8 +6605,8 @@ input, select { padding: 10px 14px; }
               )}
             </div>
 
-            {/* 局表示: 親の方を向いて配置（選択モード中は非表示） */}
-            {!tmWinStep && !tmDrawMode && (() => {
+            {/* 局表示: 親の方を向いて配置。サイコロを振っている間は合計だけ見せる */}
+            {!tmWinStep && !tmDrawMode && !(diceRolling || diceSettled) && (() => {
               const ROT = [0, -90, 180, 90]; // 手前/右/向かい/左
               const rot = ROT[(dealerIdx - seatRot + 4) % 4] ?? 0;
               const posBase = (offsetY) => ({
