@@ -414,6 +414,7 @@ function MahjongScorer() {
   const [pickedYaku, setPickedYaku] = useState([]);
   const [pickerNaki, setPickerNaki] = useState(null);
   const [pickerDora, setPickerDora] = useState(0);
+  const [pickerUra, setPickerUra] = useState(0);
   const resetYakuPicker = () => {
     setPickedYaku([]);
     setPickerNaki(null);
@@ -432,7 +433,7 @@ function MahjongScorer() {
       total += h;
     });
     if (hasYakuman) return 13;
-    return total + pickerDora;
+    return total + pickerDora + pickerUra;
   };
   const resetFuGuide = () => {
     setFuGuide(null);
@@ -3361,11 +3362,12 @@ function MahjongScorer() {
       style: {
         display: "flex",
         gap: 8,
-        marginBottom: 10
+        marginBottom: 10,
+        alignItems: "stretch"
       }
     }, React.createElement("div", {
       style: {
-        flex: "0 0 40%",
+        flex: "0 0 32%",
         background: total >= 13 ? t.gdS : t.acS,
         borderRadius: 10,
         padding: "8px 6px",
@@ -3383,7 +3385,7 @@ function MahjongScorer() {
       }
     }, "\u5408\u8A08"), React.createElement("div", {
       style: {
-        fontSize: 26,
+        fontSize: 24,
         fontWeight: 900,
         color: total >= 13 ? t.gd : t.ac,
         lineHeight: 1.15
@@ -3392,35 +3394,52 @@ function MahjongScorer() {
       style: {
         flex: 1,
         display: "flex",
+        flexDirection: "column",
+        gap: 6
+      }
+    }, [{
+      label: "ドラ",
+      val: pickerDora,
+      set: setPickerDora
+    }, {
+      label: "裏ドラ",
+      val: pickerUra,
+      set: setPickerUra
+    }].map(row => React.createElement("div", {
+      key: row.label,
+      style: {
+        flex: 1,
+        display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         background: t.sf,
         borderRadius: 10,
-        padding: "6px 8px",
-        border: `1px solid ${pickerDora > 0 ? t.gd + "55" : t.bd}`
+        padding: "5px 8px",
+        border: `1px solid ${row.val > 0 ? t.gd + "55" : t.bd}`
       }
     }, React.createElement("span", {
       style: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: 800,
-        color: t.tx
+        color: t.tx,
+        flexShrink: 0
       }
-    }, "\u30C9\u30E9"), React.createElement("div", {
+    }, row.label), React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
-        gap: 6
+        gap: 5
       }
     }, React.createElement("button", {
-      onClick: () => setPickerDora(d => Math.max(0, d - 1)),
+      onClick: () => row.set(v => Math.max(0, v - 1)),
       style: {
-        width: 38,
-        height: 38,
-        borderRadius: 9,
-        border: `1.5px solid ${pickerDora > 0 ? t.gd : t.bd}`,
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        border: `1.5px solid ${row.val > 0 ? t.gd : t.bd}`,
         background: t.card,
-        color: pickerDora > 0 ? t.gd : t.dm,
-        fontSize: 22,
+        color: row.val > 0 ? t.gd : t.dm,
+        fontSize: 19,
         fontWeight: 700,
         cursor: "pointer",
         display: "flex",
@@ -3431,22 +3450,23 @@ function MahjongScorer() {
       }
     }, "\u2212"), React.createElement("span", {
       style: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 900,
-        width: 24,
+        width: 22,
         textAlign: "center",
-        color: pickerDora > 0 ? t.gd : t.dm
+        color: row.val > 0 ? t.gd : t.dm,
+        fontVariantNumeric: "tabular-nums"
       }
-    }, pickerDora), React.createElement("button", {
-      onClick: () => setPickerDora(d => d + 1),
+    }, row.val), React.createElement("button", {
+      onClick: () => row.set(v => v + 1),
       style: {
-        width: 38,
-        height: 38,
-        borderRadius: 9,
+        width: 32,
+        height: 32,
+        borderRadius: 8,
         border: `1.5px solid ${t.gd}`,
         background: t.gdS,
         color: t.gd,
-        fontSize: 22,
+        fontSize: 19,
         fontWeight: 700,
         cursor: "pointer",
         display: "flex",
@@ -3455,7 +3475,7 @@ function MahjongScorer() {
         lineHeight: 1,
         padding: 0
       }
-    }, "+")))), React.createElement("div", {
+    }, "+")))))), React.createElement("div", {
       style: {
         maxHeight: 420,
         overflowY: "auto",
@@ -15037,6 +15057,7 @@ input, select { padding: 10px 14px; }
       if (gTsumo && riichi) pre.push("門前清自摸和（メンゼンツモ）");
       setPickedYaku(pre);
       setPickerDora(0);
+      setPickerUra(0);
       setPickerNaki(riichi ? false : null);
       setYakuPickerOpen(true);
     }
