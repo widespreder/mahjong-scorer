@@ -1104,7 +1104,7 @@ function MahjongScorer() {
         fontSize: 12,
         fontWeight: 700
       }
-    }, open ? "▲ ルールの説明を閉じる" : "？ それぞれのルールの説明を見る"), open && React.createElement("div", {
+    }, open ? "ルールの説明を閉じる" : "それぞれのルールの説明を見る"), open && React.createElement("div", {
       style: {
         marginTop: 10,
         padding: "4px 14px 14px",
@@ -1275,7 +1275,7 @@ function MahjongScorer() {
         fontSize: 12,
         fontWeight: 700
       }
-    }, open ? "▲ 説明を閉じる" : "？ ウマ・オカとは（説明を見る）"), open && React.createElement("div", {
+    }, open ? "説明を閉じる" : "ウマ・オカとは"), open && React.createElement("div", {
       style: {
         marginTop: 10,
         padding: 14,
@@ -10589,7 +10589,7 @@ input, select { padding: 10px 14px; }
         fontSize: 12,
         fontWeight: 700
       }
-    }, showUmaHelp ? "▲ 説明を閉じる" : "？ ウマ・オカとは（説明を見る）"), showUmaHelp && (() => {
+    }, showUmaHelp ? "説明を閉じる" : "ウマ・オカとは"), showUmaHelp && (() => {
       const sp = d.rules.startPoints || 25000;
       const rp = d.rules.returnPoints || 30000;
       const oka = (rp - sp) * 4 / 1000;
@@ -12762,7 +12762,7 @@ input, select { padding: 10px 14px; }
       cursor: "pointer"
     },
     onClick: () => setShowFuHelp(true)
-  }, "\uFF1F\u89E3\u8AAC")), React.createElement(FuGuideWizard, {
+  }, "\u89E3\u8AAC")), React.createElement(FuGuideWizard, {
     onComplete: fu => {
       setCFu(fu);
       setCalcStep(4);
@@ -15475,7 +15475,7 @@ input, select { padding: 10px 14px; }
       cursor: "pointer"
     },
     onClick: () => setShowFuHelp(true)
-  }, "\uFF1F\u89E3\u8AAC")), React.createElement(FuGuideWizard, {
+  }, "\u89E3\u8AAC")), React.createElement(FuGuideWizard, {
     onComplete: fu => {
       setGFu(fu);
       setGStep(7);
