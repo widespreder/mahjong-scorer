@@ -5296,7 +5296,7 @@ input, select { padding: 10px 14px; }
         <div style={{ ...card, padding: 16, marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>人数</div>
           <div style={{ display: "flex", gap: 8 }}>
-            {[[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => (
+            {[[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西"]].map(([n, lb, sub]) => (
               <button key={n} onClick={() => {
                 if (n === lgPC) return;
                 // 人数の既定ルール・ウマに切り替える
@@ -6907,7 +6907,7 @@ input, select { padding: 10px 14px; }
           {/* 人数（四人麻雀 / 三人麻雀） */}
           <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>人数</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            {[[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => (
+            {[[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西"]].map(([n, lb, sub]) => (
               <button key={n} onClick={() => {
                 if (n === playerCount) return;
                 setPlayerCount(n);
