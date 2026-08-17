@@ -6903,6 +6903,45 @@ input, select { padding: 10px 14px; }
         <div style={card}>
           <Dots total={4} cur={0} />
           <div style={question}>参加者は？</div>
+          {/* 試合形式 */}
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>試合形式</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {[["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => (
+              <button key={k} onClick={() => setMatchType(k)} style={{
+                flex: 1, padding: "13px 4px", borderRadius: 11, cursor: "pointer",
+                border: `2px solid ${matchType === k ? t.ac : t.bd}`,
+                background: matchType === k ? t.acS : "transparent",
+                color: matchType === k ? t.ac : t.dm,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800, whiteSpace: "nowrap" }}>{lb}</div>
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85, whiteSpace: "nowrap" }}>{sub}</div>
+              </button>
+            ))}
+          </div>
+
+          {/* 人数（四人麻雀 / 三人麻雀） */}
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>人数</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {[[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => (
+              <button key={n} onClick={() => {
+                if (n === playerCount) return;
+                setPlayerCount(n);
+                setSeatDone(false); setSeatTiles([]); setSeatTurn(0);
+                // 三人麻雀は連盟ルールを初期値にする（4人に戻すと元の既定へ）
+                if (n === 3) setRules(r => ({ ...r, ...SANMA_DEFAULT_RULES }));
+                else setRules({ ...defaultRules });
+              }} style={{
+                flex: 1, padding: "13px 6px", borderRadius: 11, cursor: "pointer",
+                border: `2px solid ${playerCount === n ? t.ac : t.bd}`,
+                background: playerCount === n ? t.acS : "transparent",
+                color: playerCount === n ? t.ac : t.dm,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800 }}>{lb}</div>
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85 }}>{sub}</div>
+              </button>
+            ))}
+          </div>
+
           <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 6 }}>名前の欄をタップして選択</div>
           <div style={{ textAlign: "center", marginBottom: 14 }}>
             <button onClick={() => { setView("names"); setNewNameInput(""); setEditNameIdx(null); }} style={{
@@ -6983,45 +7022,6 @@ input, select { padding: 10px 14px; }
                   fontSize: 12, fontWeight: 700, opacity: players.slice(0, PC).every(p => p.trim()) ? 1 : 0.4,
                 }}>＋ 今の{PC}人をグループとして保存</button>
             )}
-          </div>
-
-          {/* 試合形式 */}
-          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>試合形式</div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            {[["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => (
-              <button key={k} onClick={() => setMatchType(k)} style={{
-                flex: 1, padding: "13px 4px", borderRadius: 11, cursor: "pointer",
-                border: `2px solid ${matchType === k ? t.ac : t.bd}`,
-                background: matchType === k ? t.acS : "transparent",
-                color: matchType === k ? t.ac : t.dm,
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 800, whiteSpace: "nowrap" }}>{lb}</div>
-                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85, whiteSpace: "nowrap" }}>{sub}</div>
-              </button>
-            ))}
-          </div>
-
-          {/* 人数（四人麻雀 / 三人麻雀） */}
-          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>人数</div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            {[[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => (
-              <button key={n} onClick={() => {
-                if (n === playerCount) return;
-                setPlayerCount(n);
-                setSeatDone(false); setSeatTiles([]); setSeatTurn(0);
-                // 三人麻雀は連盟ルールを初期値にする（4人に戻すと元の既定へ）
-                if (n === 3) setRules(r => ({ ...r, ...SANMA_DEFAULT_RULES }));
-                else setRules({ ...defaultRules });
-              }} style={{
-                flex: 1, padding: "13px 6px", borderRadius: 11, cursor: "pointer",
-                border: `2px solid ${playerCount === n ? t.ac : t.bd}`,
-                background: playerCount === n ? t.acS : "transparent",
-                color: playerCount === n ? t.ac : t.dm,
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 800 }}>{lb}</div>
-                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85 }}>{sub}</div>
-              </button>
-            ))}
           </div>
 
           {/* 席の並べ替え: 行を長押し→ドラッグ */}
