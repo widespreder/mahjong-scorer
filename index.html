@@ -14094,139 +14094,148 @@ input, select { padding: 10px 14px; }
     style: {
       marginBottom: 16
     }
-  }, React.createElement("div", {
-    style: {
-      fontSize: 11,
-      fontWeight: 700,
-      color: t.dm,
-      marginBottom: 3
-    }
-  }, "グループ", groups.length > 0 ? `（タップで${PC}人をまとめて選択）` : ""), groups.length === 0 && React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: t.dm,
-      marginBottom: 7,
-      lineHeight: 1.7
-    }
-  }, "いまの4人をまとめて登録しておくと、次回からワンタップで呼び出せます"), groups.length > 0 && React.createElement("div", {
-    style: {
-      display: "flex",
-      flexWrap: "wrap",
-      gap: 7,
-      marginBottom: 9
-    }
-  }, groups.map(g => {
-    const active = g.members.every((m, k) => players[k] === m);
-    return React.createElement("span", {
-      key: g.id,
+  }, (() => {
+    const pcGroups = groups.filter(g => (g.members || []).length === PC);
+    return React.createElement(React.Fragment, null, React.createElement("div", {
       style: {
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        border: `1px solid ${active ? t.ac : t.bd}`,
-        background: active ? t.acS : "transparent",
-        borderRadius: 9,
-        padding: "7px 8px 7px 11px"
+        fontSize: 11,
+        fontWeight: 700,
+        color: t.dm,
+        marginBottom: 3
       }
-    }, React.createElement("button", {
+    }, "グループ", pcGroups.length > 0 ? `（タップで${PC}人をまとめて選択）` : ""), pcGroups.length === 0 && React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: t.dm,
+        marginBottom: 7,
+        lineHeight: 1.7
+      }
+    }, "いまの", PC, "人をまとめて登録しておくと、次回からワンタップで呼び出せます", groups.length > 0 ? `（${PC === 3 ? 4 : 3}人のグループは${PC === 3 ? "四" : "三"}人麻雀で表示されます）` : ""), pcGroups.length > 0 && React.createElement("div", {
+      style: {
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 7,
+        marginBottom: 9
+      }
+    }, pcGroups.map(g => {
+      const active = g.members.every((m, k) => players[k] === m);
+      return React.createElement("span", {
+        key: g.id,
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          border: `1px solid ${active ? t.ac : t.bd}`,
+          background: active ? t.acS : "transparent",
+          borderRadius: 9,
+          padding: "7px 8px 7px 11px"
+        }
+      }, React.createElement("button", {
+        onClick: () => {
+          setPlayers(prev => {
+            const np = [...prev];
+            g.members.forEach((m, k) => {
+              np[k] = m;
+            });
+            return np;
+          });
+          setPlayerMode([false, false, false, false]);
+        },
+        style: {
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+          fontSize: 13,
+          fontWeight: 700,
+          color: active ? t.ac : t.tx
+        }
+      }, g.name), React.createElement("button", {
+        onClick: () => {
+          if (!window.confirm(`グループ「${g.name}」を削除しますか？`)) return;
+          saveGroups(groups.filter(x => x.id !== g.id));
+        },
+        style: {
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: "0 2px",
+          color: t.dm,
+          fontSize: 13,
+          lineHeight: 1
+        }
+      }, "✕"));
+    })), showGroupSave ? React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 7
+      }
+    }, React.createElement("input", {
+      type: "text",
+      value: groupNameInput,
+      autoFocus: true,
+      onChange: e => setGroupNameInput(e.target.value),
+      placeholder: "グループ名（例: 金曜メンバー）",
+      style: {
+        ...inputStyle,
+        fontSize: 14,
+        flex: 1
+      }
+    }), React.createElement("button", {
+      disabled: !groupNameInput.trim(),
       onClick: () => {
-        setPlayers([...g.members]);
-        setPlayerMode([false, false, false, false]);
+        saveGroups([...groups, {
+          id: "g_" + Date.now(),
+          name: groupNameInput.trim(),
+          members: players.slice(0, PC)
+        }]);
+        setGroupNameInput("");
+        setShowGroupSave(false);
       },
       style: {
-        background: "none",
+        padding: "0 16px",
+        borderRadius: 9,
         border: "none",
         cursor: "pointer",
-        padding: 0,
+        background: t.ac,
+        color: "#fff",
         fontSize: 13,
         fontWeight: 700,
-        color: active ? t.ac : t.tx
+        opacity: groupNameInput.trim() ? 1 : 0.4,
+        flexShrink: 0
       }
-    }, g.name), React.createElement("button", {
+    }, "保存"), React.createElement("button", {
       onClick: () => {
-        if (!window.confirm(`グループ「${g.name}」を削除しますか？`)) return;
-        saveGroups(groups.filter(x => x.id !== g.id));
+        setShowGroupSave(false);
+        setGroupNameInput("");
       },
       style: {
-        background: "none",
-        border: "none",
+        padding: "0 12px",
+        borderRadius: 9,
+        border: `1px solid ${t.bd}`,
         cursor: "pointer",
-        padding: "0 2px",
+        background: "transparent",
         color: t.dm,
         fontSize: 13,
-        lineHeight: 1
+        flexShrink: 0
       }
-    }, "✕"));
-  })), showGroupSave ? React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 7
-    }
-  }, React.createElement("input", {
-    type: "text",
-    value: groupNameInput,
-    autoFocus: true,
-    onChange: e => setGroupNameInput(e.target.value),
-    placeholder: "グループ名（例: 金曜メンバー）",
-    style: {
-      ...inputStyle,
-      fontSize: 14,
-      flex: 1
-    }
-  }), React.createElement("button", {
-    disabled: !groupNameInput.trim(),
-    onClick: () => {
-      saveGroups([...groups, {
-        id: "g_" + Date.now(),
-        name: groupNameInput.trim(),
-        members: [...players]
-      }]);
-      setGroupNameInput("");
-      setShowGroupSave(false);
-    },
-    style: {
-      padding: "0 16px",
-      borderRadius: 9,
-      border: "none",
-      cursor: "pointer",
-      background: t.ac,
-      color: "#fff",
-      fontSize: 13,
-      fontWeight: 700,
-      opacity: groupNameInput.trim() ? 1 : 0.4,
-      flexShrink: 0
-    }
-  }, "保存"), React.createElement("button", {
-    onClick: () => {
-      setShowGroupSave(false);
-      setGroupNameInput("");
-    },
-    style: {
-      padding: "0 12px",
-      borderRadius: 9,
-      border: `1px solid ${t.bd}`,
-      cursor: "pointer",
-      background: "transparent",
-      color: t.dm,
-      fontSize: 13,
-      flexShrink: 0
-    }
-  }, "✕")) : React.createElement("button", {
-    onClick: () => setShowGroupSave(true),
-    disabled: !players.slice(0, PC).every(p => p.trim()),
-    style: {
-      width: "100%",
-      padding: "10px 8px",
-      borderRadius: 9,
-      cursor: "pointer",
-      border: `1px dashed ${t.bd}`,
-      background: "transparent",
-      color: t.dm,
-      fontSize: 12,
-      fontWeight: 700,
-      opacity: players.slice(0, PC).every(p => p.trim()) ? 1 : 0.4
-    }
-  }, "＋ 今の", PC, "人をグループとして保存")), React.createElement("div", {
+    }, "✕")) : React.createElement("button", {
+      onClick: () => setShowGroupSave(true),
+      disabled: !players.slice(0, PC).every(p => p.trim()),
+      style: {
+        width: "100%",
+        padding: "10px 8px",
+        borderRadius: 9,
+        cursor: "pointer",
+        border: `1px dashed ${t.bd}`,
+        background: "transparent",
+        color: t.dm,
+        fontSize: 12,
+        fontWeight: 700,
+        opacity: players.slice(0, PC).every(p => p.trim()) ? 1 : 0.4
+      }
+    }, "＋ 今の", PC, "人をグループとして保存"));
+  })()), React.createElement("div", {
     style: {
       fontSize: 11,
       color: t.dm,
