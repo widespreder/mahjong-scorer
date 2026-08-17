@@ -6903,22 +6903,6 @@ input, select { padding: 10px 14px; }
         <div style={card}>
           <Dots total={4} cur={0} />
           <div style={question}>参加者は？</div>
-          {/* 試合形式 */}
-          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>試合形式</div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            {[["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => (
-              <button key={k} onClick={() => setMatchType(k)} style={{
-                flex: 1, padding: "13px 4px", borderRadius: 11, cursor: "pointer",
-                border: `2px solid ${matchType === k ? t.ac : t.bd}`,
-                background: matchType === k ? t.acS : "transparent",
-                color: matchType === k ? t.ac : t.dm,
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 800, whiteSpace: "nowrap" }}>{lb}</div>
-                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85, whiteSpace: "nowrap" }}>{sub}</div>
-              </button>
-            ))}
-          </div>
-
           {/* 人数（四人麻雀 / 三人麻雀） */}
           <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>人数</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -6938,6 +6922,22 @@ input, select { padding: 10px 14px; }
               }}>
                 <div style={{ fontSize: 14, fontWeight: 800 }}>{lb}</div>
                 <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85 }}>{sub}</div>
+              </button>
+            ))}
+          </div>
+
+          {/* 試合形式 */}
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>試合形式</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {[["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => (
+              <button key={k} onClick={() => setMatchType(k)} style={{
+                flex: 1, padding: "13px 4px", borderRadius: 11, cursor: "pointer",
+                border: `2px solid ${matchType === k ? t.ac : t.bd}`,
+                background: matchType === k ? t.acS : "transparent",
+                color: matchType === k ? t.ac : t.dm,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800, whiteSpace: "nowrap" }}>{lb}</div>
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85, whiteSpace: "nowrap" }}>{sub}</div>
               </button>
             ))}
           </div>
