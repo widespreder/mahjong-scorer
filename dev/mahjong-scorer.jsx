@@ -5341,7 +5341,7 @@ input, select { padding: 10px 14px; }
         <div style={{ ...card, padding: 16, marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>2. メンバー</div>
           <div style={{ fontSize: 11, color: t.dm, marginBottom: 10 }}>
-            4人以上。5人以上なら毎回そこから4人を選んで打ちます（{d.members.length}人選択中）
+            {lgPC}人以上。{lgPC + 1}人以上なら毎回そこから{lgPC}人を選んで打ちます（{d.members.length}人選択中）
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
             {presetNames.map(nm => {
