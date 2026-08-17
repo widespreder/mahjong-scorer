@@ -1049,49 +1049,8 @@ export default function MahjongScorer() {
           順位によってやりとりするポイント。対局結果の精算に使います
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
-          {(pcU === 3 ? UMA_PRESETS_3 : UMA_PRESETS).map(u => {
-            const on = (r.umaKey || "none") === u.key;
-            return (
-              <button key={u.key} onClick={() => onChange({ umaKey: u.key, uma: u.uma })} style={{
-                padding: "11px 8px", borderRadius: 10, cursor: "pointer",
-                border: `2px solid ${on ? t.ac : t.bd}`,
-                background: on ? t.acS : "transparent",
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: on ? t.ac : t.tx }}>{u.label}</div>
-                <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>{u.note}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
-            <select value={sp} style={selectStyle}
-              onChange={e => {
-                const v = parseInt(e.target.value, 10);
-                onChange({ startPoints: v, returnPoints: Math.max(v, rp) });
-              }}>
-              {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
-            </select>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
-            <select value={rp} style={selectStyle}
-              onChange={e => onChange({ returnPoints: parseInt(e.target.value, 10) })}>
-              {Array.from({length:16},(_,i)=>20000+i*1000).filter(v => v >= sp).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.8 }}>
-          オカ = (返し点 − 持ち点) × 4 = <span style={{ color: oka === 0 ? t.dm : t.gd, fontWeight: 700 }}>{oka}pt</span>
-          {oka === 0 ? " — 発生しません" : " がトップへ"}
-        </div>
-
         <button onClick={() => setOpen(v => !v)} style={{
-          width: "100%", marginTop: 10, padding: "10px 8px", borderRadius: 9, cursor: "pointer",
+          width: "100%", marginBottom: 10, padding: "10px 8px", borderRadius: 9, cursor: "pointer",
           border: `1px solid ${t.bd}`, background: "transparent", color: t.ac, fontSize: 12, fontWeight: 700,
         }}>{open ? "説明を閉じる" : "ウマ・オカとは"}</button>
 
@@ -1156,6 +1115,48 @@ export default function MahjongScorer() {
             </div>
           </div>
         )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
+          {(pcU === 3 ? UMA_PRESETS_3 : UMA_PRESETS).map(u => {
+            const on = (r.umaKey || "none") === u.key;
+            return (
+              <button key={u.key} onClick={() => onChange({ umaKey: u.key, uma: u.uma })} style={{
+                padding: "11px 8px", borderRadius: 10, cursor: "pointer",
+                border: `2px solid ${on ? t.ac : t.bd}`,
+                background: on ? t.acS : "transparent",
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: on ? t.ac : t.tx }}>{u.label}</div>
+                <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>{u.note}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>持ち点</div>
+            <select value={sp} style={selectStyle}
+              onChange={e => {
+                const v = parseInt(e.target.value, 10);
+                onChange({ startPoints: v, returnPoints: Math.max(v, rp) });
+              }}>
+              {Array.from({length:16},(_,i)=>20000+i*1000).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: t.dm, marginBottom: 5 }}>返し点</div>
+            <select value={rp} style={selectStyle}
+              onChange={e => onChange({ returnPoints: parseInt(e.target.value, 10) })}>
+              {Array.from({length:16},(_,i)=>20000+i*1000).filter(v => v >= sp).map(v => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.8 }}>
+          オカ = (返し点 − 持ち点) × 4 = <span style={{ color: oka === 0 ? t.dm : t.gd, fontWeight: 700 }}>{oka}pt</span>
+          {oka === 0 ? " — 発生しません" : " がトップへ"}
+        </div>
+
       </div>
     );
   };
