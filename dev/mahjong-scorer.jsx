@@ -6663,7 +6663,7 @@ input, select { padding: 10px 14px; }
 
           {seatDone ? (
             <>
-              <button style={actionBtn("p")} onClick={() => setSetupStep(activeLeagueId ? 4 : 2)}>次へ</button>
+              <button style={actionBtn("p")} onClick={() => setSetupStep(activeLeagueId ? 4 : 3)}>次へ</button>
               <button style={actionBtn()} onClick={resetSeatDraw}>引き直す</button>
             </>
           ) : (
@@ -6671,7 +6671,7 @@ input, select { padding: 10px 14px; }
               <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 14 }}>
                 好きな牌をタップしてください
               </div>
-              <button style={actionBtn()} onClick={() => setSetupStep(activeLeagueId ? 4 : 2)}>
+              <button style={actionBtn()} onClick={() => setSetupStep(activeLeagueId ? 4 : 3)}>
                 席決めをスキップ
               </button>
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginTop: 10, lineHeight: 1.7 }}>
@@ -6703,43 +6703,11 @@ input, select { padding: 10px 14px; }
         </div>
       )}
 
-      {/* Step 2: 試合形式 */}
-      {setupStep === 2 && (
-        <div style={card}>
-          <Back onClick={() => setSetupStep(1)} />
-          <Dots total={4} cur={2} />
-          <div style={question}>試合形式は？</div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-            <button
-              style={bigBtn(matchType === "tonpu" ? t.ac : t.dm, matchType === "tonpu" ? t.acS : "transparent")}
-              onClick={() => { setMatchType("tonpu"); setSetupStep(3); }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>東風戦</div>
-              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場のみ</div>
-            </button>
-            <button
-              style={bigBtn(matchType === "hanchan" ? t.ac : t.dm, matchType === "hanchan" ? t.acS : "transparent")}
-              onClick={() => { setMatchType("hanchan"); setSetupStep(3); }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>半荘戦</div>
-              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東場＋南場</div>
-            </button>
-            <button
-              style={bigBtn(matchType === "zenchan" ? t.ac : t.dm, matchType === "zenchan" ? t.acS : "transparent")}
-              onClick={() => { setMatchType("zenchan"); setSetupStep(3); }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>全荘戦</div>
-              <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 400 }}>東南西北場</div>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Step 3: ルール設定 */}
       {setupStep === 3 && (
         <div style={card}>
-          <Back onClick={() => setSetupStep(2)} />
-          <Dots total={4} cur={3} />
+          <Back onClick={() => setSetupStep(1)} />
+          <Dots total={4} cur={2} />
           <div style={question}>ルール設定</div>
 
           {/* 前回と同じルールで始める */}
@@ -6984,6 +6952,22 @@ input, select { padding: 10px 14px; }
             )}
           </div>
 
+          {/* 試合形式 */}
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>試合形式</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {[["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => (
+              <button key={k} onClick={() => setMatchType(k)} style={{
+                flex: 1, padding: "13px 4px", borderRadius: 11, cursor: "pointer",
+                border: `2px solid ${matchType === k ? t.ac : t.bd}`,
+                background: matchType === k ? t.acS : "transparent",
+                color: matchType === k ? t.ac : t.dm,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800, whiteSpace: "nowrap" }}>{lb}</div>
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85, whiteSpace: "nowrap" }}>{sub}</div>
+              </button>
+            ))}
+          </div>
+
           {/* 人数（四人麻雀 / 三人麻雀） */}
           <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>人数</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -7103,11 +7087,16 @@ input, select { padding: 10px 14px; }
             <button
               style={{
                 ...actionBtn("p"),
-                opacity: players.every(p => p.trim()) ? 1 : 0.4,
+                opacity: (players.slice(0, PC).every(p => p.trim()) && matchType) ? 1 : 0.4,
               }}
-              disabled={!players.every(p => p.trim())}
+              disabled={!players.slice(0, PC).every(p => p.trim()) || !matchType}
               onClick={() => { resetSeatDraw(); setSetupStep(1); }}
             >席決めへ</button>
+            {!matchType && (
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 8 }}>
+                試合形式を選んでください
+              </div>
+            )}
           </div>
         </div>
       )}
