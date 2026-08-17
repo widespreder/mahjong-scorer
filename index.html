@@ -10869,7 +10869,18 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         lineHeight: 1.7
       }
-    }, "お使いのブラウザはこの機能に対応していません（iOSはSafari 16.4以降で対応）。", React.createElement("br", null), "本体の「設定 → 画面表示と明るさ → 自動ロック → なし」で切り替えてください。"))), homeCat && React.createElement("button", {
+    }, "お使いのブラウザはこの機能に対応していません（iOSはSafari 16.4以降で対応）。", React.createElement("br", null), "本体の「設定 → 画面表示と明るさ → 自動ロック → なし」で切り替えてください。"))), homeCat && React.createElement("div", {
+      style: {
+        position: "sticky",
+        bottom: 0,
+        zIndex: 20,
+        marginTop: 18,
+        marginLeft: -8,
+        marginRight: -8,
+        padding: "10px 8px calc(10px + env(safe-area-inset-bottom))",
+        background: `linear-gradient(to top, ${t.bg} 65%, transparent)`
+      }
+    }, React.createElement("button", {
       onClick: () => {
         setHomeCat(null);
         try {
@@ -10878,7 +10889,6 @@ input, select { padding: 10px 14px; }
       },
       style: {
         width: "100%",
-        marginTop: 18,
         padding: "15px 8px",
         borderRadius: 12,
         border: `1px solid ${t.bd}`,
@@ -10886,9 +10896,10 @@ input, select { padding: 10px 14px; }
         color: t.tx,
         fontSize: 15,
         fontWeight: 700,
-        cursor: "pointer"
+        cursor: "pointer",
+        boxShadow: "0 -4px 16px rgba(0,0,0,0.35)"
       }
-    }, "← メニューに戻る"));
+    }, "← メニューに戻る")));
   };
   const renderLeagueList = () => {
     const active = leagues.filter(l => l.status === "active");
