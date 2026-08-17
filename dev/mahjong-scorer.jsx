@@ -104,6 +104,82 @@ export default function MahjongScorer() {
   const [dragSeat, setDragSeat] = useState(null); // { from, offset, target, rowH }
   const seatRowRefs = React.useRef([]);
   const seatAutoReg = React.useRef({}); // 行ごとに自動登録した名前（打ち直し時に置き換えるため）
+
+  // ── 名前リストの並べ替え: 行を長押し→ドラッグ ──
+  const [nameDrag, setNameDrag] = useState(null); // { from, offset, target, rowH }
+  const nameRowRefs = React.useRef([]);
+  const nameDragMeta = React.useRef(null);
+  const nameSuppressClick = React.useRef(false);
+  const nameDragCleanup = () => {
+    const m = nameDragMeta.current;
+    if (m) {
+      if (m.timer) clearTimeout(m.timer);
+      if (m.raf) cancelAnimationFrame(m.raf);
+      if (m.moveH) { document.removeEventListener("touchmove", m.moveH); document.removeEventListener("mousemove", m.moveH); }
+      if (m.endH) { document.removeEventListener("touchend", m.endH); document.removeEventListener("touchcancel", m.endH); document.removeEventListener("mouseup", m.endH); }
+    }
+    nameDragMeta.current = null;
+    setNameDrag(null);
+  };
+  const nameDragActivate = () => {
+    const m = nameDragMeta.current;
+    if (!m || m.active) return;
+    m.active = true;
+    nameSuppressClick.current = true;
+    try { if (navigator.vibrate) navigator.vibrate(30); } catch {}
+    const r0 = nameRowRefs.current[m.from], r1 = nameRowRefs.current[m.from + 1] || nameRowRefs.current[m.from - 1];
+    m.rowH = (r0 && r1) ? Math.max(36, Math.abs(r1.getBoundingClientRect().top - r0.getBoundingClientRect().top)) : 52;
+    const maxIdx = m.count - 1;
+    const moveH = (ev) => {
+      if (ev.cancelable) ev.preventDefault();
+      const y = ev.touches ? (ev.touches[0] ? ev.touches[0].clientY : m.lastY) : ev.clientY;
+      m.lastY = y;
+      const off = y - m.startY;
+      m.lastTarget = Math.max(0, Math.min(maxIdx, m.from + Math.round(off / m.rowH)));
+      m.lastOffset = off;
+      if (!m.raf) m.raf = requestAnimationFrame(() => {
+        m.raf = null;
+        setNameDrag({ from: m.from, offset: m.lastOffset, target: m.lastTarget, rowH: m.rowH });
+      });
+    };
+    const endH = (ev) => {
+      if (ev && ev.cancelable && ev.type === "touchend") ev.preventDefault();
+      const from = m.from, to = m.lastTarget;
+      nameDragCleanup();
+      if (from !== to) {
+        const arr = [...presetNames];
+        const [x] = arr.splice(from, 1);
+        arr.splice(to, 0, x);
+        savePresetNames(arr);
+      }
+      setTimeout(() => { nameSuppressClick.current = false; }, 400);
+    };
+    m.moveH = moveH; m.endH = endH;
+    document.addEventListener("touchmove", moveH, { passive: false });
+    document.addEventListener("mousemove", moveH);
+    document.addEventListener("touchend", endH, { passive: false });
+    document.addEventListener("touchcancel", endH);
+    document.addEventListener("mouseup", endH);
+    setNameDrag({ from: m.from, offset: 0, target: m.from, rowH: m.rowH });
+  };
+  const nameDragStart = (e, i, count) => {
+    const tag = (e.target && e.target.tagName ? e.target.tagName : "").toUpperCase();
+    if (tag === "INPUT" || tag === "BUTTON") return; // 編集・削除ボタンや入力欄は通常操作
+    if (nameDragMeta.current) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    nameDragMeta.current = { startY: y, lastY: y, from: i, count, rowH: 52, timer: null, raf: null, active: false, lastTarget: i, lastOffset: 0, moveH: null, endH: null };
+    nameDragMeta.current.timer = setTimeout(nameDragActivate, 350);
+  };
+  const nameDragPreMove = (e) => {
+    const m = nameDragMeta.current;
+    if (!m || m.active) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    if (Math.abs(y - m.startY) > 10) { clearTimeout(m.timer); nameDragMeta.current = null; }
+  };
+  const nameDragCancelIfPending = () => {
+    const m = nameDragMeta.current;
+    if (m && !m.active) { clearTimeout(m.timer); nameDragMeta.current = null; }
+  };
   const seatDragMeta = React.useRef(null); // 進行中ドラッグの一時情報
   const seatSuppressClick = React.useRef(false); // ドラッグ直後のselect誤タップ防止
 
@@ -3458,14 +3534,6 @@ input, select { padding: 10px 14px; }
       savePresetNames(arr);
       setEditNameIdx(null);
     };
-    const move = (idx, dir) => {
-      const j = idx + dir;
-      if (j < 0 || j >= presetNames.length) return;
-      const arr = [...presetNames];
-      [arr[idx], arr[j]] = [arr[j], arr[idx]];
-      savePresetNames(arr);
-    };
-
     return (
       <div style={body}>
         <div style={{ textAlign: "center", padding: "16px 0 12px" }}>
@@ -3502,12 +3570,45 @@ input, select { padding: 10px 14px; }
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: t.dm }}>登録済み（{presetNames.length}人）</span>
           </div>
+          {presetNames.length > 1 && (
+            <div style={{ fontSize: 11, color: t.dm, marginBottom: 8, lineHeight: 1.6 }}>
+              行を<b style={{ color: t.tx }}>長押し</b>して、そのまま上下にドラッグで並べ替え
+            </div>
+          )}
           {presetNames.length === 0 ? (
             <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: t.dm }}>まだ登録がありません</div>
-          ) : presetNames.map((n, i) => (
-            <div key={i} style={{
+          ) : presetNames.map((n, i) => {
+            const nd = nameDrag;
+            const isDragging = nd && nd.from === i;
+            let shiftY = 0;
+            if (nd && !isDragging) {
+              if (nd.from < nd.target && i > nd.from && i <= nd.target) shiftY = -nd.rowH;
+              else if (nd.from > nd.target && i >= nd.target && i < nd.from) shiftY = nd.rowH;
+            }
+            return (
+            <div key={i}
+              ref={el => { nameRowRefs.current[i] = el; }}
+              onTouchStart={(e) => nameDragStart(e, i, presetNames.length)}
+              onTouchMove={nameDragPreMove}
+              onTouchEnd={nameDragCancelIfPending}
+              onMouseDown={(e) => nameDragStart(e, i, presetNames.length)}
+              onMouseMove={nameDragPreMove}
+              onMouseUp={nameDragCancelIfPending}
+              onMouseLeave={nameDragCancelIfPending}
+              onClickCapture={(e) => { if (nameSuppressClick.current) { e.preventDefault(); e.stopPropagation(); } }}
+              onContextMenu={(e) => { if (nameDrag || nameSuppressClick.current) e.preventDefault(); }}
+              style={{
               display: "flex", alignItems: "center", gap: 8,
               padding: "10px 0", borderBottom: i < presetNames.length - 1 ? `1px solid ${t.bd}33` : "none",
+              position: "relative",
+              transform: isDragging ? `translateY(${nd.offset}px) scale(1.01)` : shiftY ? `translateY(${shiftY}px)` : "none",
+              transition: isDragging ? "none" : "transform 0.15s ease",
+              zIndex: isDragging ? 10 : 1,
+              background: isDragging ? t.sf : "transparent",
+              borderRadius: isDragging ? 10 : 0,
+              boxShadow: isDragging ? "0 8px 22px rgba(0,0,0,0.5)" : "none",
+              outline: isDragging ? `2px solid ${t.ac}88` : "none",
+              WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none",
             }}>
               {editNameIdx === i ? (
                 <>
@@ -3533,18 +3634,7 @@ input, select { padding: 10px 14px; }
                 </>
               ) : (
                 <>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <button onClick={() => move(i, -1)} disabled={i === 0} style={{
-                      width: 24, height: 18, borderRadius: 4, cursor: i === 0 ? "default" : "pointer",
-                      border: `1px solid ${t.bd}`, background: t.sf,
-                      color: i === 0 ? t.bd : t.dm, fontSize: 9, padding: 0, lineHeight: 1,
-                    }}>▲</button>
-                    <button onClick={() => move(i, 1)} disabled={i === presetNames.length - 1} style={{
-                      width: 24, height: 18, borderRadius: 4, cursor: i === presetNames.length - 1 ? "default" : "pointer",
-                      border: `1px solid ${t.bd}`, background: t.sf,
-                      color: i === presetNames.length - 1 ? t.bd : t.dm, fontSize: 9, padding: 0, lineHeight: 1,
-                    }}>▼</button>
-                  </div>
+                  <span style={{ flexShrink: 0, color: t.dm, fontSize: 20, lineHeight: 1, padding: "0 4px", touchAction: "none", cursor: "grab" }}>≡</span>
                   <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n}</span>
                   <button onClick={() => { setEditNameIdx(i); setEditNameVal(n); }} style={{
                     padding: "7px 12px", borderRadius: 8, border: `1px solid ${t.bd}`,
@@ -3557,7 +3647,8 @@ input, select { padding: 10px 14px; }
                 </>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* 初期値に戻す */}
