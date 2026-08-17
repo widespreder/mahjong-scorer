@@ -459,7 +459,7 @@ function MahjongScorer() {
     rows.forEach(r => {
       r.avgRank = r.games ? r.rankSum / r.games : 0;
       r.topRate = r.games ? r.ranks[0] / r.games : 0;
-      r.lastRate = r.games ? r.ranks[3] / r.games : 0;
+      r.lastRate = r.games ? r.ranks[(lg.playerCount || 4) - 1] / r.games : 0;
     });
     return rows.sort((a, b) => b.pt - a.pt || a.avgRank - b.avgRank);
   };
@@ -493,6 +493,7 @@ function MahjongScorer() {
     return {
       id: "lg_" + Date.now(),
       name: "",
+      playerCount: 4,
       members: [...presetNames].slice(0, 4),
       mode: "count",
       targetCount: 10,
@@ -1182,7 +1183,8 @@ function MahjongScorer() {
     setLastRules({
       ...rules
     });
-    const pcNow = activeLeagueId ? 4 : playerCount;
+    const activeLg = activeLeagueId ? leagues.find(l => l.id === activeLeagueId) : null;
+    const pcNow = activeLg ? activeLg.playerCount || 4 : playerCount;
     const cfg = {
       date: gameDate,
       matchType,
@@ -1205,7 +1207,7 @@ function MahjongScorer() {
     setTableMode(true);
     setTmWinStep(null);
     setTmDrawMode(false);
-  }, [gameDate, matchType, players, rules, playerCount, activeLeagueId]);
+  }, [gameDate, matchType, players, rules, playerCount, activeLeagueId, leagues]);
   const t = {
     bg: "#0c1117",
     sf: "#161d27",
@@ -10751,7 +10753,8 @@ input, select { padding: 10px 14px; }
         members: [...d.members, nm]
       });
     };
-    const canSave = d.name.trim() && d.members.length >= 4;
+    const lgPC = d.playerCount || 4;
+    const canSave = d.name.trim() && d.members.length >= lgPC;
     return React.createElement("div", {
       style: body
     }, React.createElement("button", {
@@ -10764,6 +10767,71 @@ input, select { padding: 10px 14px; }
         marginBottom: 16
       }
     }, leagues.some(l => l.id === d.id) ? "リーグ戦の設定" : "新しいリーグ戦"), React.createElement("div", {
+      style: {
+        ...card,
+        padding: 16,
+        marginBottom: 12
+      }
+    }, React.createElement("div", {
+      style: {
+        fontSize: 13,
+        fontWeight: 700,
+        marginBottom: 8
+      }
+    }, "人数"), React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8
+      }
+    }, [[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => React.createElement("button", {
+      key: n,
+      onClick: () => {
+        if (n === lgPC) return;
+        if (n === 3) set({
+          playerCount: 3,
+          rules: {
+            ...d.rules,
+            ...SANMA_DEFAULT_RULES
+          },
+          umaKey: "renmei3",
+          uma: [10, 0, -10]
+        });else set({
+          playerCount: 4,
+          rules: {
+            ...defaultRules
+          },
+          umaKey: "10-20",
+          uma: [20, 10, -10, -20]
+        });
+      },
+      style: {
+        flex: 1,
+        padding: "13px 6px",
+        borderRadius: 11,
+        cursor: "pointer",
+        border: `2px solid ${lgPC === n ? t.ac : t.bd}`,
+        background: lgPC === n ? t.acS : "transparent",
+        color: lgPC === n ? t.ac : t.dm
+      }
+    }, React.createElement("div", {
+      style: {
+        fontSize: 14,
+        fontWeight: 800
+      }
+    }, lb), React.createElement("div", {
+      style: {
+        fontSize: 10,
+        marginTop: 3,
+        opacity: 0.85
+      }
+    }, sub)))), leagues.some(l => l.id === d.id) && React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: t.dm,
+        marginTop: 8,
+        lineHeight: 1.6
+      }
+    }, "対局が記録された後の人数変更は、集計が混ざるためおすすめしません")), React.createElement("div", {
       style: {
         ...card,
         padding: 16,
@@ -10994,7 +11062,7 @@ input, select { padding: 10px 14px; }
         gap: 7,
         marginBottom: 12
       }
-    }, UMA_PRESETS.map(u => {
+    }, (lgPC === 3 ? UMA_PRESETS_3 : UMA_PRESETS).map(u => {
       const on = d.umaKey === u.key;
       return React.createElement("button", {
         key: u.key,
@@ -11110,7 +11178,7 @@ input, select { padding: 10px 14px; }
       const rp = d.rules.returnPoints || 30000;
       const oka = (rp - sp) * 4 / 1000;
       const demo = [15000, 7000, -7000, -15000].map(o => sp + o);
-      const res = calcGamePts(demo, [0, 1, 2, 3], {
+      const res = calcGamePts(demo.slice(0, lgPC), demo.slice(0, lgPC).map((_, i) => i), {
         rules: d.rules,
         uma: d.uma
       });
@@ -11489,7 +11557,7 @@ input, select { padding: 10px 14px; }
         color: t.tx,
         lineHeight: 1.9
       }
-    }, !d.name.trim() && React.createElement("div", null, "・リーグ名を入力してください"), d.members.length < 4 && React.createElement("div", null, "・メンバーを4人以上選んでください（現在", d.members.length, "人）"))), React.createElement("button", {
+    }, !d.name.trim() && React.createElement("div", null, "・リーグ名を入力してください"), d.members.length < lgPC && React.createElement("div", null, "・メンバーを", lgPC, "人以上選んでください（現在", d.members.length, "人）"))), React.createElement("button", {
       style: {
         ...actionBtn("p"),
         opacity: canSave ? 1 : 0.4
@@ -11553,7 +11621,7 @@ input, select { padding: 10px 14px; }
       }
     })), lg.status === "active" && React.createElement("button", {
       onClick: () => {
-        setLgPick(lg.members.length === 4 ? [...lg.members] : []);
+        setLgPick(lg.members.length === (lg.playerCount || 4) ? [...lg.members] : []);
         setLgMatchType("hanchan");
         setView("leaguestart");
       },
@@ -11870,7 +11938,8 @@ input, select { padding: 10px 14px; }
     if (!lg) return React.createElement("div", {
       style: body
     });
-    const ready = lgPick.length === 4 && !!lgMatchType;
+    const lgPC = lg.playerCount || 4;
+    const ready = lgPick.length === lgPC && !!lgMatchType;
     return React.createElement("div", {
       style: body
     }, React.createElement("button", {
@@ -11888,7 +11957,7 @@ input, select { padding: 10px 14px; }
         color: t.dm,
         marginBottom: 16
       }
-    }, lg.members.length === 4 ? "メンバーは4人なので全員が出場します" : `この対局に出る4人を選んでください（${lgPick.length}/4）`), React.createElement("div", {
+    }, lg.members.length === lgPC ? `メンバーは${lgPC}人なので全員が出場します` : `この対局に出る${lgPC}人を選んでください（${lgPick.length}/${lgPC}）`), React.createElement("div", {
       style: {
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
@@ -11897,7 +11966,7 @@ input, select { padding: 10px 14px; }
       }
     }, lg.members.map(nm => {
       const on = lgPick.includes(nm);
-      const full = lgPick.length >= 4 && !on;
+      const full = lgPick.length >= lgPC && !on;
       return React.createElement("button", {
         key: nm,
         onClick: () => setLgPick(on ? lgPick.filter(x => x !== nm) : full ? lgPick : [...lgPick, nm]),
@@ -11961,6 +12030,7 @@ input, select { padding: 10px 14px; }
         const d = new Date();
         setGameDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
         setPlayers([...lgPick]);
+        setPlayerCount(lgPC);
         setRules({
           ...defaultRules,
           ...lg.rules
@@ -14131,12 +14201,9 @@ input, select { padding: 10px 14px; }
       if (n === 3) setRules(r => ({
         ...r,
         ...SANMA_DEFAULT_RULES
-      }));else setRules(r => ({
-        ...r,
-        ...FACTORY_RULES,
-        startPoints: 25000,
-        returnPoints: 30000
-      }));
+      }));else setRules({
+        ...defaultRules
+      });
     },
     style: {
       flex: 1,
