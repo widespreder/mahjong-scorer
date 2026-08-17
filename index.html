@@ -1532,109 +1532,11 @@ function MahjongScorer() {
         color: t.dm,
         marginBottom: 9
       }
-    }, "順位によってやりとりするポイント。対局結果の精算に使います"), React.createElement("div", {
-      style: {
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 7,
-        marginBottom: 10
-      }
-    }, (pcU === 3 ? UMA_PRESETS_3 : UMA_PRESETS).map(u => {
-      const on = (r.umaKey || "none") === u.key;
-      return React.createElement("button", {
-        key: u.key,
-        onClick: () => onChange({
-          umaKey: u.key,
-          uma: u.uma
-        }),
-        style: {
-          padding: "11px 8px",
-          borderRadius: 10,
-          cursor: "pointer",
-          border: `2px solid ${on ? t.ac : t.bd}`,
-          background: on ? t.acS : "transparent"
-        }
-      }, React.createElement("div", {
-        style: {
-          fontSize: 14,
-          fontWeight: 800,
-          color: on ? t.ac : t.tx
-        }
-      }, u.label), React.createElement("div", {
-        style: {
-          fontSize: 10,
-          color: t.dm,
-          marginTop: 2
-        }
-      }, u.note));
-    })), React.createElement("div", {
-      style: {
-        display: "flex",
-        gap: 10,
-        marginBottom: 8
-      }
-    }, React.createElement("div", {
-      style: {
-        flex: 1
-      }
-    }, React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: t.dm,
-        marginBottom: 5
-      }
-    }, "持ち点"), React.createElement("select", {
-      value: sp,
-      style: selectStyle,
-      onChange: e => {
-        const v = parseInt(e.target.value, 10);
-        onChange({
-          startPoints: v,
-          returnPoints: Math.max(v, rp)
-        });
-      }
-    }, Array.from({
-      length: 16
-    }, (_, i) => 20000 + i * 1000).map(v => React.createElement("option", {
-      key: v,
-      value: v
-    }, v.toLocaleString())))), React.createElement("div", {
-      style: {
-        flex: 1
-      }
-    }, React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: t.dm,
-        marginBottom: 5
-      }
-    }, "返し点"), React.createElement("select", {
-      value: rp,
-      style: selectStyle,
-      onChange: e => onChange({
-        returnPoints: parseInt(e.target.value, 10)
-      })
-    }, Array.from({
-      length: 16
-    }, (_, i) => 20000 + i * 1000).filter(v => v >= sp).map(v => React.createElement("option", {
-      key: v,
-      value: v
-    }, v.toLocaleString()))))), React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: t.dm,
-        lineHeight: 1.8
-      }
-    }, "オカ = (返し点 − 持ち点) × 4 = ", React.createElement("span", {
-      style: {
-        color: oka === 0 ? t.dm : t.gd,
-        fontWeight: 700
-      }
-    }, oka, "pt"), oka === 0 ? " — 発生しません" : " がトップへ"), React.createElement("button", {
+    }, "順位によってやりとりするポイント。対局結果の精算に使います"), React.createElement("button", {
       onClick: () => setOpen(v => !v),
       style: {
         width: "100%",
-        marginTop: 10,
+        marginBottom: 10,
         padding: "10px 8px",
         borderRadius: 9,
         cursor: "pointer",
@@ -1766,7 +1668,105 @@ function MahjongScorer() {
         marginTop: 8,
         lineHeight: 1.7
       }
-    }, "合計 ", pts.reduce((a2, x) => a2 + x.pt, 0), "pt。同点のときは起家に近い席を上位として扱います。")));
+    }, "合計 ", pts.reduce((a2, x) => a2 + x.pt, 0), "pt。同点のときは起家に近い席を上位として扱います。")), React.createElement("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 7,
+        marginBottom: 10
+      }
+    }, (pcU === 3 ? UMA_PRESETS_3 : UMA_PRESETS).map(u => {
+      const on = (r.umaKey || "none") === u.key;
+      return React.createElement("button", {
+        key: u.key,
+        onClick: () => onChange({
+          umaKey: u.key,
+          uma: u.uma
+        }),
+        style: {
+          padding: "11px 8px",
+          borderRadius: 10,
+          cursor: "pointer",
+          border: `2px solid ${on ? t.ac : t.bd}`,
+          background: on ? t.acS : "transparent"
+        }
+      }, React.createElement("div", {
+        style: {
+          fontSize: 14,
+          fontWeight: 800,
+          color: on ? t.ac : t.tx
+        }
+      }, u.label), React.createElement("div", {
+        style: {
+          fontSize: 10,
+          color: t.dm,
+          marginTop: 2
+        }
+      }, u.note));
+    })), React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 10,
+        marginBottom: 8
+      }
+    }, React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: t.dm,
+        marginBottom: 5
+      }
+    }, "持ち点"), React.createElement("select", {
+      value: sp,
+      style: selectStyle,
+      onChange: e => {
+        const v = parseInt(e.target.value, 10);
+        onChange({
+          startPoints: v,
+          returnPoints: Math.max(v, rp)
+        });
+      }
+    }, Array.from({
+      length: 16
+    }, (_, i) => 20000 + i * 1000).map(v => React.createElement("option", {
+      key: v,
+      value: v
+    }, v.toLocaleString())))), React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: t.dm,
+        marginBottom: 5
+      }
+    }, "返し点"), React.createElement("select", {
+      value: rp,
+      style: selectStyle,
+      onChange: e => onChange({
+        returnPoints: parseInt(e.target.value, 10)
+      })
+    }, Array.from({
+      length: 16
+    }, (_, i) => 20000 + i * 1000).filter(v => v >= sp).map(v => React.createElement("option", {
+      key: v,
+      value: v
+    }, v.toLocaleString()))))), React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: t.dm,
+        lineHeight: 1.8
+      }
+    }, "オカ = (返し点 − 持ち点) × 4 = ", React.createElement("span", {
+      style: {
+        color: oka === 0 ? t.dm : t.gd,
+        fontWeight: 700
+      }
+    }, oka, "pt"), oka === 0 ? " — 発生しません" : " がトップへ"));
   };
   const editTag = {
     fontSize: 10,
