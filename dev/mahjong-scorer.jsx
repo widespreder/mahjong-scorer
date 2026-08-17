@@ -7025,6 +7025,9 @@ input, select { padding: 10px 14px; }
           </div>
 
           {/* 席の並べ替え: 行を長押し→ドラッグ */}
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>
+            仮席 <span style={{ fontSize: 10 }}>（席決めで確定。スキップした場合はこの並びで開始）</span>
+          </div>
           <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 10, lineHeight: 1.7 }}>
             並べ替えは行を<b style={{ color: t.tx }}>長押し</b>して、そのまま上下にドラッグ
           </div>
