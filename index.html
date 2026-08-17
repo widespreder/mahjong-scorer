@@ -8725,6 +8725,7 @@ input, select { padding: 10px 14px; }
   const [showRoundEdit, setShowRoundEdit] = useState(false);
   const [seatRot, setSeatRot] = useState(0);
   const [playerDetail, setPlayerDetail] = useState(null);
+  const [rankPeek, setRankPeek] = useState(null);
   const longPressTimer = React.useRef(null);
   const longPressFired = React.useRef(false);
   const longPressHandlers = i => ({
@@ -8736,7 +8737,7 @@ input, select { padding: 10px 14px; }
         try {
           if (navigator.vibrate) navigator.vibrate(12);
         } catch {}
-        setPlayerDetail(i);
+        setRankPeek(i);
       }, 500);
     },
     onPointerUp: () => {
@@ -9660,6 +9661,152 @@ input, select { padding: 10px 14px; }
         textAlign: "center"
       }
     }, "オーラスを待たずに終わります。結果画面で内容を確認してから記録できます"))));
+  };
+  const RankPeekOverlay = () => {
+    if (rankPeek === null) return null;
+    const pi = rankPeek;
+    const rot = (PC === 3 ? [0, -90, 90] : [0, -90, 180, 90])[(pi - seatRot + PC) % PC] ?? 0;
+    const ranked = scores.map((v, i) => ({
+      i,
+      v
+    })).sort((a, b) => b.v - a.v || a.i - b.i);
+    const myRank = ranked.findIndex(r => r.i === pi) + 1;
+    return React.createElement("div", {
+      onClick: () => setRankPeek(null),
+      style: {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0,0,0,0.88)",
+        zIndex: 150,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16
+      }
+    }, React.createElement("div", {
+      onClick: e => e.stopPropagation(),
+      style: {
+        ...card,
+        width: "min(86vw, 420px)",
+        margin: 0,
+        padding: 18,
+        transform: `rotate(${rot}deg)`
+      }
+    }, React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 10
+      }
+    }, React.createElement("div", null, React.createElement("div", {
+      style: {
+        fontSize: 16,
+        fontWeight: 800
+      }
+    }, players[pi]), React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: t.dm
+      }
+    }, "現在 ", React.createElement("b", {
+      style: {
+        color: t.gd,
+        fontSize: 14
+      }
+    }, myRank, "位"), " ・ ±はこの人との点差")), React.createElement("button", {
+      style: {
+        background: "none",
+        border: "none",
+        color: t.dm,
+        fontSize: 20,
+        cursor: "pointer",
+        lineHeight: 1
+      },
+      onClick: () => setRankPeek(null)
+    }, "✕")), ranked.map((r, rank) => {
+      const me = r.i === pi;
+      const diff = r.v - scores[pi];
+      return React.createElement("div", {
+        key: r.i,
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "9px 10px",
+          borderRadius: 10,
+          marginBottom: 5,
+          background: me ? t.acS : t.sf,
+          border: `1px solid ${me ? t.ac : t.bd}`
+        }
+      }, React.createElement("span", {
+        style: {
+          fontSize: 13,
+          fontWeight: 900,
+          color: rank === 0 ? t.gd : t.dm,
+          width: 30,
+          flexShrink: 0
+        }
+      }, rank + 1, "位"), React.createElement("span", {
+        style: {
+          fontSize: 11,
+          fontWeight: 800,
+          flexShrink: 0,
+          color: r.i === dealerIdx ? "#1a1a1a" : t.dm,
+          background: r.i === dealerIdx ? t.gd : t.card,
+          border: `1px solid ${r.i === dealerIdx ? t.gd : t.bd}`,
+          borderRadius: 5,
+          padding: "3px 5px"
+        }
+      }, SEAT_WINDS[(r.i - dealerIdx + PC) % PC]), React.createElement("span", {
+        style: {
+          flex: 1,
+          fontSize: 14,
+          fontWeight: 700,
+          color: t.tx,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap"
+        }
+      }, players[r.i]), React.createElement("span", {
+        style: {
+          fontSize: 15,
+          fontWeight: 800,
+          color: r.v < 0 ? t.rd : t.tx,
+          fontVariantNumeric: "tabular-nums"
+        }
+      }, r.v.toLocaleString()), React.createElement("span", {
+        style: {
+          fontSize: 12,
+          fontWeight: 800,
+          width: 66,
+          textAlign: "right",
+          flexShrink: 0,
+          fontVariantNumeric: "tabular-nums",
+          color: me ? t.dm : diff > 0 ? t.rd : diff < 0 ? t.gn : t.dm
+        }
+      }, me ? "—" : (diff > 0 ? "+" : "") + diff.toLocaleString()));
+    }), React.createElement("button", {
+      style: {
+        width: "100%",
+        marginTop: 8,
+        padding: "10px 8px",
+        borderRadius: 9,
+        cursor: "pointer",
+        border: `1px solid ${t.bd}`,
+        background: "transparent",
+        color: t.ac,
+        fontSize: 12,
+        fontWeight: 700
+      },
+      onClick: () => {
+        setPlayerDetail(pi);
+        setRankPeek(null);
+      }
+    }, "点数の変動履歴を見る")));
   };
   const PlayerHistoryModal = () => {
     if (playerDetail === null) return null;
@@ -15708,7 +15855,7 @@ input, select { padding: 10px 14px; }
         textAlign: "center",
         marginTop: 6
       }
-    }, "点数を長押しすると変動履歴が見られます"), React.createElement(PlayerHistoryModal, null), showRoundEdit && React.createElement("div", {
+    }, "点数を長押しすると順位と点差が見られます"), React.createElement(RankPeekOverlay, null), React.createElement(PlayerHistoryModal, null), showRoundEdit && React.createElement("div", {
       style: {
         position: "fixed",
         top: 0,
@@ -15973,7 +16120,7 @@ input, select { padding: 10px 14px; }
       marginBottom: 10,
       marginTop: -8
     }
-  }, "点数を長押しすると変動履歴が見られます"), React.createElement(PlayerHistoryModal, null), React.createElement(RuleCheckModal, null), React.createElement("div", {
+  }, "点数を長押しすると順位と点差が見られます"), React.createElement(RankPeekOverlay, null), React.createElement(PlayerHistoryModal, null), React.createElement(RuleCheckModal, null), React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
