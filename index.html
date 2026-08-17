@@ -14393,6 +14393,8 @@ input, select { padding: 10px 14px; }
     },
     disabled: !players.slice(0, PC).every(p => p.trim()) || !matchType,
     onClick: () => {
+      const adds = players.slice(0, PC).map(x => (x || "").trim()).filter(x => x && !presetNames.includes(x) && !/^[A-D]プレーヤー$/.test(x));
+      if (adds.length) savePresetNames([...presetNames, ...Array.from(new Set(adds))]);
       resetSeatDraw();
       setSetupStep(1);
     }
