@@ -164,6 +164,7 @@ function MahjongScorer() {
   const [playerMode, setPlayerMode] = useState([false, false, false, false]);
   const [dragSeat, setDragSeat] = useState(null);
   const seatRowRefs = React.useRef([]);
+  const seatAutoReg = React.useRef({});
   const seatDragMeta = React.useRef(null);
   const seatSuppressClick = React.useRef(false);
   const moveSeatOrder = (from, to) => {
@@ -14328,6 +14329,16 @@ input, select { padding: 10px 14px; }
         const np = [...players];
         np[i] = e.target.value;
         setPlayers(np);
+      },
+      onBlur: () => {
+        const v = (p || "").trim();
+        if (!v || /^[A-D]プレーヤー$/.test(v)) return;
+        const prev = seatAutoReg.current[i];
+        let list = presetNames;
+        if (prev && prev !== v && list.includes(prev)) list = list.filter(n => n !== prev);
+        if (!list.includes(v)) list = [...list, v];
+        if (list !== presetNames) savePresetNames(list);
+        seatAutoReg.current[i] = v;
       }
     }), React.createElement("button", {
       style: {
