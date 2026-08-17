@@ -6651,8 +6651,8 @@ input, select { padding: 10px 14px; }
                     </>
                   ) : (
                     <span style={{
-                      width: 26, height: 26, borderRadius: 4,
-                      border: "2px solid rgba(255,255,255,0.35)",
+                      width: 44, height: 60, borderRadius: 6,
+                      border: "2.5px solid rgba(255,255,255,0.6)",
                       background: "rgba(255,255,255,0.12)",
                     }} />
                   )}
