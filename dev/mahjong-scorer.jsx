@@ -6952,17 +6952,23 @@ input, select { padding: 10px 14px; }
 
           {/* グループ */}
           <div style={{ marginBottom: 16 }}>
+            {(() => {
+              // 選択中の人数に合うグループだけ表示（3人グループと4人グループを分ける）
+              const pcGroups = groups.filter(g => (g.members || []).length === PC);
+              return (
+                <>
             <div style={{ fontSize: 11, fontWeight: 700, color: t.dm, marginBottom: 3 }}>
-              グループ{groups.length > 0 ? `（タップで${PC}人をまとめて選択）` : ""}
+              グループ{pcGroups.length > 0 ? `（タップで${PC}人をまとめて選択）` : ""}
             </div>
-            {groups.length === 0 && (
+            {pcGroups.length === 0 && (
               <div style={{ fontSize: 10, color: t.dm, marginBottom: 7, lineHeight: 1.7 }}>
-                いまの4人をまとめて登録しておくと、次回からワンタップで呼び出せます
+                いまの{PC}人をまとめて登録しておくと、次回からワンタップで呼び出せます
+                {groups.length > 0 ? `（${PC === 3 ? 4 : 3}人のグループは${PC === 3 ? "四" : "三"}人麻雀で表示されます）` : ""}
               </div>
             )}
-            {groups.length > 0 && (
+            {pcGroups.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 9 }}>
-                {groups.map(g => {
+                {pcGroups.map(g => {
                   const active = g.members.every((m, k) => players[k] === m);
                   return (
                     <span key={g.id} style={{
@@ -6971,7 +6977,10 @@ input, select { padding: 10px 14px; }
                       background: active ? t.acS : "transparent",
                       borderRadius: 9, padding: "7px 8px 7px 11px",
                     }}>
-                      <button onClick={() => { setPlayers([...g.members]); setPlayerMode([false, false, false, false]); }}
+                      <button onClick={() => {
+                        setPlayers(prev => { const np = [...prev]; g.members.forEach((m, k) => { np[k] = m; }); return np; });
+                        setPlayerMode([false, false, false, false]);
+                      }}
                         style={{
                           background: "none", border: "none", cursor: "pointer", padding: 0,
                           fontSize: 13, fontWeight: 700, color: active ? t.ac : t.tx,
@@ -7000,7 +7009,7 @@ input, select { padding: 10px 14px; }
                 <button
                   disabled={!groupNameInput.trim()}
                   onClick={() => {
-                    saveGroups([...groups, { id: "g_" + Date.now(), name: groupNameInput.trim(), members: [...players] }]);
+                    saveGroups([...groups, { id: "g_" + Date.now(), name: groupNameInput.trim(), members: players.slice(0, PC) }]);
                     setGroupNameInput(""); setShowGroupSave(false);
                   }}
                   style={{
@@ -7023,6 +7032,9 @@ input, select { padding: 10px 14px; }
                   fontSize: 12, fontWeight: 700, opacity: players.slice(0, PC).every(p => p.trim()) ? 1 : 0.4,
                 }}>＋ 今の{PC}人をグループとして保存</button>
             )}
+                </>
+              );
+            })()}
           </div>
 
           {/* 席の並べ替え: 行を長押し→ドラッグ */}
