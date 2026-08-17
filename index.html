@@ -13983,6 +13983,90 @@ input, select { padding: 10px 14px; }
     style: {
       fontSize: 12,
       color: t.dm,
+      marginBottom: 8
+    }
+  }, "試合形式"), React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 14
+    }
+  }, [["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => React.createElement("button", {
+    key: k,
+    onClick: () => setMatchType(k),
+    style: {
+      flex: 1,
+      padding: "13px 4px",
+      borderRadius: 11,
+      cursor: "pointer",
+      border: `2px solid ${matchType === k ? t.ac : t.bd}`,
+      background: matchType === k ? t.acS : "transparent",
+      color: matchType === k ? t.ac : t.dm
+    }
+  }, React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 800,
+      whiteSpace: "nowrap"
+    }
+  }, lb), React.createElement("div", {
+    style: {
+      fontSize: 10,
+      marginTop: 3,
+      opacity: 0.85,
+      whiteSpace: "nowrap"
+    }
+  }, sub)))), React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: t.dm,
+      marginBottom: 8
+    }
+  }, "人数"), React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 14
+    }
+  }, [[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => React.createElement("button", {
+    key: n,
+    onClick: () => {
+      if (n === playerCount) return;
+      setPlayerCount(n);
+      setSeatDone(false);
+      setSeatTiles([]);
+      setSeatTurn(0);
+      if (n === 3) setRules(r => ({
+        ...r,
+        ...SANMA_DEFAULT_RULES
+      }));else setRules({
+        ...defaultRules
+      });
+    },
+    style: {
+      flex: 1,
+      padding: "13px 6px",
+      borderRadius: 11,
+      cursor: "pointer",
+      border: `2px solid ${playerCount === n ? t.ac : t.bd}`,
+      background: playerCount === n ? t.acS : "transparent",
+      color: playerCount === n ? t.ac : t.dm
+    }
+  }, React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 800
+    }
+  }, lb), React.createElement("div", {
+    style: {
+      fontSize: 10,
+      marginTop: 3,
+      opacity: 0.85
+    }
+  }, sub)))), React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: t.dm,
       textAlign: "center",
       marginBottom: 6
     }
@@ -14142,90 +14226,6 @@ input, select { padding: 10px 14px; }
       opacity: players.slice(0, PC).every(p => p.trim()) ? 1 : 0.4
     }
   }, "＋ 今の", PC, "人をグループとして保存")), React.createElement("div", {
-    style: {
-      fontSize: 12,
-      color: t.dm,
-      marginBottom: 8
-    }
-  }, "試合形式"), React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      marginBottom: 14
-    }
-  }, [["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => React.createElement("button", {
-    key: k,
-    onClick: () => setMatchType(k),
-    style: {
-      flex: 1,
-      padding: "13px 4px",
-      borderRadius: 11,
-      cursor: "pointer",
-      border: `2px solid ${matchType === k ? t.ac : t.bd}`,
-      background: matchType === k ? t.acS : "transparent",
-      color: matchType === k ? t.ac : t.dm
-    }
-  }, React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 800,
-      whiteSpace: "nowrap"
-    }
-  }, lb), React.createElement("div", {
-    style: {
-      fontSize: 10,
-      marginTop: 3,
-      opacity: 0.85,
-      whiteSpace: "nowrap"
-    }
-  }, sub)))), React.createElement("div", {
-    style: {
-      fontSize: 12,
-      color: t.dm,
-      marginBottom: 8
-    }
-  }, "人数"), React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      marginBottom: 14
-    }
-  }, [[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => React.createElement("button", {
-    key: n,
-    onClick: () => {
-      if (n === playerCount) return;
-      setPlayerCount(n);
-      setSeatDone(false);
-      setSeatTiles([]);
-      setSeatTurn(0);
-      if (n === 3) setRules(r => ({
-        ...r,
-        ...SANMA_DEFAULT_RULES
-      }));else setRules({
-        ...defaultRules
-      });
-    },
-    style: {
-      flex: 1,
-      padding: "13px 6px",
-      borderRadius: 11,
-      cursor: "pointer",
-      border: `2px solid ${playerCount === n ? t.ac : t.bd}`,
-      background: playerCount === n ? t.acS : "transparent",
-      color: playerCount === n ? t.ac : t.dm
-    }
-  }, React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 800
-    }
-  }, lb), React.createElement("div", {
-    style: {
-      fontSize: 10,
-      marginTop: 3,
-      opacity: 0.85
-    }
-  }, sub)))), React.createElement("div", {
     style: {
       fontSize: 11,
       color: t.dm,
