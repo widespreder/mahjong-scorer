@@ -311,7 +311,7 @@ export default function MahjongScorer() {
     rows.forEach(r => {
       r.avgRank = r.games ? r.rankSum / r.games : 0;
       r.topRate = r.games ? r.ranks[0] / r.games : 0;
-      r.lastRate = r.games ? r.ranks[3] / r.games : 0;
+      r.lastRate = r.games ? r.ranks[(lg.playerCount || 4) - 1] / r.games : 0;
     });
     return rows.sort((a, b) => b.pt - a.pt || a.avgRank - b.avgRank);
   };
@@ -336,6 +336,7 @@ export default function MahjongScorer() {
     return {
       id: "lg_" + Date.now(),
       name: "",
+      playerCount: 4,                  // 4=四人麻雀 / 3=三人麻雀
       members: [...presetNames].slice(0, 4),
       mode: "count",
       targetCount: 10,
@@ -862,7 +863,8 @@ export default function MahjongScorer() {
     // 次回「前回と同じ」で始められるよう控えておく
     try { localStorage.setItem("mj_last_rules", JSON.stringify(rules)); } catch {}
     setLastRules({ ...rules });
-    const pcNow = activeLeagueId ? 4 : playerCount;   // リーグ戦は四人麻雀のみ
+    const activeLg = activeLeagueId ? leagues.find(l => l.id === activeLeagueId) : null;
+    const pcNow = activeLg ? (activeLg.playerCount || 4) : playerCount;
     const cfg = { date: gameDate, matchType, playerCount: pcNow, players: players.slice(0, pcNow), rules: { ...rules } };
     setGameConfig(cfg);
     setScores(Array(pcNow).fill(sp));
@@ -877,7 +879,7 @@ export default function MahjongScorer() {
     setTableMode(true);   // 卓上モードで開始
     setTmWinStep(null);
     setTmDrawMode(false);
-  }, [gameDate, matchType, players, rules, playerCount, activeLeagueId]);
+  }, [gameDate, matchType, players, rules, playerCount, activeLeagueId, leagues]);
 
   // ── Theme ──
   const t = { bg: "#0c1117", sf: "#161d27", card: "#1c2533", ac: "#3b82f6", acS: "rgba(59,130,246,0.12)", gn: "#22c55e", gnS: "rgba(34,197,94,0.12)", rd: "#ef4444", rdS: "rgba(239,68,68,0.12)", gd: "#eab308", gdS: "rgba(234,179,8,0.12)", tx: "#e2e8f0", dm: "#64748b", bd: "#2a3444" };
@@ -5279,13 +5281,42 @@ input, select { padding: 10px 14px; }
       if (has) set({ members: d.members.filter(x => x !== nm) });
       else set({ members: [...d.members, nm] });
     };
-    const canSave = d.name.trim() && d.members.length >= 4;
+    const lgPC = d.playerCount || 4;
+    const canSave = d.name.trim() && d.members.length >= lgPC;
 
     return (
       <div style={body}>
         <button style={backBtn} onClick={() => setView("league")}>← 戻る</button>
         <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>
           {leagues.some(l => l.id === d.id) ? "リーグ戦の設定" : "新しいリーグ戦"}
+        </div>
+
+        {/* 人数 */}
+        <div style={{ ...card, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>人数</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[[4, "四人麻雀", "東南西北"], [3, "三人麻雀", "東南西・連盟ルール"]].map(([n, lb, sub]) => (
+              <button key={n} onClick={() => {
+                if (n === lgPC) return;
+                // 人数の既定ルール・ウマに切り替える
+                if (n === 3) set({ playerCount: 3, rules: { ...d.rules, ...SANMA_DEFAULT_RULES }, umaKey: "renmei3", uma: [10, 0, -10] });
+                else set({ playerCount: 4, rules: { ...defaultRules }, umaKey: "10-20", uma: [20, 10, -10, -20] });
+              }} style={{
+                flex: 1, padding: "13px 6px", borderRadius: 11, cursor: "pointer",
+                border: `2px solid ${lgPC === n ? t.ac : t.bd}`,
+                background: lgPC === n ? t.acS : "transparent",
+                color: lgPC === n ? t.ac : t.dm,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800 }}>{lb}</div>
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.85 }}>{sub}</div>
+              </button>
+            ))}
+          </div>
+          {leagues.some(l => l.id === d.id) && (
+            <div style={{ fontSize: 10, color: t.dm, marginTop: 8, lineHeight: 1.6 }}>
+              対局が記録された後の人数変更は、集計が混ざるためおすすめしません
+            </div>
+          )}
         </div>
 
         {/* 名前 */}
@@ -5382,7 +5413,7 @@ input, select { padding: 10px 14px; }
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>4. ウマ・オカ</div>
           <div style={{ fontSize: 11, color: t.dm, marginBottom: 10 }}>順位によってやりとりするポイント</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 12 }}>
-            {UMA_PRESETS.map(u => {
+            {(lgPC === 3 ? UMA_PRESETS_3 : UMA_PRESETS).map(u => {
               const on = d.umaKey === u.key;
               return (
                 <button key={u.key} onClick={() => set({ umaKey: u.key, uma: u.uma })} style={{
@@ -5433,7 +5464,7 @@ input, select { padding: 10px 14px; }
             const oka = (rp - sp) * 4 / 1000;
             // 持ち点に合わせた例（合計が 持ち点×4 になるようにする）
             const demo = [15000, 7000, -7000, -15000].map(o => sp + o);
-            const res = calcGamePts(demo, [0, 1, 2, 3], { rules: d.rules, uma: d.uma });
+            const res = calcGamePts(demo.slice(0, lgPC), demo.slice(0, lgPC).map((_, i) => i), { rules: d.rules, uma: d.uma });
             return (
               <div style={{ marginTop: 10, padding: 14, borderRadius: 11, background: t.sf, border: `1px solid ${t.bd}` }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: t.tx, marginBottom: 6 }}>ウマとは</div>
@@ -5608,7 +5639,7 @@ input, select { padding: 10px 14px; }
             </div>
             <div style={{ fontSize: 12, color: t.tx, lineHeight: 1.9 }}>
               {!d.name.trim() && <div>・リーグ名を入力してください</div>}
-              {d.members.length < 4 && <div>・メンバーを4人以上選んでください（現在{d.members.length}人）</div>}
+              {d.members.length < lgPC && <div>・メンバーを{lgPC}人以上選んでください（現在{d.members.length}人）</div>}
             </div>
           </div>
         )}
@@ -5655,7 +5686,7 @@ input, select { padding: 10px 14px; }
         {lg.status === "active" && (
           <button onClick={() => {
             // メンバーがちょうど4人なら最初から全員選択済みにする
-            setLgPick(lg.members.length === 4 ? [...lg.members] : []);
+            setLgPick(lg.members.length === (lg.playerCount || 4) ? [...lg.members] : []);
             setLgMatchType("hanchan"); setView("leaguestart");
           }} style={{
             width: "100%", padding: "16px", marginBottom: 16, borderRadius: 13, cursor: "pointer",
@@ -5813,21 +5844,22 @@ input, select { padding: 10px 14px; }
   const renderLeagueStart = () => {
     const lg = curLeague;
     if (!lg) return <div style={body} />;
-    const ready = lgPick.length === 4 && !!lgMatchType;
+    const lgPC = lg.playerCount || 4;
+    const ready = lgPick.length === lgPC && !!lgMatchType;
     return (
       <div style={body}>
         <button style={backBtn} onClick={() => setView("leaguedetail")}>← 戻る</button>
         <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{lg.name}</div>
         <div style={{ fontSize: 12, color: t.dm, marginBottom: 16 }}>
-          {lg.members.length === 4
-            ? "メンバーは4人なので全員が出場します"
-            : `この対局に出る4人を選んでください（${lgPick.length}/4）`}
+          {lg.members.length === lgPC
+            ? `メンバーは${lgPC}人なので全員が出場します`
+            : `この対局に出る${lgPC}人を選んでください（${lgPick.length}/${lgPC}）`}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
           {lg.members.map(nm => {
             const on = lgPick.includes(nm);
-            const full = lgPick.length >= 4 && !on;
+            const full = lgPick.length >= lgPC && !on;
             return (
               <button key={nm} onClick={() => setLgPick(on ? lgPick.filter(x => x !== nm) : (full ? lgPick : [...lgPick, nm]))}
                 style={{
@@ -5863,6 +5895,7 @@ input, select { padding: 10px 14px; }
             const d = new Date();
             setGameDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);
             setPlayers([...lgPick]);
+            setPlayerCount(lgPC);
             setRules({ ...defaultRules, ...lg.rules });
             setMatchType(lgMatchType);
             setActiveLeagueId(lg.id);
@@ -6978,7 +7011,7 @@ input, select { padding: 10px 14px; }
                 setSeatDone(false); setSeatTiles([]); setSeatTurn(0);
                 // 三人麻雀は連盟ルールを初期値にする（4人に戻すと元の既定へ）
                 if (n === 3) setRules(r => ({ ...r, ...SANMA_DEFAULT_RULES }));
-                else setRules(r => ({ ...r, ...FACTORY_RULES, startPoints: 25000, returnPoints: 30000 }));
+                else setRules({ ...defaultRules });
               }} style={{
                 flex: 1, padding: "13px 6px", borderRadius: 11, cursor: "pointer",
                 border: `2px solid ${playerCount === n ? t.ac : t.bd}`,
