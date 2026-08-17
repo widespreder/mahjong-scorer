@@ -883,7 +883,7 @@ export default function MahjongScorer() {
   }, [gameDate, matchType, players, rules, playerCount, activeLeagueId, leagues]);
 
   // ── Theme ──
-  const t = { bg: "#0c1117", sf: "#161d27", card: "#1c2533", ac: "#3b82f6", acS: "rgba(59,130,246,0.12)", gn: "#22c55e", gnS: "rgba(34,197,94,0.12)", rd: "#ef4444", rdS: "rgba(239,68,68,0.12)", gd: "#eab308", gdS: "rgba(234,179,8,0.12)", tx: "#e2e8f0", dm: "#64748b", bd: "#2a3444" };
+  const t = { bg: "#0c1117", sf: "#161d27", card: "#1c2533", ac: "#5b9bff", acS: "rgba(91,155,255,0.14)", gn: "#34d872", gnS: "rgba(52,216,114,0.14)", rd: "#f26d6d", rdS: "rgba(242,109,109,0.14)", gd: "#f2c14e", gdS: "rgba(242,193,78,0.14)", tx: "#f5f8fc", dm: "#9db0c7", bd: "#35415a" };
 
   // ── Shared Styles ──
   const card = { background: t.card, borderRadius: 14, padding: 22, marginBottom: 18, border: `1px solid ${t.bd}`, boxSizing: "border-box", maxWidth: "100%", overflow: "hidden", lineHeight: 1.7 };
@@ -898,7 +898,7 @@ export default function MahjongScorer() {
     const item = (title, body) => (
       <div style={{ padding: "11px 0", borderBottom: `1px solid ${t.bd}44` }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: t.tx, marginBottom: 4 }}>{title}</div>
-        <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.9 }}>{body}</div>
+        <div style={{ fontSize: 12, color: "#b9c6d8", lineHeight: 1.9 }}>{body}</div>
       </div>
     );
     return (
@@ -4466,7 +4466,7 @@ input, select { padding: 10px 14px; }
           <span style={{ fontSize: 14, fontWeight: 600, color: t.tx, flexShrink: 0 }}>{label}</span>
           <span style={{ fontSize: 15, fontWeight: 800, color: t.tx, textAlign: "right" }}>{value}</span>
         </div>
-        {hint && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, lineHeight: 1.6 }}>{hint}</div>}
+        {hint && <div style={{ fontSize: 11, color: "#b9c6d8", marginTop: 4, lineHeight: 1.6 }}>{hint}</div>}
       </div>
     );
     const renchan = rs.agariRenchan ? "あがり連荘" : rs.tenpaiRenchan ? "テンパイ連荘" : "無条件連荘";
@@ -4536,7 +4536,7 @@ input, select { padding: 10px 14px; }
               <div style={{ padding: "10px 0", borderBottom: `1px solid ${t.bd}33` }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{label}</div>
                 {body}
-                {hint && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 5, lineHeight: 1.6 }}>{hint}</div>}
+                {hint && <div style={{ fontSize: 11, color: "#b9c6d8", marginTop: 5, lineHeight: 1.6 }}>{hint}</div>}
               </div>
             );
             const tgl = (label, on, onToggle, hint) => (
@@ -4550,7 +4550,7 @@ input, select { padding: 10px 14px; }
                     <span style={{ position: "absolute", top: 3, left: on ? 23 : 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
                   </button>
                 </div>
-                {hint && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, lineHeight: 1.6 }}>{hint}</div>}
+                {hint && <div style={{ fontSize: 11, color: "#b9c6d8", marginTop: 4, lineHeight: 1.6 }}>{hint}</div>}
               </div>
             );
             const renchanKey = rs.agariRenchan ? "agari" : rs.tenpaiRenchan ? "tenpai" : "none";
@@ -4594,7 +4594,7 @@ input, select { padding: 10px 14px; }
             {ruleEditMode ? "✓ 変更を終える" : "✏️ ルールを変更する"}
           </button>
 
-          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 12, lineHeight: 1.7 }}>
+          <div style={{ fontSize: 11, color: "#b9c6d8", marginTop: 12, lineHeight: 1.7 }}>
             ノーテン罰符は場で3,000点、本場は1本につき300点です
           </div>
 
