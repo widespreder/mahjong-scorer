@@ -7086,7 +7086,14 @@ input, select { padding: 10px 14px; }
                       />
                       <button
                         style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "8px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
-                        onClick={() => { const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm); }}
+                        onClick={() => {
+                          // 入力した名前をリストに自動登録（重複・空・初期名は除く）
+                          const v = (p || "").trim();
+                          if (v && !presetNames.includes(v) && !/^[A-D]プレーヤー$/.test(v)) {
+                            savePresetNames([...presetNames, v]);
+                          }
+                          const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm);
+                        }}
                       >リスト</button>
                     </>
                   ) : (
