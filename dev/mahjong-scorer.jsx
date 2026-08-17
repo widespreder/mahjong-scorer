@@ -7026,9 +7026,6 @@ input, select { padding: 10px 14px; }
           </div>
 
           {/* 席の並べ替え: 行を長押し→ドラッグ */}
-          <div style={{ fontSize: 12, color: t.dm, marginBottom: 4 }}>
-            仮席 <span style={{ fontSize: 10 }}>（席決めで確定。スキップした場合はこの並びで開始）</span>
-          </div>
           <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 10, lineHeight: 1.7 }}>
             並べ替えは行を<b style={{ color: t.tx }}>長押し</b>して、そのまま上下にドラッグ
           </div>
@@ -7060,14 +7057,17 @@ input, select { padding: 10px 14px; }
                   zIndex: isDragging ? 10 : 1,
                   WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none",
                 }}>
-                {/* 風マークは席に固定（動かさない） */}
-                <span style={{
-                  fontSize: 18, fontWeight: 900, lineHeight: 1, flexShrink: 0,
-                  color: i === 0 ? "#1a1a1a" : t.tx,
-                  background: i === 0 ? t.gd : t.sf,
-                  border: `1px solid ${i === 0 ? t.gd : t.bd}`,
-                  borderRadius: 6, padding: "5px 8px",
-                }}>{WINDS[i]}</span>
+                {/* 風マークは席に固定（動かさない）。席決め前なので「仮」を添える */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                  <span style={{ fontSize: 9, color: t.dm, lineHeight: 1, letterSpacing: "0.1em" }}>仮</span>
+                  <span style={{
+                    fontSize: 18, fontWeight: 900, lineHeight: 1,
+                    color: i === 0 ? "#1a1a1a" : t.tx,
+                    background: i === 0 ? t.gd : t.sf,
+                    border: `1px solid ${i === 0 ? t.gd : t.bd}`,
+                    borderRadius: 6, padding: "5px 8px",
+                  }}>{WINDS[i]}</span>
+                </div>
 
                 {/* 名前の欄だけがドラッグで移動する */}
                 <div style={{
