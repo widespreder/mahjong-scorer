@@ -13474,7 +13474,7 @@ input, select { padding: 10px 14px; }
     }
   }, "東の ", players[0], " さんが起家（最初の親）です")), seatDone ? React.createElement(React.Fragment, null, React.createElement("button", {
     style: actionBtn("p"),
-    onClick: () => setSetupStep(activeLeagueId ? 4 : 2)
+    onClick: () => setSetupStep(activeLeagueId ? 4 : 3)
   }, "次へ"), React.createElement("button", {
     style: actionBtn(),
     onClick: resetSeatDraw
@@ -13487,7 +13487,7 @@ input, select { padding: 10px 14px; }
     }
   }, "好きな牌をタップしてください"), React.createElement("button", {
     style: actionBtn(),
-    onClick: () => setSetupStep(activeLeagueId ? 4 : 2)
+    onClick: () => setSetupStep(activeLeagueId ? 4 : 3)
   }, "席決めをスキップ"), React.createElement("div", {
     style: {
       fontSize: 12,
@@ -13536,83 +13536,13 @@ input, select { padding: 10px 14px; }
       textOverflow: "ellipsis",
       whiteSpace: "nowrap"
     }
-  }, nm)))))), setupStep === 2 && React.createElement("div", {
+  }, nm)))))), setupStep === 3 && React.createElement("div", {
     style: card
   }, React.createElement(Back, {
     onClick: () => setSetupStep(1)
   }), React.createElement(Dots, {
     total: 4,
     cur: 2
-  }), React.createElement("div", {
-    style: question
-  }, "試合形式は？"), React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 10,
-      justifyContent: "center",
-      flexWrap: "wrap"
-    }
-  }, React.createElement("button", {
-    style: bigBtn(matchType === "tonpu" ? t.ac : t.dm, matchType === "tonpu" ? t.acS : "transparent"),
-    onClick: () => {
-      setMatchType("tonpu");
-      setSetupStep(3);
-    }
-  }, React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      marginBottom: 4
-    }
-  }, "東風戦"), React.createElement("div", {
-    style: {
-      fontSize: 11,
-      opacity: 0.7,
-      fontWeight: 400
-    }
-  }, "東場のみ")), React.createElement("button", {
-    style: bigBtn(matchType === "hanchan" ? t.ac : t.dm, matchType === "hanchan" ? t.acS : "transparent"),
-    onClick: () => {
-      setMatchType("hanchan");
-      setSetupStep(3);
-    }
-  }, React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      marginBottom: 4
-    }
-  }, "半荘戦"), React.createElement("div", {
-    style: {
-      fontSize: 11,
-      opacity: 0.7,
-      fontWeight: 400
-    }
-  }, "東場＋南場")), React.createElement("button", {
-    style: bigBtn(matchType === "zenchan" ? t.ac : t.dm, matchType === "zenchan" ? t.acS : "transparent"),
-    onClick: () => {
-      setMatchType("zenchan");
-      setSetupStep(3);
-    }
-  }, React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      marginBottom: 4
-    }
-  }, "全荘戦"), React.createElement("div", {
-    style: {
-      fontSize: 11,
-      opacity: 0.7,
-      fontWeight: 400
-    }
-  }, "東南西北場")))), setupStep === 3 && React.createElement("div", {
-    style: card
-  }, React.createElement(Back, {
-    onClick: () => setSetupStep(2)
-  }), React.createElement(Dots, {
-    total: 4,
-    cur: 3
   }), React.createElement("div", {
     style: question
   }, "ルール設定"), lastRules && (() => {
@@ -14147,6 +14077,43 @@ input, select { padding: 10px 14px; }
       color: t.dm,
       marginBottom: 8
     }
+  }, "試合形式"), React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 14
+    }
+  }, [["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => React.createElement("button", {
+    key: k,
+    onClick: () => setMatchType(k),
+    style: {
+      flex: 1,
+      padding: "13px 4px",
+      borderRadius: 11,
+      cursor: "pointer",
+      border: `2px solid ${matchType === k ? t.ac : t.bd}`,
+      background: matchType === k ? t.acS : "transparent",
+      color: matchType === k ? t.ac : t.dm
+    }
+  }, React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 800,
+      whiteSpace: "nowrap"
+    }
+  }, lb), React.createElement("div", {
+    style: {
+      fontSize: 10,
+      marginTop: 3,
+      opacity: 0.85,
+      whiteSpace: "nowrap"
+    }
+  }, sub)))), React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: t.dm,
+      marginBottom: 8
+    }
   }, "人数"), React.createElement("div", {
     style: {
       display: "flex",
@@ -14351,14 +14318,21 @@ input, select { padding: 10px 14px; }
   }, React.createElement("button", {
     style: {
       ...actionBtn("p"),
-      opacity: players.every(p => p.trim()) ? 1 : 0.4
+      opacity: players.slice(0, PC).every(p => p.trim()) && matchType ? 1 : 0.4
     },
-    disabled: !players.every(p => p.trim()),
+    disabled: !players.slice(0, PC).every(p => p.trim()) || !matchType,
     onClick: () => {
       resetSeatDraw();
       setSetupStep(1);
     }
-  }, "席決めへ"))), setupStep === 4 && React.createElement("div", null, React.createElement("div", {
+  }, "席決めへ"), !matchType && React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: t.dm,
+      textAlign: "center",
+      marginTop: 8
+    }
+  }, "試合形式を選んでください"))), setupStep === 4 && React.createElement("div", null, React.createElement("div", {
     style: card
   }, React.createElement("div", {
     style: question
