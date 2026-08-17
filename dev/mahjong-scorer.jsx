@@ -7130,7 +7130,14 @@ input, select { padding: 10px 14px; }
                 opacity: (players.slice(0, PC).every(p => p.trim()) && matchType) ? 1 : 0.4,
               }}
               disabled={!players.slice(0, PC).every(p => p.trim()) || !matchType}
-              onClick={() => { resetSeatDraw(); setSetupStep(1); }}
+              onClick={() => {
+                // 直接入力のまま進んだ名前もリストへ自動登録
+                const adds = players.slice(0, PC)
+                  .map(x => (x || "").trim())
+                  .filter(x => x && !presetNames.includes(x) && !/^[A-D]プレーヤー$/.test(x));
+                if (adds.length) savePresetNames([...presetNames, ...Array.from(new Set(adds))]);
+                resetSeatDraw(); setSetupStep(1);
+              }}
             >席決めへ</button>
             {!matchType && (
               <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 8 }}>
