@@ -14331,6 +14331,10 @@ input, select { padding: 10px 14px; }
         whiteSpace: "nowrap"
       },
       onClick: () => {
+        const v = (p || "").trim();
+        if (v && !presetNames.includes(v) && !/^[A-D]プレーヤー$/.test(v)) {
+          savePresetNames([...presetNames, v]);
+        }
         const nm = [...playerMode];
         nm[i] = false;
         setPlayerMode(nm);
