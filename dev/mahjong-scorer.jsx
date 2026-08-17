@@ -103,6 +103,7 @@ export default function MahjongScorer() {
   // ── 席の並べ替え: 行を長押し→そのままドラッグ ──
   const [dragSeat, setDragSeat] = useState(null); // { from, offset, target, rowH }
   const seatRowRefs = React.useRef([]);
+  const seatAutoReg = React.useRef({}); // 行ごとに自動登録した名前（打ち直し時に置き換えるため）
   const seatDragMeta = React.useRef(null); // 進行中ドラッグの一時情報
   const seatSuppressClick = React.useRef(false); // ドラッグ直後のselect誤タップ防止
 
@@ -7086,6 +7087,18 @@ input, select { padding: 10px 14px; }
                         placeholder="名前を入力"
                         value={p}
                         onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
+                        onBlur={() => {
+                          // 入力を終えたら自動でリストに登録
+                          const v = (p || "").trim();
+                          if (!v || /^[A-D]プレーヤー$/.test(v)) return;
+                          const prev = seatAutoReg.current[i];
+                          let list = presetNames;
+                          // この行で直前に自動登録した名前は置き換える（打ち直しのゴミを残さない）
+                          if (prev && prev !== v && list.includes(prev)) list = list.filter(n => n !== prev);
+                          if (!list.includes(v)) list = [...list, v];
+                          if (list !== presetNames) savePresetNames(list);
+                          seatAutoReg.current[i] = v;
+                        }}
                       />
                       <button
                         style={{ background: "none", border: `1px solid ${t.bd}`, borderRadius: 8, padding: "8px 10px", color: t.dm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
