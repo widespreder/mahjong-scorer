@@ -13985,43 +13985,6 @@ input, select { padding: 10px 14px; }
       color: t.dm,
       marginBottom: 8
     }
-  }, "試合形式"), React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      marginBottom: 14
-    }
-  }, [["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => React.createElement("button", {
-    key: k,
-    onClick: () => setMatchType(k),
-    style: {
-      flex: 1,
-      padding: "13px 4px",
-      borderRadius: 11,
-      cursor: "pointer",
-      border: `2px solid ${matchType === k ? t.ac : t.bd}`,
-      background: matchType === k ? t.acS : "transparent",
-      color: matchType === k ? t.ac : t.dm
-    }
-  }, React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 800,
-      whiteSpace: "nowrap"
-    }
-  }, lb), React.createElement("div", {
-    style: {
-      fontSize: 10,
-      marginTop: 3,
-      opacity: 0.85,
-      whiteSpace: "nowrap"
-    }
-  }, sub)))), React.createElement("div", {
-    style: {
-      fontSize: 12,
-      color: t.dm,
-      marginBottom: 8
-    }
   }, "人数"), React.createElement("div", {
     style: {
       display: "flex",
@@ -14062,6 +14025,43 @@ input, select { padding: 10px 14px; }
       fontSize: 10,
       marginTop: 3,
       opacity: 0.85
+    }
+  }, sub)))), React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: t.dm,
+      marginBottom: 8
+    }
+  }, "試合形式"), React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 14
+    }
+  }, [["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => React.createElement("button", {
+    key: k,
+    onClick: () => setMatchType(k),
+    style: {
+      flex: 1,
+      padding: "13px 4px",
+      borderRadius: 11,
+      cursor: "pointer",
+      border: `2px solid ${matchType === k ? t.ac : t.bd}`,
+      background: matchType === k ? t.acS : "transparent",
+      color: matchType === k ? t.ac : t.dm
+    }
+  }, React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 800,
+      whiteSpace: "nowrap"
+    }
+  }, lb), React.createElement("div", {
+    style: {
+      fontSize: 10,
+      marginTop: 3,
+      opacity: 0.85,
+      whiteSpace: "nowrap"
     }
   }, sub)))), React.createElement("div", {
     style: {
