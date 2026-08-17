@@ -4126,7 +4126,8 @@ input, select { padding: 10px 14px; }
   const [tmDrawMode, setTmDrawMode] = useState(false); // 卓上モードの流局入力
   const [showRoundEdit, setShowRoundEdit] = useState(false); // 局の修正モーダル
   const [seatRot, setSeatRot] = useState(0); // 卓の回転（0-3）自分を手前に持ってくる
-  const [playerDetail, setPlayerDetail] = useState(null); // 長押ししたプレイヤーのindex
+  const [playerDetail, setPlayerDetail] = useState(null); // 変動履歴を表示するプレイヤーのindex
+  const [rankPeek, setRankPeek] = useState(null);         // 長押しで順位・点差を表示するプレイヤーのindex
   // 長押し（500ms）で履歴を開く。誤タップで開かないようにする
   const longPressTimer = React.useRef(null);
   const longPressFired = React.useRef(false);
@@ -4137,7 +4138,7 @@ input, select { padding: 10px 14px; }
       longPressTimer.current = setTimeout(() => {
         longPressFired.current = true;
         try { if (navigator.vibrate) navigator.vibrate(12); } catch {}
-        setPlayerDetail(i);
+        setRankPeek(i);
       }, 500);
     },
     onPointerUp: () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); },
@@ -4710,6 +4711,72 @@ input, select { padding: 10px 14px; }
               オーラスを待たずに終わります。結果画面で内容を確認してから記録できます
             </div>
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 長押し: 現在の順位と点差を、押した人の席の向きで表示（卓上にスマホを置いて全員で見る想定）
+  const RankPeekOverlay = () => {
+    if (rankPeek === null) return null;
+    const pi = rankPeek;
+    const rot = (PC === 3 ? [0, -90, 90] : [0, -90, 180, 90])[(pi - seatRot + PC) % PC] ?? 0;
+    // 同点は起家に近い席が上位
+    const ranked = scores.map((v, i) => ({ i, v })).sort((a, b) => (b.v - a.v) || (a.i - b.i));
+    const myRank = ranked.findIndex(r => r.i === pi) + 1;
+    return (
+      <div
+        onClick={() => setRankPeek(null)}
+        style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.88)", zIndex: 150,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+        }}>
+        <div onClick={(e) => e.stopPropagation()} style={{
+          ...card, width: "min(86vw, 420px)", margin: 0, padding: 18,
+          transform: `rotate(${rot}deg)`,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800 }}>{players[pi]}</div>
+              <div style={{ fontSize: 12, color: t.dm }}>現在 <b style={{ color: t.gd, fontSize: 14 }}>{myRank}位</b> ・ ±はこの人との点差</div>
+            </div>
+            <button style={{ background: "none", border: "none", color: t.dm, fontSize: 20, cursor: "pointer", lineHeight: 1 }}
+              onClick={() => setRankPeek(null)}>✕</button>
+          </div>
+
+          {ranked.map((r, rank) => {
+            const me = r.i === pi;
+            const diff = r.v - scores[pi];
+            return (
+              <div key={r.i} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 10px", borderRadius: 10, marginBottom: 5,
+                background: me ? t.acS : t.sf,
+                border: `1px solid ${me ? t.ac : t.bd}`,
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 900, color: rank === 0 ? t.gd : t.dm, width: 30, flexShrink: 0 }}>{rank + 1}位</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 800, flexShrink: 0,
+                  color: r.i === dealerIdx ? "#1a1a1a" : t.dm,
+                  background: r.i === dealerIdx ? t.gd : t.card,
+                  border: `1px solid ${r.i === dealerIdx ? t.gd : t.bd}`,
+                  borderRadius: 5, padding: "3px 5px",
+                }}>{SEAT_WINDS[(r.i - dealerIdx + PC) % PC]}</span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: t.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{players[r.i]}</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: r.v < 0 ? t.rd : t.tx, fontVariantNumeric: "tabular-nums" }}>{r.v.toLocaleString()}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, width: 66, textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums",
+                  color: me ? t.dm : diff > 0 ? t.rd : diff < 0 ? t.gn : t.dm }}>
+                  {me ? "—" : (diff > 0 ? "+" : "") + diff.toLocaleString()}
+                </span>
+              </div>
+            );
+          })}
+
+          <button style={{
+            width: "100%", marginTop: 8, padding: "10px 8px", borderRadius: 9, cursor: "pointer",
+            border: `1px solid ${t.bd}`, background: "transparent", color: t.ac, fontSize: 12, fontWeight: 700,
+          }} onClick={() => { setPlayerDetail(pi); setRankPeek(null); }}>点数の変動履歴を見る</button>
         </div>
       </div>
     );
@@ -7919,8 +7986,9 @@ input, select { padding: 10px 14px; }
 
         {actionRow(false)}
         <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 6 }}>
-          点数を長押しすると変動履歴が見られます
+          点数を長押しすると順位と点差が見られます
         </div>
+        <RankPeekOverlay />
         <PlayerHistoryModal />
 
         {/* 局の修正モーダル */}
@@ -8019,8 +8087,9 @@ input, select { padding: 10px 14px; }
       </div>
 
       <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 10, marginTop: -8 }}>
-        点数を長押しすると変動履歴が見られます
+        点数を長押しすると順位と点差が見られます
       </div>
+      <RankPeekOverlay />
       <PlayerHistoryModal />
       <RuleCheckModal />
 
