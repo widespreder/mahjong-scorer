@@ -5335,16 +5335,24 @@ input, select { padding: 10px 14px; }
           </>
         )}
 
-        {/* カテゴリ内の一番下にも戻り口を置く（長い画面で上まで戻らなくて済むように） */}
+        {/* 画面下に固定の戻り口（スクロール中もいつでも押せる） */}
         {homeCat && (
-          <button
-            onClick={() => { setHomeCat(null); try { window.scrollTo(0, 0); } catch {} }}
-            style={{
-              width: "100%", marginTop: 18, padding: "15px 8px", borderRadius: 12,
-              border: `1px solid ${t.bd}`, background: t.card, color: t.tx,
-              fontSize: 15, fontWeight: 700, cursor: "pointer",
-            }}
-          >← メニューに戻る</button>
+          <div style={{
+            position: "sticky", bottom: 0, zIndex: 20,
+            marginTop: 18, marginLeft: -8, marginRight: -8,
+            padding: "10px 8px calc(10px + env(safe-area-inset-bottom))",
+            background: `linear-gradient(to top, ${t.bg} 65%, transparent)`,
+          }}>
+            <button
+              onClick={() => { setHomeCat(null); try { window.scrollTo(0, 0); } catch {} }}
+              style={{
+                width: "100%", padding: "15px 8px", borderRadius: 12,
+                border: `1px solid ${t.bd}`, background: t.card, color: t.tx,
+                fontSize: 15, fontWeight: 700, cursor: "pointer",
+                boxShadow: "0 -4px 16px rgba(0,0,0,0.35)",
+              }}
+            >← メニューに戻る</button>
+          </div>
         )}
       </div>
     );
