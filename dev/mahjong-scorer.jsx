@@ -6902,7 +6902,7 @@ input, select { padding: 10px 14px; }
       {setupStep === 0 && (
         <div style={card}>
           <Dots total={4} cur={0} />
-          <div style={question}>参加者は？</div>
+          <div style={question}>試合形式と参加者</div>
           {/* 人数（四人麻雀 / 三人麻雀） */}
           <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>人数</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
