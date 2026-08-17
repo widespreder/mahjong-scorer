@@ -6709,7 +6709,7 @@ input, select { padding: 10px 14px; }
                 席決めをスキップ
               </button>
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginTop: 10, lineHeight: 1.7 }}>
-                スキップすると以下の席順でスタートします
+                スキップすると仮席のまま、以下の席順でスタートします
               </div>
               <div style={{
                 display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8,
