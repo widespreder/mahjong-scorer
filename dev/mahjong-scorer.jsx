@@ -2011,7 +2011,37 @@ export default function MahjongScorer() {
 
     return (
       <div>
+        {yakuInfo && (() => {
+          const y = yakuInfo;
+          const m = y.name.match(/^(.+?)（(.+?)）$/);
+          const base = m ? m[1] : y.name, paren = m ? m[2] : "";
+          const isKana = /^[ァ-ヶー]+$/.test(base);
+          const kana = isKana ? base : paren;
+          const main = isKana ? (paren || base) : base;
+          return (
+            <div onClick={() => setYakuInfo(null)} style={{
+              position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+              background: "rgba(0,0,0,0.85)", zIndex: 220,
+              display: "flex", alignItems: "center", justifyContent: "center", padding: 18,
+            }}>
+              <div onClick={(e) => e.stopPropagation()} style={{ ...card, maxWidth: 380, width: "100%", margin: 0, padding: 18 }}>
+                <div style={{ fontSize: 11, color: t.dm, textAlign: "center", fontWeight: 700 }}>{kana}</div>
+                <div style={{ fontSize: 22, fontWeight: 900, textAlign: "center", color: y.han >= 13 ? t.gd : t.tx }}>{main}</div>
+                <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginTop: 4 }}>
+                  門前 {y.han >= 13 ? "役満" : `${y.han}翻`}
+                  {y.naki === null ? " ・ 鳴くと成立しません" : y.naki < y.han ? ` ／ 鳴き ${y.naki}翻（食い下がり）` : " ／ 鳴いても同じ"}
+                </div>
+                <div style={{
+                  fontSize: 13, color: t.tx, lineHeight: 1.9, marginTop: 12,
+                  padding: 12, borderRadius: 10, background: t.sf, border: `1px solid ${t.bd}`,
+                }}>{y.desc}</div>
+                <button style={{ ...actionBtn(), marginTop: 12, marginBottom: 0 }} onClick={() => setYakuInfo(null)}>閉じる</button>
+              </div>
+            </div>
+          );
+        })()}
         <div style={{ fontSize: 14, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>役を選んで翻数を計算</div>
+        <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 6 }}>役を長押しすると説明が見られます</div>
         {lockedRiichi && (
           <div style={{ fontSize: 11, color: t.rd, textAlign: "center", marginBottom: 8, fontWeight: 700 }}>
             🔴 リーチ宣言済み{isTsumo ? "・ツモ" : ""}のため自動でチェック済み（門前固定）
@@ -2115,7 +2145,8 @@ export default function MahjongScorer() {
                     const kana = isKana ? base : paren;
                     const main = isKana ? (paren || base) : base;
                     return (
-                      <button key={y.name} onClick={() => {
+                      <button key={y.name} {...yakuPressHandlers(y)} onClick={() => {
+                        if (yakuPressFired.current) { yakuPressFired.current = false; return; }
                         const cur = pickedYaku;
                         let next;
                         if (cur.includes(y.name)) {
@@ -4136,6 +4167,24 @@ input, select { padding: 10px 14px; }
   const [playerDetail, setPlayerDetail] = useState(null); // 変動履歴を表示するプレイヤーのindex
   const [rankPeek, setRankPeek] = useState(null);         // 長押しで順位・点差を表示するプレイヤーのindex
   const [showPayView, setShowPayView] = useState(false);  // 卓上表示（点数の受け渡しを矢印で表示）
+  const [yakuInfo, setYakuInfo] = useState(null);         // 長押しで説明を出す役
+  const yakuPressTimer = React.useRef(null);
+  const yakuPressFired = React.useRef(false);
+  const yakuPressHandlers = (y) => ({
+    onPointerDown: () => {
+      yakuPressFired.current = false;
+      if (yakuPressTimer.current) clearTimeout(yakuPressTimer.current);
+      yakuPressTimer.current = setTimeout(() => {
+        yakuPressFired.current = true;
+        try { if (navigator.vibrate) navigator.vibrate(12); } catch {}
+        setYakuInfo(y);
+      }, 450);
+    },
+    onPointerUp: () => { if (yakuPressTimer.current) clearTimeout(yakuPressTimer.current); },
+    onPointerLeave: () => { if (yakuPressTimer.current) clearTimeout(yakuPressTimer.current); },
+    onPointerCancel: () => { if (yakuPressTimer.current) clearTimeout(yakuPressTimer.current); },
+    onContextMenu: (e) => e.preventDefault(),
+  });
   // 長押し（500ms）で履歴を開く。誤タップで開かないようにする
   const longPressTimer = React.useRef(null);
   const longPressFired = React.useRef(false);
