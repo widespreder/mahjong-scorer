@@ -4132,6 +4132,7 @@ input, select { padding: 10px 14px; }
   const [seatRot, setSeatRot] = useState(0); // 卓の回転（0-3）自分を手前に持ってくる
   const [playerDetail, setPlayerDetail] = useState(null); // 変動履歴を表示するプレイヤーのindex
   const [rankPeek, setRankPeek] = useState(null);         // 長押しで順位・点差を表示するプレイヤーのindex
+  const [showPayView, setShowPayView] = useState(false);  // 卓上表示（点数の受け渡しを矢印で表示）
   // 長押し（500ms）で履歴を開く。誤タップで開かないようにする
   const longPressTimer = React.useRef(null);
   const longPressFired = React.useRef(false);
@@ -4718,6 +4719,129 @@ input, select { padding: 10px 14px; }
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  // 卓上表示: 誰から誰へいくら動くかを、卓の配置＋矢印で見せる
+  const PayTableView = () => {
+    if (!showPayView || gWinner === null || !gResult) return null;
+    const payers = PC - 1;
+    const hb = honba * HU();
+    const pool = (riichiBets + gRiichi.filter(Boolean).length) * 1000;
+    // 支払いの明細（供託は卓上からなので矢印にしない）
+    const flows = [];
+    if (gTsumo) {
+      for (let i = 0; i < PC; i++) {
+        if (i === gWinner) continue;
+        let amt;
+        if (isSanma || gParent) amt = gResult.each;
+        else amt = (i === dealerIdx) ? gResult.fromParent : gResult.fromChild;
+        flows.push({ from: i, amt: amt + Math.floor(hb / payers) });
+      }
+    } else if (gLoser !== null) {
+      flows.push({ from: gLoser, amt: gResult.total + hb });
+    }
+    const total = flows.reduce((a, f) => a + f.amt, 0) + pool;
+
+    // 席の配置（卓上モードと同じ: 手前/右/(向かい)/左）
+    const slotOf = (i) => (i - seatRot + PC) % PC;
+    const POS4 = [
+      { x: 50, y: 86, rot: 0 }, { x: 86, y: 50, rot: -90 },
+      { x: 50, y: 14, rot: 180 }, { x: 14, y: 50, rot: 90 },
+    ];
+    const POS3 = [
+      { x: 50, y: 86, rot: 0 }, { x: 84, y: 40, rot: -90 }, { x: 16, y: 40, rot: 90 },
+    ];
+    const posOf = (i) => (PC === 3 ? POS3 : POS4)[slotOf(i)];
+    const win = posOf(gWinner);
+
+    return (
+      <div onClick={() => setShowPayView(false)} style={{
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.93)", zIndex: 200,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12,
+      }}>
+        <div onClick={(e) => e.stopPropagation()} style={{
+          position: "relative", width: "min(94vw, 94vh, 560px)", aspectRatio: "1 / 1",
+          borderRadius: 20, background: "linear-gradient(160deg, #1f5c3d, #14402b)",
+          border: `2px solid ${t.bd}`, overflow: "hidden",
+        }}>
+          {/* 矢印 */}
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+            <defs>
+              <marker id="payArrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+                <path d="M0,0 L5,2.5 L0,5 z" fill={t.gd} />
+              </marker>
+            </defs>
+            {flows.map((f, k) => {
+              const p0 = posOf(f.from);
+              const dx = win.x - p0.x, dy = win.y - p0.y;
+              const len = Math.sqrt(dx * dx + dy * dy) || 1;
+              // 端を少し縮めてパネルに重ならないように
+              const x1 = p0.x + (dx / len) * 13, y1 = p0.y + (dy / len) * 13;
+              const x2 = win.x - (dx / len) * 15, y2 = win.y - (dy / len) * 15;
+              return <line key={k} x1={x1} y1={y1} x2={x2} y2={y2} stroke={t.gd} strokeWidth="0.7" markerEnd="url(#payArrow)" opacity="0.9" />;
+            })}
+          </svg>
+
+          {/* 中央: 局とアガリ内容 */}
+          <div style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+            textAlign: "center", padding: "10px 14px", borderRadius: 14,
+            background: "rgba(0,0,0,0.45)", border: `1px solid ${t.bd}`, minWidth: "36%",
+          }}>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontWeight: 700 }}>
+              {roundWind}{dealerIdx + 1}局{honba > 0 ? ` ${honba}本場` : ""}
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>
+              {gHan >= 13 ? getLimitName(gHan) : gHan >= 5 ? `${gHan}翻` : `${gHan}翻${gFu}符`} / {gTsumo ? "ツモ" : "ロン"}
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: t.gd, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+              +{total.toLocaleString()}
+            </div>
+            {pool > 0 && (
+              <div style={{ fontSize: 11, color: t.ac, fontWeight: 700 }}>
+                （リーチ棒 {pool / 1000}本 +{pool.toLocaleString()} 含む）
+              </div>
+            )}
+          </div>
+
+          {/* 各席のパネル */}
+          {Array.from({ length: PC }, (_, i) => i).map(i => {
+            const pos = posOf(i);
+            const isWin = i === gWinner;
+            const f = flows.find(x => x.from === i);
+            const amt = isWin ? total : (f ? -f.amt : 0);
+            return (
+              <div key={i} style={{
+                position: "absolute", top: `${pos.y}%`, left: `${pos.x}%`,
+                transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`,
+                textAlign: "center", padding: "8px 12px", borderRadius: 12,
+                background: isWin ? "rgba(234,179,8,0.18)" : "rgba(0,0,0,0.5)",
+                border: `2px solid ${isWin ? t.gd : amt < 0 ? t.rd : t.bd}`,
+                minWidth: "24%",
+              }}>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 700 }}>
+                  {SEAT_WINDS[(i - dealerIdx + PC) % PC]}{i === dealerIdx ? "（親）" : ""}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>{players[i]}</div>
+                <div style={{
+                  fontSize: 20, fontWeight: 900, marginTop: 2, fontVariantNumeric: "tabular-nums",
+                  color: amt > 0 ? t.gd : amt < 0 ? "#ff8a8a" : "rgba(255,255,255,0.45)",
+                }}>
+                  {amt > 0 ? "+" : ""}{amt.toLocaleString()}
+                </div>
+                {isWin && <div style={{ fontSize: 10, color: t.gd, fontWeight: 700 }}>アガリ</div>}
+              </div>
+            );
+          })}
+        </div>
+
+        <button onClick={() => setShowPayView(false)} style={{
+          width: "min(94vw, 560px)", marginTop: 12, padding: "15px 8px", borderRadius: 12,
+          border: `1px solid ${t.bd}`, background: t.card, color: t.tx, fontSize: 15, fontWeight: 700, cursor: "pointer",
+        }}>← 戻る</button>
       </div>
     );
   };
@@ -8015,6 +8139,7 @@ input, select { padding: 10px 14px; }
         <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 6 }}>
           点数を長押しすると順位と点差が見られます
         </div>
+        <PayTableView />
         <RankPeekOverlay />
         <PlayerHistoryModal />
 
@@ -8116,6 +8241,7 @@ input, select { padding: 10px 14px; }
       <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginBottom: 10, marginTop: -8 }}>
         点数を長押しすると順位と点差が見られます
       </div>
+      <PayTableView />
       <RankPeekOverlay />
       <PlayerHistoryModal />
       <RuleCheckModal />
@@ -8432,6 +8558,8 @@ input, select { padding: 10px 14px; }
                     </>
                   }
                 />
+                <button style={{ ...actionBtn(), color: t.gd, border: `1px solid ${t.gd}55` }}
+                  onClick={() => setShowPayView(true)}>🀄 卓上表示（点数の受け渡し）</button>
                 <button style={actionBtn("p")} onClick={applyRound}>{correctingIdx !== null ? "修正を反映" : "スコアに反映"}</button>
                 <button style={actionBtn()} onClick={resetGW}>キャンセル</button>
               </>
