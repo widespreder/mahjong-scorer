@@ -3794,14 +3794,93 @@ function MahjongScorer() {
         onClick: onCancel
       }, "キャンセル"));
     }
-    return React.createElement("div", null, React.createElement("div", {
+    return React.createElement("div", null, yakuInfo && (() => {
+      const y = yakuInfo;
+      const m = y.name.match(/^(.+?)（(.+?)）$/);
+      const base = m ? m[1] : y.name,
+        paren = m ? m[2] : "";
+      const isKana = /^[ァ-ヶー]+$/.test(base);
+      const kana = isKana ? base : paren;
+      const main = isKana ? paren || base : base;
+      return React.createElement("div", {
+        onClick: () => setYakuInfo(null),
+        style: {
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.85)",
+          zIndex: 220,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 18
+        }
+      }, React.createElement("div", {
+        onClick: e => e.stopPropagation(),
+        style: {
+          ...card,
+          maxWidth: 380,
+          width: "100%",
+          margin: 0,
+          padding: 18
+        }
+      }, React.createElement("div", {
+        style: {
+          fontSize: 11,
+          color: t.dm,
+          textAlign: "center",
+          fontWeight: 700
+        }
+      }, kana), React.createElement("div", {
+        style: {
+          fontSize: 22,
+          fontWeight: 900,
+          textAlign: "center",
+          color: y.han >= 13 ? t.gd : t.tx
+        }
+      }, main), React.createElement("div", {
+        style: {
+          fontSize: 12,
+          color: t.dm,
+          textAlign: "center",
+          marginTop: 4
+        }
+      }, "門前 ", y.han >= 13 ? "役満" : `${y.han}翻`, y.naki === null ? " ・ 鳴くと成立しません" : y.naki < y.han ? ` ／ 鳴き ${y.naki}翻（食い下がり）` : " ／ 鳴いても同じ"), React.createElement("div", {
+        style: {
+          fontSize: 13,
+          color: t.tx,
+          lineHeight: 1.9,
+          marginTop: 12,
+          padding: 12,
+          borderRadius: 10,
+          background: t.sf,
+          border: `1px solid ${t.bd}`
+        }
+      }, y.desc), React.createElement("button", {
+        style: {
+          ...actionBtn(),
+          marginTop: 12,
+          marginBottom: 0
+        },
+        onClick: () => setYakuInfo(null)
+      }, "閉じる")));
+    })(), React.createElement("div", {
       style: {
         fontSize: 14,
         fontWeight: 800,
         textAlign: "center",
         marginBottom: 6
       }
-    }, "役を選んで翻数を計算"), lockedRiichi && React.createElement("div", {
+    }, "役を選んで翻数を計算"), React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: t.dm,
+        textAlign: "center",
+        marginBottom: 6
+      }
+    }, "役を長押しすると説明が見られます"), lockedRiichi && React.createElement("div", {
       style: {
         fontSize: 11,
         color: t.rd,
@@ -4026,7 +4105,12 @@ function MahjongScorer() {
         const main = isKana ? paren || base : base;
         return React.createElement("button", {
           key: y.name,
+          ...yakuPressHandlers(y),
           onClick: () => {
+            if (yakuPressFired.current) {
+              yakuPressFired.current = false;
+              return;
+            }
             const cur = pickedYaku;
             let next;
             if (cur.includes(y.name)) {
@@ -8733,6 +8817,32 @@ input, select { padding: 10px 14px; }
   const [playerDetail, setPlayerDetail] = useState(null);
   const [rankPeek, setRankPeek] = useState(null);
   const [showPayView, setShowPayView] = useState(false);
+  const [yakuInfo, setYakuInfo] = useState(null);
+  const yakuPressTimer = React.useRef(null);
+  const yakuPressFired = React.useRef(false);
+  const yakuPressHandlers = y => ({
+    onPointerDown: () => {
+      yakuPressFired.current = false;
+      if (yakuPressTimer.current) clearTimeout(yakuPressTimer.current);
+      yakuPressTimer.current = setTimeout(() => {
+        yakuPressFired.current = true;
+        try {
+          if (navigator.vibrate) navigator.vibrate(12);
+        } catch {}
+        setYakuInfo(y);
+      }, 450);
+    },
+    onPointerUp: () => {
+      if (yakuPressTimer.current) clearTimeout(yakuPressTimer.current);
+    },
+    onPointerLeave: () => {
+      if (yakuPressTimer.current) clearTimeout(yakuPressTimer.current);
+    },
+    onPointerCancel: () => {
+      if (yakuPressTimer.current) clearTimeout(yakuPressTimer.current);
+    },
+    onContextMenu: e => e.preventDefault()
+  });
   const longPressTimer = React.useRef(null);
   const longPressFired = React.useRef(false);
   const longPressHandlers = i => ({
