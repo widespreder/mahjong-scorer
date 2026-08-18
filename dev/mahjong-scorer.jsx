@@ -6904,9 +6904,9 @@ input, select { padding: 10px 14px; }
           <Back onClick={() => {
             // リーグ戦は出場者選択（リーグ側）へ戻す
             if (activeLeagueId) { resetSeatDraw(); setView("leaguestart"); }
-            else setSetupStep(0);
+            else setSetupStep(3);
           }} />
-          <Dots total={activeLeagueId ? 3 : 5} cur={activeLeagueId ? 0 : 1} />
+          <Dots total={activeLeagueId ? 3 : 5} cur={activeLeagueId ? 0 : 2} />
           <div style={question}>席決め</div>
           <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 16, lineHeight: 1.7 }}>
             伏せた牌を1人ずつ引いて席を決めます
@@ -7044,7 +7044,7 @@ input, select { padding: 10px 14px; }
 
       {/* Step 2: 親決め（仮親がサイコロを振る） */}
       {setupStep === 2 && (() => {
-        const nextStep = activeLeagueId ? 4 : 3;
+        const nextStep = 4;
         const newDealer = oyaDice ? (oyaDice.sum - 1) % PC : 0;
         const applyOya = () => {
           if (newDealer > 0) {
@@ -7083,7 +7083,7 @@ input, select { padding: 10px 14px; }
         return (
           <div style={card}>
             <Back onClick={() => setSetupStep(1)} />
-            <Dots total={activeLeagueId ? 3 : 5} cur={activeLeagueId ? 1 : 2} />
+            <Dots total={activeLeagueId ? 3 : 5} cur={activeLeagueId ? 1 : 3} />
             <div style={question}>親決め</div>
             <div style={{ fontSize: 13, color: t.tx, textAlign: "center", marginBottom: 4, fontWeight: 700 }}>
               仮親の <span style={{ color: t.gd }}>{players[0]}</span> さんはサイコロを振ってください
@@ -7134,8 +7134,8 @@ input, select { padding: 10px 14px; }
       {/* Step 3: ルール設定 */}
       {setupStep === 3 && (
         <div style={card}>
-          <Back onClick={() => setSetupStep(2)} />
-          <Dots total={5} cur={3} />
+          <Back onClick={() => setSetupStep(0)} />
+          <Dots total={5} cur={1} />
           <div style={question}>ルール設定</div>
 
           {/* 前回と同じルールで始める */}
@@ -7288,7 +7288,7 @@ input, select { padding: 10px 14px; }
           <RuleHelp />
 
           <div style={{ marginTop: 16 }}>
-            <button style={actionBtn("p")} onClick={() => setSetupStep(4)}>確認へ</button>
+            <button style={actionBtn("p")} onClick={() => { resetSeatDraw(); setSetupStep(1); }}>席決めへ</button>
           </div>
         </div>
       )}
@@ -7561,9 +7561,9 @@ input, select { padding: 10px 14px; }
                   .map(x => (x || "").trim())
                   .filter(x => x && !presetNames.includes(x) && !/^[A-D]プレーヤー$/.test(x));
                 if (adds.length) savePresetNames([...presetNames, ...Array.from(new Set(adds))]);
-                resetSeatDraw(); setSetupStep(1);
+                setSetupStep(3);
               }}
-            >席決めへ</button>
+            >ルール設定へ</button>
             {!matchType && (
               <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 8 }}>
                 試合形式を選んでください
