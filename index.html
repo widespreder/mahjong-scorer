@@ -14638,6 +14638,9 @@ input, select { padding: 10px 14px; }
         np[i] = e.target.value;
         setPlayers(np);
       },
+      onKeyDown: e => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      },
       onBlur: () => {
         const v = (p || "").trim();
         if (!v || /^[A-D]プレーヤー$/.test(v)) return;
@@ -14647,6 +14650,14 @@ input, select { padding: 10px 14px; }
         if (!list.includes(v)) list = [...list, v];
         if (list !== presetNames) savePresetNames(list);
         seatAutoReg.current[i] = v;
+        if (v !== p) {
+          const np = [...players];
+          np[i] = v;
+          setPlayers(np);
+        }
+        const nm = [...playerMode];
+        nm[i] = false;
+        setPlayerMode(nm);
       }
     }), React.createElement("button", {
       style: {
