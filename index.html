@@ -13943,11 +13943,11 @@ input, select { padding: 10px 14px; }
       if (activeLeagueId) {
         resetSeatDraw();
         setView("leaguestart");
-      } else setSetupStep(0);
+      } else setSetupStep(3);
     }
   }), React.createElement(Dots, {
     total: activeLeagueId ? 3 : 5,
-    cur: activeLeagueId ? 0 : 1
+    cur: activeLeagueId ? 0 : 2
   }), React.createElement("div", {
     style: question
   }, "席決め"), React.createElement("div", {
@@ -14171,7 +14171,7 @@ input, select { padding: 10px 14px; }
       whiteSpace: "nowrap"
     }
   }, nm)))))), setupStep === 2 && (() => {
-    const nextStep = activeLeagueId ? 4 : 3;
+    const nextStep = 4;
     const newDealer = oyaDice ? (oyaDice.sum - 1) % PC : 0;
     const applyOya = () => {
       if (newDealer > 0) {
@@ -14231,7 +14231,7 @@ input, select { padding: 10px 14px; }
       onClick: () => setSetupStep(1)
     }), React.createElement(Dots, {
       total: activeLeagueId ? 3 : 5,
-      cur: activeLeagueId ? 1 : 2
+      cur: activeLeagueId ? 1 : 3
     }), React.createElement("div", {
       style: question
     }, "親決め"), React.createElement("div", {
@@ -14326,10 +14326,10 @@ input, select { padding: 10px 14px; }
   })(), setupStep === 3 && React.createElement("div", {
     style: card
   }, React.createElement(Back, {
-    onClick: () => setSetupStep(2)
+    onClick: () => setSetupStep(0)
   }), React.createElement(Dots, {
     total: 5,
-    cur: 3
+    cur: 1
   }), React.createElement("div", {
     style: question
   }, "ルール設定"), lastRules && (() => {
@@ -14688,8 +14688,11 @@ input, select { padding: 10px 14px; }
     }
   }, React.createElement("button", {
     style: actionBtn("p"),
-    onClick: () => setSetupStep(4)
-  }, "確認へ"))), setupStep === 0 && React.createElement("div", {
+    onClick: () => {
+      resetSeatDraw();
+      setSetupStep(1);
+    }
+  }, "席決めへ"))), setupStep === 0 && React.createElement("div", {
     style: card
   }, React.createElement(Dots, {
     total: 5,
@@ -15156,10 +15159,9 @@ input, select { padding: 10px 14px; }
     onClick: () => {
       const adds = players.slice(0, PC).map(x => (x || "").trim()).filter(x => x && !presetNames.includes(x) && !/^[A-D]プレーヤー$/.test(x));
       if (adds.length) savePresetNames([...presetNames, ...Array.from(new Set(adds))]);
-      resetSeatDraw();
-      setSetupStep(1);
+      setSetupStep(3);
     }
-  }, "席決めへ"), !matchType && React.createElement("div", {
+  }, "ルール設定へ"), !matchType && React.createElement("div", {
     style: {
       fontSize: 11,
       color: t.dm,
