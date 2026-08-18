@@ -4295,6 +4295,10 @@ function MahjongScorer() {
 *, *::before, *::after { box-sizing: border-box; }
 button { padding: 8px 12px; }
 input, select { padding: 10px 14px; }
+@keyframes dicePrompt {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
 @keyframes wallBlink {
   0%, 100% {
     background: rgba(56,189,248,0.28);
@@ -8796,6 +8800,7 @@ input, select { padding: 10px 14px; }
   const [diceVals, setDiceVals] = useState([1, 1]);
   const [diceRolling, setDiceRolling] = useState(false);
   const [diceSettled, setDiceSettled] = useState(false);
+  const [diceRoundKey, setDiceRoundKey] = useState(null);
   const diceClearTimer = React.useRef(null);
   const [diceHoldSec, setDiceHoldSec] = useState(() => {
     try {
@@ -8909,6 +8914,7 @@ input, select { padding: 10px 14px; }
     };
   }, [keepAwake, wakeSupported]);
   const rollDice = () => {
+    setDiceRoundKey(`${roundWind}${dealerIdx}-${honba}-${rounds.length}`);
     if (diceClearTimer.current) clearTimeout(diceClearTimer.current);
     setDiceRolling(true);
     setDiceSettled(false);
@@ -15856,7 +15862,16 @@ input, select { padding: 10px 14px; }
           fontWeight: 900,
           color: "#fff"
         }
-      }, roundWind, dealerIdx + 1, "局")), React.createElement("div", {
+      }, roundWind, dealerIdx + 1, "局")), diceRoundKey !== `${roundWind}${dealerIdx}-${honba}-${rounds.length}` && React.createElement("div", {
+        style: posBase(15.5)
+      }, React.createElement("span", {
+        style: {
+          fontSize: "3.1cqmin",
+          fontWeight: 800,
+          color: t.gd,
+          animation: "dicePrompt 1.6s ease-in-out infinite"
+        }
+      }, "タップしてサイコロ")), React.createElement("div", {
         style: posBase(8.5)
       }, React.createElement("span", {
         style: {
