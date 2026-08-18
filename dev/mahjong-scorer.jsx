@@ -2229,6 +2229,10 @@ export default function MahjongScorer() {
 *, *::before, *::after { box-sizing: border-box; }
 button { padding: 8px 12px; }
 input, select { padding: 10px 14px; }
+@keyframes dicePrompt {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
 @keyframes wallBlink {
   0%, 100% {
     background: rgba(56,189,248,0.28);
@@ -4186,6 +4190,7 @@ input, select { padding: 10px 14px; }
   const [diceVals, setDiceVals] = useState([1, 1]);
   const [diceRolling, setDiceRolling] = useState(false);
   const [diceSettled, setDiceSettled] = useState(false);
+  const [diceRoundKey, setDiceRoundKey] = useState(null); // サイコロを振った局（局が変わると案内を再表示）
   const diceClearTimer = React.useRef(null);
   const [diceHoldSec, setDiceHoldSec] = useState(() => {
     try { const v = parseInt(localStorage.getItem("mj_dice_hold") || "5", 10); return (isNaN(v) || v <= 0) ? 5 : v; } catch { return 5; }
@@ -4275,6 +4280,7 @@ input, select { padding: 10px 14px; }
 
 
   const rollDice = () => {
+    setDiceRoundKey(`${roundWind}${dealerIdx}-${honba}-${rounds.length}`);
     if (diceClearTimer.current) clearTimeout(diceClearTimer.current);
     setDiceRolling(true);
     setDiceSettled(false);
@@ -7975,6 +7981,15 @@ input, select { padding: 10px 14px; }
                       {roundWind}{dealerIdx + 1}局
                     </span>
                   </div>
+                  {/* 局の最初だけ: サイコロを振る案内 */}
+                  {diceRoundKey !== `${roundWind}${dealerIdx}-${honba}-${rounds.length}` && (
+                    <div style={posBase(15.5)}>
+                      <span style={{
+                        fontSize: "3.1cqmin", fontWeight: 800, color: t.gd,
+                        animation: "dicePrompt 1.6s ease-in-out infinite",
+                      }}>タップしてサイコロ</span>
+                    </div>
+                  )}
                   {/* サイコロの下: 本場・供託 */}
                   <div style={posBase(8.5)}>
                     <span style={{
