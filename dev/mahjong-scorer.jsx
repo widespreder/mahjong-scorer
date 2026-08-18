@@ -7158,10 +7158,10 @@ input, select { padding: 10px 14px; }
                   {same ? "✓ 前回と同じルールです" : "前回のルール"}
                 </div>
                 <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.8, marginBottom: 11 }}>{sum}</div>
-                <button onClick={() => { setRules({ ...lastRules }); setSetupStep(4); }} style={{
+                <button onClick={() => { setRules({ ...lastRules }); resetSeatDraw(); setSetupStep(1); }} style={{
                   width: "100%", padding: "13px 10px", borderRadius: 10, cursor: "pointer", border: "none",
                   background: same ? t.gn : t.ac, color: "#fff", fontSize: 14, fontWeight: 800,
-                }}>{same ? "このまま確認へ進む" : "前回と同じルールで始める"}</button>
+                }}>{same ? "このまま席決めへ進む" : "前回と同じルールで席決めへ"}</button>
                 <div style={{ fontSize: 10, color: t.dm, marginTop: 7, textAlign: "center" }}>
                   変更したい場合は、下の項目をそのまま設定してください
                 </div>
