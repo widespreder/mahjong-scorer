@@ -7266,8 +7266,9 @@ input, select { padding: 10px 14px; }
                         placeholder="名前を入力"
                         value={p}
                         onChange={e => { const np = [...players]; np[i] = e.target.value; setPlayers(np); }}
+                        onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }}
                         onBlur={() => {
-                          // 入力を終えたら自動でリストに登録
+                          // 入力を終えたら「リスト」を押さなくても自動で登録し、選択モードに戻す
                           const v = (p || "").trim();
                           if (!v || /^[A-D]プレーヤー$/.test(v)) return;
                           const prev = seatAutoReg.current[i];
@@ -7277,6 +7278,8 @@ input, select { padding: 10px 14px; }
                           if (!list.includes(v)) list = [...list, v];
                           if (list !== presetNames) savePresetNames(list);
                           seatAutoReg.current[i] = v;
+                          if (v !== p) { const np = [...players]; np[i] = v; setPlayers(np); }
+                          const nm = [...playerMode]; nm[i] = false; setPlayerMode(nm);
                         }}
                       />
                       <button
