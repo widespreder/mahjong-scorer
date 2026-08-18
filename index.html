@@ -9697,12 +9697,9 @@ input, select { padding: 10px 14px; }
       }
     }, React.createElement("div", {
       style: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
         marginBottom: 10
       }
-    }, React.createElement("div", null, React.createElement("div", {
+    }, React.createElement("div", {
       style: {
         fontSize: 16,
         fontWeight: 800
@@ -9717,17 +9714,7 @@ input, select { padding: 10px 14px; }
         color: t.gd,
         fontSize: 14
       }
-    }, myRank, "位"), " ・ ±はこの人との点差")), React.createElement("button", {
-      style: {
-        background: "none",
-        border: "none",
-        color: t.dm,
-        fontSize: 20,
-        cursor: "pointer",
-        lineHeight: 1
-      },
-      onClick: () => setRankPeek(null)
-    }, "✕")), ranked.map((r, rank) => {
+    }, myRank, "位"), " ・ ±はこの人との点差")), ranked.map((r, rank) => {
       const me = r.i === pi;
       const diff = r.v - scores[pi];
       return React.createElement("div", {
@@ -9806,7 +9793,21 @@ input, select { padding: 10px 14px; }
         setPlayerDetail(pi);
         setRankPeek(null);
       }
-    }, "点数の変動履歴を見る")));
+    }, "点数の変動履歴を見る"), React.createElement("button", {
+      style: {
+        width: "100%",
+        marginTop: 8,
+        padding: "14px 8px",
+        borderRadius: 11,
+        cursor: "pointer",
+        border: `1px solid ${t.bd}`,
+        background: t.sf,
+        color: t.tx,
+        fontSize: 15,
+        fontWeight: 700
+      },
+      onClick: () => setRankPeek(null)
+    }, "← 戻る")));
   };
   const PlayerHistoryModal = () => {
     if (playerDetail === null) return null;
