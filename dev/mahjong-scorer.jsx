@@ -266,6 +266,9 @@ export default function MahjongScorer() {
   const SEAT_WINDS = SEATS_OF(PC);
   const HU = () => (gameConfig?.rules?.honbaUnit) || 300;   // 1本場の点数
   const isSanma = PC === 3;
+  // 親決め（仮親がサイコロを振って起家を決める）
+  const [oyaDice, setOyaDice] = useState(null);     // { d1, d2, sum } 振り終わった目
+  const [oyaRolling, setOyaRolling] = useState(false);
   const [seatTiles, setSeatTiles] = useState([]);   // [{wind, by}] by=引いた人のindex(元の並び順)
   const [seatTurn, setSeatTurn] = useState(0);      // 今引く人（元の並び順のindex）
   const [seatDone, setSeatDone] = useState(false);
@@ -6900,7 +6903,7 @@ input, select { padding: 10px 14px; }
             if (activeLeagueId) { resetSeatDraw(); setView("leaguestart"); }
             else setSetupStep(0);
           }} />
-          <Dots total={activeLeagueId ? 2 : 4} cur={activeLeagueId ? 0 : 1} />
+          <Dots total={activeLeagueId ? 3 : 5} cur={activeLeagueId ? 0 : 1} />
           <div style={question}>席決め</div>
           <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginBottom: 16, lineHeight: 1.7 }}>
             伏せた牌を1人ずつ引いて席を決めます
@@ -6966,7 +6969,7 @@ input, select { padding: 10px 14px; }
               background: t.gdS, border: `1px solid ${t.gd}55`,
             }}>
               <div style={{ fontSize: 11, color: t.gd, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>
-                席順が決まりました
+                席順が決まりました（この東は仮親です）
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
                 {players.slice(0, PC).map((nm, i) => (
@@ -6987,15 +6990,16 @@ input, select { padding: 10px 14px; }
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8 }}>
-                東の {players[0]} さんが起家（最初の親）です
+              <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 8, lineHeight: 1.7 }}>
+                東の <b style={{ color: t.gd }}>{players[0]}</b> さんが<b style={{ color: t.gd }}>仮親</b>です<br />
+                次のページでサイコロを振って親（起家）を決めます
               </div>
             </div>
           )}
 
           {seatDone ? (
             <>
-              <button style={actionBtn("p")} onClick={() => setSetupStep(activeLeagueId ? 4 : 3)}>次へ</button>
+              <button style={actionBtn("p")} onClick={() => { setOyaDice(null); setSetupStep(2); }}>次へ</button>
               <button style={actionBtn()} onClick={resetSeatDraw}>引き直す</button>
             </>
           ) : (
@@ -7003,7 +7007,7 @@ input, select { padding: 10px 14px; }
               <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 14 }}>
                 好きな牌をタップしてください
               </div>
-              <button style={actionBtn()} onClick={() => setSetupStep(activeLeagueId ? 4 : 3)}>
+              <button style={actionBtn()} onClick={() => { setOyaDice(null); setSetupStep(2); }}>
                 席決めをスキップ
               </button>
               <div style={{ fontSize: 12, color: t.dm, textAlign: "center", marginTop: 10, lineHeight: 1.7 }}>
@@ -7035,11 +7039,100 @@ input, select { padding: 10px 14px; }
         </div>
       )}
 
+      {/* Step 2: 親決め（仮親がサイコロを振る） */}
+      {setupStep === 2 && (() => {
+        const nextStep = activeLeagueId ? 4 : 3;
+        const newDealer = oyaDice ? (oyaDice.sum - 1) % PC : 0;
+        const applyOya = () => {
+          if (newDealer > 0) {
+            // 席の並び（反時計回り）を保ったまま、起家が東になるよう回す
+            setPlayers(prev => {
+              const head = prev.slice(0, PC);
+              const rest = prev.slice(PC);
+              return head.slice(newDealer).concat(head.slice(0, newDealer)).concat(rest);
+            });
+          }
+          setSetupStep(nextStep);
+        };
+        const roll = () => {
+          if (oyaRolling) return;
+          setOyaRolling(true);
+          setOyaDice(null);
+          try { if (navigator.vibrate) navigator.vibrate(20); } catch {}
+          let n = 0;
+          const spin = setInterval(() => {
+            setOyaDice({ d1: 1 + Math.floor(Math.random() * 6), d2: 1 + Math.floor(Math.random() * 6), sum: 0 });
+            if (++n > 12) {
+              clearInterval(spin);
+              const a = 1 + Math.floor(Math.random() * 6), b = 1 + Math.floor(Math.random() * 6);
+              setOyaDice({ d1: a, d2: b, sum: a + b });
+              setOyaRolling(false);
+            }
+          }, 70);
+        };
+        const pip = (v) => (
+          <div style={{
+            width: 58, height: 58, borderRadius: 10, background: "#fdfdf7",
+            color: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 30, fontWeight: 900, boxShadow: "0 3px 10px rgba(0,0,0,0.45)",
+          }}>{v || "?"}</div>
+        );
+        return (
+          <div style={card}>
+            <Back onClick={() => setSetupStep(1)} />
+            <Dots total={activeLeagueId ? 3 : 5} cur={activeLeagueId ? 1 : 2} />
+            <div style={question}>親決め</div>
+            <div style={{ fontSize: 13, color: t.tx, textAlign: "center", marginBottom: 4, fontWeight: 700 }}>
+              仮親の <span style={{ color: t.gd }}>{players[0]}</span> さんはサイコロを振ってください
+            </div>
+            <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginBottom: 14, lineHeight: 1.7 }}>
+              仮親から反時計回りに数えて、出た目の席の人が起家（最初の親）になります
+            </div>
+
+            <button onClick={roll} disabled={oyaRolling} style={{
+              width: "100%", padding: "22px 12px", borderRadius: 16, cursor: oyaRolling ? "default" : "pointer",
+              border: `2px solid ${t.gd}55`, background: "linear-gradient(160deg, #1f5c3d, #14402b)",
+              marginBottom: 12,
+            }}>
+              <div style={{ display: "flex", gap: 14, justifyContent: "center" }}>
+                {pip(oyaDice?.d1)}{pip(oyaDice?.d2)}
+              </div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight: 700, marginTop: 12 }}>
+                {oyaRolling ? "振っています…" : oyaDice?.sum ? "もう一度振る" : "タップしてサイコロを振る"}
+              </div>
+            </button>
+
+            {oyaDice?.sum > 0 && !oyaRolling && (
+              <div style={{
+                padding: 14, borderRadius: 12, marginBottom: 12,
+                background: t.gdS, border: `1px solid ${t.gd}55`, textAlign: "center",
+              }}>
+                <div style={{ fontSize: 12, color: t.dm }}>出た目 <b style={{ color: t.gd, fontSize: 16 }}>{oyaDice.sum}</b></div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: t.tx, marginTop: 6 }}>
+                  {players[newDealer]} さんが起家（親）
+                </div>
+                {newDealer > 0 && (
+                  <div style={{ fontSize: 11, color: t.dm, marginTop: 6, lineHeight: 1.7 }}>
+                    座る場所はそのままで、東南西北だけ割り当て直します
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button style={{ ...actionBtn("p"), opacity: oyaDice?.sum > 0 ? 1 : 0.4 }}
+              disabled={!(oyaDice?.sum > 0)} onClick={applyOya}>次へ</button>
+            <button style={actionBtn()} onClick={() => setSetupStep(nextStep)}>
+              サイコロを使わない（今の東が親）
+            </button>
+          </div>
+        );
+      })()}
+
       {/* Step 3: ルール設定 */}
       {setupStep === 3 && (
         <div style={card}>
-          <Back onClick={() => setSetupStep(1)} />
-          <Dots total={4} cur={2} />
+          <Back onClick={() => setSetupStep(2)} />
+          <Dots total={5} cur={3} />
           <div style={question}>ルール設定</div>
 
           {/* 前回と同じルールで始める */}
@@ -7200,7 +7293,7 @@ input, select { padding: 10px 14px; }
       {/* Step 0: 参加者 */}
       {setupStep === 0 && (
         <div style={card}>
-          <Dots total={4} cur={0} />
+          <Dots total={5} cur={0} />
           <div style={question}>試合形式と参加者</div>
           {/* 人数（四人麻雀 / 三人麻雀） */}
           <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>人数</div>
@@ -7543,7 +7636,7 @@ input, select { padding: 10px 14px; }
                   );
                 })()}
                 <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 8, lineHeight: 1.7 }}>
-                  この向きで座ります。手前の東が<b style={{ color: t.gd }}>仮親</b>としてサイコロを振り、親を決めます
+                  手前が東（起家）。この向きで座ります
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
