@@ -4736,13 +4736,9 @@ input, select { padding: 10px 14px; }
           ...card, width: "min(86vw, 420px)", margin: 0, padding: 18,
           transform: `rotate(${rot}deg)`,
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 800 }}>{players[pi]}</div>
-              <div style={{ fontSize: 12, color: t.dm }}>現在 <b style={{ color: t.gd, fontSize: 14 }}>{myRank}位</b> ・ ±はこの人との点差</div>
-            </div>
-            <button style={{ background: "none", border: "none", color: t.dm, fontSize: 20, cursor: "pointer", lineHeight: 1 }}
-              onClick={() => setRankPeek(null)}>✕</button>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 16, fontWeight: 800 }}>{players[pi]}</div>
+            <div style={{ fontSize: 12, color: t.dm }}>現在 <b style={{ color: t.gd, fontSize: 14 }}>{myRank}位</b> ・ ±はこの人との点差</div>
           </div>
 
           {ranked.map((r, rank) => {
@@ -4777,6 +4773,11 @@ input, select { padding: 10px 14px; }
             width: "100%", marginTop: 8, padding: "10px 8px", borderRadius: 9, cursor: "pointer",
             border: `1px solid ${t.bd}`, background: "transparent", color: t.ac, fontSize: 12, fontWeight: 700,
           }} onClick={() => { setPlayerDetail(pi); setRankPeek(null); }}>点数の変動履歴を見る</button>
+
+          <button style={{
+            width: "100%", marginTop: 8, padding: "14px 8px", borderRadius: 11, cursor: "pointer",
+            border: `1px solid ${t.bd}`, background: t.sf, color: t.tx, fontSize: 15, fontWeight: 700,
+          }} onClick={() => setRankPeek(null)}>← 戻る</button>
         </div>
       </div>
     );
