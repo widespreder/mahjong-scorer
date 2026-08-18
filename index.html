@@ -14362,7 +14362,8 @@ input, select { padding: 10px 14px; }
         setRules({
           ...lastRules
         });
-        setSetupStep(4);
+        resetSeatDraw();
+        setSetupStep(1);
       },
       style: {
         width: "100%",
@@ -14375,7 +14376,7 @@ input, select { padding: 10px 14px; }
         fontSize: 14,
         fontWeight: 800
       }
-    }, same ? "このまま確認へ進む" : "前回と同じルールで始める"), React.createElement("div", {
+    }, same ? "このまま席決めへ進む" : "前回と同じルールで席決めへ"), React.createElement("div", {
       style: {
         fontSize: 10,
         color: t.dm,
