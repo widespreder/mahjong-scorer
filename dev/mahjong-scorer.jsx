@@ -7542,8 +7542,8 @@ input, select { padding: 10px 14px; }
                     </div>
                   );
                 })()}
-                <div style={{ fontSize: 10, color: t.dm, textAlign: "center", marginTop: 8, lineHeight: 1.7 }}>
-                  手前が東（起家）。この向きで座ります
+                <div style={{ fontSize: 11, color: t.dm, textAlign: "center", marginTop: 8, lineHeight: 1.7 }}>
+                  この向きで座ります。手前の東が<b style={{ color: t.gd }}>仮親</b>としてサイコロを振り、親を決めます
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${t.bd}33`, padding: "6px 0" }}>
