@@ -7804,12 +7804,14 @@ input, select { padding: 10px 14px; }
                   {same ? "✓ 前回と同じルールです" : "前回のルール"}
                 </div>
                 <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.8, marginBottom: 11 }}>{sum}</div>
-                <button onClick={() => { setRules({ ...lastRules }); setSetupStep(0); }} style={{
-                  width: "100%", padding: "13px 10px", borderRadius: 10, cursor: "pointer", border: "none",
+                <button disabled={!matchType}
+                  onClick={() => { setRules({ ...lastRules }); setSetupStep(0); }} style={{
+                  width: "100%", padding: "13px 10px", borderRadius: 10, cursor: matchType ? "pointer" : "default", border: "none",
                   background: same ? t.gn : t.ac, color: "#fff", fontSize: 14, fontWeight: 800,
+                  opacity: matchType ? 1 : 0.4,
                 }}>{same ? "このままメンバー決定へ" : "前回と同じルールでメンバー決定へ"}</button>
-                <div style={{ fontSize: 10, color: t.dm, marginTop: 7, textAlign: "center" }}>
-                  変更したい場合は、下の「ルールを変更する」から
+                <div style={{ fontSize: 10, color: matchType ? t.dm : t.gd, marginTop: 7, textAlign: "center", fontWeight: matchType ? 400 : 700 }}>
+                  {matchType ? "変更したい場合は、下の「ルールを変更する」から" : "まず上の試合形式を選んでください"}
                 </div>
               </div>
             );
@@ -7948,8 +7950,8 @@ input, select { padding: 10px 14px; }
           </>)}
 
 
-          {/* 詳細を開いているときだけ、下にも進むボタンを出す */}
-          {(rulesOpen || !lastRules) && (
+          {/* 詳細を開いているとき、または形式を選んだあとは下にも進むボタンを出す */}
+          {(rulesOpen || !lastRules || matchType) && (
             <div style={{ marginTop: 16 }}>
               <button style={{ ...actionBtn("p"), opacity: matchType ? 1 : 0.4 }} disabled={!matchType}
                 onClick={() => setSetupStep(0)}>メンバー決定へ</button>
