@@ -4467,6 +4467,50 @@ input, select { padding: 10px 14px; }
   const [diceVals, setDiceVals] = useState([1, 1]);
   const [diceRolling, setDiceRolling] = useState(false);
   const [diceSpin, setDiceSpin] = useState(0);   // 振った回数（3Dの回転量に使う）
+  // サイコロの効果音（Web Audioでその場で合成。ファイル不要・オフラインOK）
+  const [diceSoundOn, setDiceSoundOn] = useState(() => {
+    try { return localStorage.getItem("mj_dice_sound") !== "0"; } catch { return true; }
+  });
+  const saveDiceSound = (on) => {
+    setDiceSoundOn(on);
+    try { localStorage.setItem("mj_dice_sound", on ? "1" : "0"); } catch {}
+  };
+  const audioCtxRef = React.useRef(null);
+  const playDiceSound = () => {
+    if (!diceSoundOn) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtxRef.current) audioCtxRef.current = new AC();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+      const clack = (t, vol, freq) => {
+        const dur = 0.05;
+        const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2.2);
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = freq; bp.Q.value = 1.1;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+        src.start(t); src.stop(t + dur);
+      };
+      const now = ctx.currentTime + 0.01;
+      // 転がり: 速い連打から徐々に間隔が開く
+      let tt = now;
+      const hits = 9 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < hits; i++) {
+        const prog = i / hits;
+        clack(tt, 0.22 + Math.random() * 0.16, 1500 + Math.random() * 2300);
+        tt += 0.028 + prog * 0.085 + Math.random() * 0.028;
+      }
+      // 着地: 低めの音で2回コトッ
+      clack(tt + 0.02, 0.5, 1050);
+      clack(tt + 0.11, 0.32, 850);
+    } catch {}
+  };
   const [wallBlink, setWallBlink] = useState(false); // 山を割る人の点滅（10秒）
   const wallBlinkTimer = React.useRef(null);
   const [diceSettled, setDiceSettled] = useState(false);
@@ -4560,6 +4604,7 @@ input, select { padding: 10px 14px; }
 
 
   const rollDice = () => {
+    playDiceSound();
     setDiceSpin(v => v + 1);
     setWallBlink(true);
     if (wallBlinkTimer.current) clearTimeout(wallBlinkTimer.current);
@@ -5983,6 +6028,18 @@ input, select { padding: 10px 14px; }
               </div>
               <div style={{ fontSize: 10, color: t.dm, marginTop: 8 }}>
                 振った後、自動で消えるまでの時間です
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: `1px solid ${t.bd}33` }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: t.tx }}>🔊 転がる効果音</div>
+                  <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>振ったときにカラカラ…と鳴ります</div>
+                </div>
+                <button onClick={() => saveDiceSound(!diceSoundOn)} style={{
+                  width: 48, height: 28, borderRadius: 14, border: "none", padding: 0, cursor: "pointer",
+                  background: diceSoundOn ? t.ac : t.bd, position: "relative", transition: "background 0.15s", flexShrink: 0,
+                }}>
+                  <span style={{ position: "absolute", top: 3, left: diceSoundOn ? 23 : 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transition: "left 0.15s" }} />
+                </button>
               </div>
             </div>
 
@@ -7605,6 +7662,7 @@ input, select { padding: 10px 14px; }
         };
         const roll = () => {
           if (oyaRolling) return;
+          playDiceSound();
           setOyaRolling(true);
           setOyaDice(null);
           try { if (navigator.vibrate) navigator.vibrate(20); } catch {}
