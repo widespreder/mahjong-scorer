@@ -56,9 +56,8 @@ const RATE_VALUES = (() => {
   return out;
 })();
 const RATE_LABEL = (r) => !r ? "なし" : (r < 1 ? r.toFixed(2) : (r % 1 === 0 ? String(r) : r.toFixed(1)));
-const GOLD = (pt, rate) => Math.round(pt * 1000 * rate * 10) / 10;
-const GOLD_LABEL = (g) => (Math.round(g * 10) / 10).toLocaleString("ja-JP");
-const RATE_POS = RATE_VALUES.filter((v) => v > 0);
+const GOLD = (pt, rate) => Math.round(pt * rate * 100) / 100;
+const GOLD_LABEL = (g) => (g % 1 === 0 ? String(g) : g.toFixed(2).replace(/0$/, ""));
 const TABLE_IMG = "assets/table.jpg";   // 麻雀卓の画像
 // 人数に応じた席風（三麻は北家なし）
 const SEATS_OF = (pc) => pc === 3 ? ["東", "南", "西"] : WINDS;
@@ -3358,72 +3357,32 @@ input, select { padding: 10px 14px; }
     );
   };
 
-  // レート設定のカード（ルール編集用）／チェックでON・OFF
-  const RateSetting = ({ rate, onChange }) => {
-    const on = !!rate;
-    const [last, setLast] = useState(rate || 0.1);
-    const toggle = () => {
-      if (on) { setLast(rate); onChange(0); }
-      else {
-        try { navigator.vibrate && navigator.vibrate(8); } catch (e) {}
-        onChange(last || 0.1);
-      }
-    };
-    const ex = (n) => GOLD_LABEL(GOLD(n / 1000, rate));
-    return (
-      <div style={{ marginBottom: 16 }}>
-        <div onClick={toggle} style={{
-          display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
-          padding: "12px 14px", borderRadius: 12,
-          border: `1px solid ${on ? t.ac : t.bd}`,
-          background: on ? t.acS : "transparent",
-          transition: "background 0.15s, border-color 0.15s",
-        }}>
-          <div style={{
-            width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: on ? t.ac : "transparent",
-            border: `2px solid ${on ? t.ac : t.dm}`,
-            color: "#fff", fontSize: 13, fontWeight: 900, lineHeight: 1,
-          }}>{on ? "✓" : ""}</div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: t.tx }}>レート換算する</div>
-            <div style={{ fontSize: 11, color: t.dm, marginTop: 2, lineHeight: 1.6 }}>
-              精算画面にゴールドの増減が表示されます
-            </div>
-          </div>
-        </div>
-        {on && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>レート（ゴールド）</div>
-            <div style={{ fontSize: 11, color: t.dm, marginBottom: 8, lineHeight: 1.7 }}>
-              1点あたりのゴールド
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ flex: 1 }}>
-                <ReelPicker values={RATE_POS} value={rate || 0.1} onChange={onChange} labelOf={RATE_LABEL} />
-              </div>
-              <div style={{ width: 126, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: t.dm }}>1点 =</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: t.gd, lineHeight: 1.3 }}>
-                  {RATE_LABEL(rate)}
-                </div>
-                <div style={{ fontSize: 11, color: t.dm, fontWeight: 700 }}>ゴールド</div>
-                <div style={{
-                  fontSize: 10, color: t.dm, marginTop: 8, paddingTop: 8,
-                  borderTop: `1px solid ${t.bd}`, lineHeight: 1.8,
-                  fontVariantNumeric: "tabular-nums",
-                }}>
-                  <div>1,000点 = <span style={{ color: t.gd, fontWeight: 800 }}>{ex(1000)}G</span></div>
-                  <div>30,000点 = <span style={{ color: t.gd, fontWeight: 800 }}>{ex(30000)}G</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+  // レート設定のカード（ルール編集用）
+  const RateSetting = ({ rate, onChange }) => (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>レート（ゴールド）</div>
+      <div style={{ fontSize: 11, color: t.dm, marginBottom: 8, lineHeight: 1.7 }}>
+        1ptあたりのゴールド。精算画面にゴールドの増減が表示されます
       </div>
-    );
-  };
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ flex: 1 }}>
+          <ReelPicker values={RATE_VALUES} value={rate || 0} onChange={onChange} labelOf={RATE_LABEL} />
+        </div>
+        <div style={{ width: 108, textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: t.dm }}>1pt =</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: rate ? t.gd : t.dm, lineHeight: 1.3 }}>
+            {RATE_LABEL(rate || 0)}
+          </div>
+          <div style={{ fontSize: 11, color: t.dm, fontWeight: 700 }}>{rate ? "ゴールド" : ""}</div>
+          {!!rate && (
+            <div style={{ fontSize: 10, color: t.dm, marginTop: 6, lineHeight: 1.6 }}>
+              例) +20pt<br />= {GOLD_LABEL(GOLD(20, rate))} ゴールド
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   const TableDiagram = ({ highlight, dice1, dice2, breakPos, labels }) => {
     const seatStyle = (pos, on) => {
@@ -5146,7 +5105,7 @@ input, select { padding: 10px 14px; }
   // 起動時のオープニング（タップでスキップ）
   const BootSplash = () => {
     if (!booting) return null;
-    const chars = ["ポ", "ン", "ヅ", "ケ"];
+    const chars = ["卓", "上", "ポ", "ン", "づ", "け"];
     return (
       <div onClick={() => setBooting(false)} style={{
         position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 400,
@@ -5156,25 +5115,25 @@ input, select { padding: 10px 14px; }
       }}>
         <div style={{ fontSize: 46, animation: "bootTile 0.75s cubic-bezier(.2,1.4,.4,1) both", lineHeight: 1 }}>🀄</div>
 
-        <div style={{ display: "flex", gap: 4, marginTop: 14 }}>
+        <div style={{
+          marginTop: 14, fontSize: 16, fontWeight: 800, color: t.gd, letterSpacing: "0.22em",
+          animation: "bootSub 0.7s 0.3s ease-out both",
+        }}>麻雀スコアラー</div>
+
+        <div style={{ display: "flex", gap: 2, marginTop: 8 }}>
           {chars.map((c, i) => (
             <span key={i} style={{
-              fontSize: 46, fontWeight: 900, color: "#fff", letterSpacing: "0.02em",
-              animation: `bootChar 0.5s ${0.35 + i * 0.13}s cubic-bezier(.2,1.1,.35,1) both, bootGlow 2.2s ${1.1 + i * 0.05}s ease-in-out infinite`,
+              fontSize: 40, fontWeight: 900, color: "#fff", letterSpacing: "0.02em",
+              animation: `bootChar 0.5s ${0.45 + i * 0.11}s cubic-bezier(.2,1.1,.35,1) both, bootGlow 2.2s ${1.2 + i * 0.05}s ease-in-out infinite`,
             }}>{c}</span>
           ))}
         </div>
 
         <div style={{
-          height: 2, width: 190, marginTop: 14,
+          height: 2, width: 210, marginTop: 14,
           background: `linear-gradient(90deg, transparent, ${t.gd}, transparent)`,
-          animation: "bootLine 0.7s 0.95s ease-out both",
+          animation: "bootLine 0.7s 1.05s ease-out both",
         }} />
-
-        <div style={{
-          marginTop: 12, fontSize: 12, fontWeight: 700, color: t.gd,
-          animation: "bootSub 0.8s 1.2s ease-out both",
-        }}>麻雀スコアラー</div>
 
         <div style={{
           marginTop: 22, fontSize: 10, color: "rgba(255,255,255,0.4)",
@@ -5519,22 +5478,25 @@ input, select { padding: 10px 14px; }
         {/* ロゴ */}
         <div style={{ textAlign: "center", marginBottom: 22 }}>
           <div style={{ fontSize: 40, lineHeight: 1, animation: "bootTile 0.7s cubic-bezier(.2,1.4,.4,1) both" }}>🀄</div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 3, marginTop: 10 }}>
-            {["ポ", "ン", "ヅ", "ケ"].map((c, i) => (
+          <div style={{
+            fontSize: 16, fontWeight: 800, color: t.gd, letterSpacing: "0.22em", marginTop: 12,
+            animation: "bootSub 0.6s 0.15s ease-out both",
+          }}>麻雀スコアラー</div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 2, marginTop: 6 }}>
+            {["卓", "上", "ポ", "ン", "づ", "け"].map((c, i) => (
               <span key={i} style={{
-                fontSize: 40, fontWeight: 900, color: "#fff", lineHeight: 1.15,
-                animation: `bootChar 0.45s ${0.12 + i * 0.09}s cubic-bezier(.2,1.1,.35,1) both`,
+                fontSize: 34, fontWeight: 900, color: "#fff", lineHeight: 1.2,
+                animation: `bootChar 0.45s ${0.2 + i * 0.08}s cubic-bezier(.2,1.1,.35,1) both`,
                 textShadow: "0 0 22px rgba(234,179,8,0.28), 0 3px 12px rgba(0,0,0,0.6)",
               }}>{c}</span>
             ))}
           </div>
           <div style={{
-            height: 2, width: 180, margin: "12px auto 9px",
+            height: 2, width: 200, margin: "12px auto 9px",
             background: `linear-gradient(90deg, transparent, ${t.gd}, transparent)`,
-            animation: "bootLine 0.6s 0.5s ease-out both",
+            animation: "bootLine 0.6s 0.6s ease-out both",
           }} />
-          <div style={{ fontSize: 12, fontWeight: 700, color: t.gd, letterSpacing: "0.18em" }}>麻雀スコアラー</div>
-          <div style={{ fontSize: 10, color: t.dm, marginTop: 4 }}>卓の真ん中に置いて使えます</div>
+          <div style={{ fontSize: 10, color: t.dm, marginTop: 2 }}>卓の真ん中に置いて使えます</div>
         </div>
 
         {/* 保留中があれば最優先で出す */}
@@ -5616,21 +5578,21 @@ input, select { padding: 10px 14px; }
       return (
         <div style={body}>
           <div style={{ textAlign: "center", padding: "18px 0 20px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-              <span style={{ fontSize: 26, animation: "titlePop 0.45s cubic-bezier(.2,1.3,.4,1) both" }}>🀄</span>
-              {["ポ", "ン", "ヅ", "ケ"].map((c, i) => (
+            <p style={{ fontSize: 13, color: t.gd, margin: "0 0 3px", letterSpacing: "0.2em", fontWeight: 800 }}>麻雀スコアラー</p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+              <span style={{ fontSize: 24, animation: "titlePop 0.45s cubic-bezier(.2,1.3,.4,1) both" }}>🀄</span>
+              {["卓", "上", "ポ", "ン", "づ", "け"].map((c, i) => (
                 <span key={i} style={{
-                  fontSize: 30, fontWeight: 900, lineHeight: 1.2, color: t.tx,
-                  animation: `titlePop 0.42s ${0.08 + i * 0.09}s cubic-bezier(.2,1.3,.4,1) both`,
+                  fontSize: 26, fontWeight: 900, lineHeight: 1.2, color: t.tx,
+                  animation: `titlePop 0.42s ${0.08 + i * 0.08}s cubic-bezier(.2,1.3,.4,1) both`,
                 }}>{c}</span>
               ))}
             </div>
             <div style={{
-              height: 2, width: 150, margin: "10px auto 8px",
+              height: 2, width: 170, margin: "10px auto 8px",
               background: `linear-gradient(90deg, transparent, ${t.gd}, transparent)`,
               animation: "bootLine 0.6s 0.45s ease-out both",
             }} />
-            <p style={{ fontSize: 12, color: t.dm, margin: 0, letterSpacing: "0.12em", fontWeight: 700 }}>麻雀スコアラー</p>
             <p style={{ fontSize: 11, color: t.dm, margin: "3px 0 0" }}>かんたん点数計算 &amp; 対局管理</p>
           </div>
 
@@ -7748,15 +7710,7 @@ input, select { padding: 10px 14px; }
           </div>
 
           {/* 試合形式 */}
-          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <span>試合形式</span>
-            {!matchType && (
-              <span style={{
-                fontSize: 10, fontWeight: 800, color: t.gd, background: t.gdS,
-                border: `1px solid ${t.gd}55`, borderRadius: 5, padding: "1px 6px",
-              }}>未選択</span>
-            )}
-          </div>
+          <div style={{ fontSize: 12, color: t.dm, marginBottom: 8 }}>試合形式</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
             {[["tonpu", "東風戦", "東場のみ"], ["hanchan", "半荘戦", "東＋南場"], ["zenchan", "全荘戦", "東南西北"]].map(([k, lb, sub]) => (
               <button key={k} onClick={() => setMatchType(k)} style={{
@@ -7792,18 +7746,12 @@ input, select { padding: 10px 14px; }
                   {same ? "✓ 前回と同じルールです" : "前回のルール"}
                 </div>
                 <div style={{ fontSize: 11, color: t.dm, lineHeight: 1.8, marginBottom: 11 }}>{sum}</div>
-                <button disabled={!matchType}
-                  onClick={() => { if (!matchType) return; setRules({ ...lastRules }); setSetupStep(0); }} style={{
-                  width: "100%", padding: "13px 10px", borderRadius: 10, border: "none",
-                  cursor: matchType ? "pointer" : "not-allowed",
-                  opacity: matchType ? 1 : 0.4,
+                <button onClick={() => { setRules({ ...lastRules }); setSetupStep(0); }} style={{
+                  width: "100%", padding: "13px 10px", borderRadius: 10, cursor: "pointer", border: "none",
                   background: same ? t.gn : t.ac, color: "#fff", fontSize: 14, fontWeight: 800,
                 }}>{same ? "このままメンバー決定へ" : "前回と同じルールでメンバー決定へ"}</button>
-                <div style={{
-                  fontSize: matchType ? 10 : 11, marginTop: 7, textAlign: "center",
-                  color: matchType ? t.dm : t.gd, fontWeight: matchType ? 400 : 800,
-                }}>
-                  {matchType ? "変更したい場合は、下の「ルールを変更する」から" : "↑ 試合形式（東風戦・半荘戦・全荘戦）を選んでください"}
+                <div style={{ fontSize: 10, color: t.dm, marginTop: 7, textAlign: "center" }}>
+                  変更したい場合は、下の「ルールを変更する」から
                 </div>
               </div>
             );
@@ -9660,7 +9608,7 @@ input, select { padding: 10px 14px; }
               ))}
               {!!(gameConfig?.rules?.rate) && (
                 <div style={{ fontSize: 10, color: t.dm, textAlign: "right", marginTop: 6 }}>
-                  レート 1,000点 = {GOLD_LABEL(GOLD(1, gameConfig.rules.rate))} ゴールド
+                  レート 1pt = {RATE_LABEL(gameConfig.rules.rate)} ゴールド
                 </div>
               )}
             </div>
@@ -10105,7 +10053,7 @@ input, select { padding: 10px 14px; }
               }}>← 戻る</button>
           ) : <span style={{ width: 62, flexShrink: 0 }} />}
           <h1 style={{ flex: 1, fontSize: 17, fontWeight: 800, margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer" }}
-            onClick={() => { setHomeCat(null); setView("title"); }}>🀄 <span>ポンヅケ</span></h1>
+            onClick={() => { setHomeCat(null); setView("title"); }}>🀄 <span>卓上ポンづけ</span></h1>
           <span style={{ width: 62, flexShrink: 0 }} />
         </div>
         )}
