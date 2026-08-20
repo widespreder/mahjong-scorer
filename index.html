@@ -15553,6 +15553,7 @@ input, select { padding: 10px 14px; }
         marginBottom: 11
       }
     }, sum), React.createElement("button", {
+      disabled: !matchType,
       onClick: () => {
         setRules({
           ...lastRules
@@ -15563,21 +15564,23 @@ input, select { padding: 10px 14px; }
         width: "100%",
         padding: "13px 10px",
         borderRadius: 10,
-        cursor: "pointer",
+        cursor: matchType ? "pointer" : "default",
         border: "none",
         background: same ? t.gn : t.ac,
         color: "#fff",
         fontSize: 14,
-        fontWeight: 800
+        fontWeight: 800,
+        opacity: matchType ? 1 : 0.4
       }
     }, same ? "このままメンバー決定へ" : "前回と同じルールでメンバー決定へ"), React.createElement("div", {
       style: {
         fontSize: 10,
-        color: t.dm,
+        color: matchType ? t.dm : t.gd,
         marginTop: 7,
-        textAlign: "center"
+        textAlign: "center",
+        fontWeight: matchType ? 400 : 700
       }
-    }, "変更したい場合は、下の「ルールを変更する」から"));
+    }, matchType ? "変更したい場合は、下の「ルールを変更する」から" : "まず上の試合形式を選んでください"));
   })(), React.createElement("button", {
     onClick: () => setRulesOpen(v => !v),
     style: {
@@ -15901,7 +15904,7 @@ input, select { padding: 10px 14px; }
       ...r,
       ...patch
     }))
-  })), React.createElement(RuleHelp, null)), (rulesOpen || !lastRules) && React.createElement("div", {
+  })), React.createElement(RuleHelp, null)), (rulesOpen || !lastRules || matchType) && React.createElement("div", {
     style: {
       marginTop: 16
     }
